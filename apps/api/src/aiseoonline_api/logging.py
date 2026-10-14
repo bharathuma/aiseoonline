@@ -2,7 +2,6 @@
 
 import logging
 
-
 LOGGER_NAME = "aiseoonline"
 
 
