@@ -1,0 +1,69 @@
+name: Infrastructure checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-redis:
+    name: PostgreSQL and worker integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: integration
+          POSTGRES_PASSWORD: integration-only-password
+          POSTGRES_DB: aiseoonline_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U integration -d aiseoonline_test"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      AISEO_ENVIRONMENT: test
+      AISEO_DATABASE_URL: postgresql+psycopg://integration:integration-only-password@127.0.0.1:5432/aiseoonline_test
+      AISEO_REDIS_URL: redis://127.0.0.1:6379/0
+      AISEO_TEST_DATABASE_URL: postgresql+psycopg://integration:integration-only-password@127.0.0.1:5432/aiseoonline_test
+      AISEO_TEST_REDIS_URL: redis://127.0.0.1:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+          enable-cache: true
+      - run: uv sync --project apps/api --group dev
+      - name: Apply migration
+        run: uv run --project apps/api alembic -c apps/api/alembic.ini upgrade head
+      - name: Verify idempotent migration
+        run: uv run --project apps/api alembic -c apps/api/alembic.ini upgrade head
+      - name: Start example Celery worker
+        run: |
+          PYTHONPATH=apps/worker uv run --project apps/api celery -A run:celery_app worker --pool=solo --loglevel=WARNING --hostname=ci@localhost > /tmp/aiseoonline-worker.log 2>&1 &
+          echo $! > /tmp/aiseoonline-worker.pid
+          sleep 8
+      - name: Run unit and integration tests
+        run: uv run --project apps/api pytest apps/api/tests -q -rs
+      - name: Show worker logs after failure
+        if: failure()
+        run: cat /tmp/aiseoonline-worker.log || true
+
+  compose-syntax:
+    name: Compose configuration
+    runs-on: ubuntu-latest
+    env:
+      AISEO_DB_PASSWORD: ci-only-hex-pass123
+      AISEO_REDIS_PASSWORD: ci-only-redis-pass123
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Docker Compose
+        run: docker compose -f compose.yaml config --quiet

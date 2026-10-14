@@ -8,6 +8,11 @@ dependencies = [
     "fastapi>=0.115,<1.0",
     "pydantic-settings>=2.7,<3.0",
     "uvicorn>=0.34,<1.0",
+    "sqlalchemy>=2.0.35,<3.0",
+    "alembic>=1.13,<2.0",
+    "psycopg[binary]>=3.2,<4.0",
+    "redis>=5.2,<7.0",
+    "celery[redis]>=5.5,<6.0",
 ]
 
 [dependency-groups]
@@ -26,6 +31,7 @@ packages = ["src/aiseoonline_api"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["integration: requires PostgreSQL and/or Redis services"]
 
 [tool.ruff]
 line-length = 100
