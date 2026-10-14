@@ -6,8 +6,8 @@ from alembic import context
 from sqlalchemy import create_engine, pool
 
 from aiseoonline_api.config import get_settings
-from aiseoonline_api.db import models
-from aiseoonline_api.db.base import Base  # noqa: F401 -- registers all model tables
+from aiseoonline_api.db import models  # noqa: F401 -- registers all model tables
+from aiseoonline_api.db.base import Base
 
 config = context.config
 if config.config_file_name is not None:
