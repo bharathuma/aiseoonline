@@ -1,0 +1,109 @@
+name: aiseoonline
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aiseoonline
+      POSTGRES_USER: aiseoonline
+      POSTGRES_PASSWORD: ${AISEO_DB_PASSWORD:?Set AISEO_DB_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aiseoonline -d aiseoonline"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [backend]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    environment:
+      AISEO_REDIS_PASSWORD: ${AISEO_REDIS_PASSWORD:?Set AISEO_REDIS_PASSWORD in .env}
+    command: ["/bin/sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$AISEO_REDIS_PASSWORD\""]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$AISEO_REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [backend]
+
+  migrate:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.api
+    restart: "no"
+    environment: &application_env
+      AISEO_ENVIRONMENT: development
+      AISEO_LOG_LEVEL: INFO
+      AISEO_DATABASE_URL: postgresql+psycopg://aiseoonline:${AISEO_DB_PASSWORD:?Set AISEO_DB_PASSWORD in .env}@db:5432/aiseoonline
+      AISEO_REDIS_URL: redis://:${AISEO_REDIS_PASSWORD:?Set AISEO_REDIS_PASSWORD in .env}@redis:6379/0
+    command: ["alembic", "-c", "alembic.ini", "upgrade", "head"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [backend]
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.api
+    restart: unless-stopped
+    environment: *application_env
+    ports:
+      - "127.0.0.1:${AISEO_API_PORT:-8000}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [backend]
+
+  worker:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.api
+    restart: unless-stopped
+    environment: *application_env
+    working_dir: /app/worker
+    command: ["celery", "-A", "run:celery_app", "worker", "--loglevel=INFO", "--concurrency=2"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    stop_grace_period: 30s
+    networks: [backend]
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${AISEO_WEB_PORT:-4321}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks: [backend]
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

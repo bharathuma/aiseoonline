@@ -1,0 +1,109 @@
+name: Infrastructure checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-redis:
+    name: PostgreSQL and worker integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: integration
+          POSTGRES_PASSWORD: integration-only-password
+          POSTGRES_DB: aiseoonline_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U integration -d aiseoonline_test"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      AISEO_ENVIRONMENT: test
+      AISEO_DATABASE_URL: postgresql+psycopg://integration:integration-only-password@127.0.0.1:5432/aiseoonline_test
+      AISEO_REDIS_URL: redis://127.0.0.1:6379/0
+      AISEO_TEST_DATABASE_URL: postgresql+psycopg://integration:integration-only-password@127.0.0.1:5432/aiseoonline_test
+      AISEO_TEST_REDIS_URL: redis://127.0.0.1:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+          enable-cache: true
+      - run: uv sync --project apps/api --group dev
+      - name: Apply migration
+        run: uv run --project apps/api alembic -c apps/api/alembic.ini upgrade head
+      - name: Verify idempotent migration
+        run: uv run --project apps/api alembic -c apps/api/alembic.ini upgrade head
+      - name: Start example Celery worker
+        run: |
+          PYTHONPATH=apps/worker uv run --project apps/api celery -A run:celery_app worker --pool=solo --loglevel=WARNING --hostname=ci@localhost > /tmp/aiseoonline-worker.log 2>&1 &
+          echo $! > /tmp/aiseoonline-worker.pid
+          sleep 8
+      - name: Run unit and integration tests
+        run: uv run --project apps/api pytest apps/api/tests -q -rs
+      - name: Show worker logs after failure
+        if: failure()
+        run: cat /tmp/aiseoonline-worker.log || true
+
+  compose-syntax:
+    name: Compose configuration
+    runs-on: ubuntu-latest
+    env:
+      AISEO_DB_PASSWORD: ci-only-hex-pass123
+      AISEO_REDIS_PASSWORD: ci-only-redis-pass123
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Docker Compose
+        run: docker compose -f compose.yaml config --quiet
+
+  compose-smoke:
+    name: Complete Compose startup
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate local test passwords
+        run: |
+          DB_PASSWORD="$(openssl rand -hex 24)"
+          REDIS_PASSWORD="$(openssl rand -hex 24)"
+          echo "::add-mask::$DB_PASSWORD"
+          echo "::add-mask::$REDIS_PASSWORD"
+          echo "AISEO_DB_PASSWORD=$DB_PASSWORD" >> "$GITHUB_ENV"
+          echo "AISEO_REDIS_PASSWORD=$REDIS_PASSWORD" >> "$GITHUB_ENV"
+      - name: Build and start the full stack
+        run: docker compose -f compose.yaml up --build -d
+      - name: Check readiness, frontend and worker
+        run: |
+          ready=0
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8000/api/v1/ready &&
+               curl -fsS http://127.0.0.1:4321/ > /dev/null; then
+              ready=1
+              break
+            fi
+            sleep 3
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo "Stack did not become ready"
+            exit 1
+          fi
+          docker compose exec -T api alembic -c alembic.ini current
+          docker compose exec -T api python -c 'from aiseoonline_api.config import get_settings; from aiseoonline_api.jobs import create_celery_app; result=create_celery_app(get_settings()).send_task("aiseoonline.ping", args=["compose"]); assert result.get(timeout=30)=={"status":"ok","message":"compose"}'
+      - name: Show diagnostics on failure
+        if: failure()
+        run: docker compose ps && docker compose logs --no-color --tail 150
+      - name: Tear down test stack
+        if: always()
+        run: docker compose down -v --remove-orphans
