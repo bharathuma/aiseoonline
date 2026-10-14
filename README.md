@@ -2,52 +2,56 @@
 
 Open-source SEO tools for checking, understanding, and improving websites.
 
-**Status: Under development.** The application is not available from this repository yet.
+**Status: Development foundation available; SEO tools and AI features are still planned.** This repository has not been deployed to the public website.
 
-AISEOOnline is intended to make routine SEO checks easier for site owners, developers, and teams. It will offer free single-purpose utilities alongside site-wide auditing and AI-assisted analysis.
+AISEOOnline is being built for site owners, developers, and teams who need practical SEO checks. The initial code contains an Astro/React website and a FastAPI backend with a health endpoint and OpenAPI documentation.
 
 ## Planned features
 
-**SEO tools**
-- Validate robots.txt files and XML sitemaps.
-- Inspect titles, descriptions, headings, canonicals, redirects, and structured data.
-- Check internal links and social sharing metadata.
-- Generate alternative meta titles and descriptions.
+- **SEO tools:** robots.txt, sitemaps, metadata, redirects, canonical URLs, structured data, headings, internal links, and social tags.
+- **Site auditing:** bounded crawling with source-linked findings and reports.
+- **AI analysis:** evidence-backed explanations, retrieval over permitted content, and bounded audit workflows.
 
-**Site auditing**
-- Scan permitted pages within configurable limits.
-- Group technical findings by page and severity.
-- Provide reports with source URLs and actionable explanations.
-
-**AI-assisted analysis**
-- Explain verified findings and suggest priorities.
-- Answer questions about indexed site content with source references.
-- Coordinate supported auditing tools in bounded workflows.
-
-Technical checks will be implemented with repeatable rules; model-generated suggestions will not replace factual checks or guarantee search rankings.
+Technical findings will come from deterministic checks. Model-generated suggestions will not replace site evidence.
 
 ## Technology
 
-The proposed stack includes Astro, React, TypeScript, Tailwind CSS, Python, FastAPI, Pydantic, PostgreSQL, pgvector, Redis, Celery, LangChain, and LangGraph. AI integrations, evaluation, and tracing will be added as those features are implemented.
+- Web: Astro, React, TypeScript, Tailwind CSS, pnpm
+- API: Python, FastAPI, Pydantic, uv
+- Planned: PostgreSQL/pgvector, Redis/Celery, LangChain/LangGraph, model APIs, and observability
 
-The initial architecture is described in [docs/architecture.md](docs/architecture.md), with design rationale in the [decision records](docs/adr/README.md).
+See [architecture](docs/architecture.md) and [design decisions](docs/adr/README.md).
+
+## Local development
+
+Prerequisites: Node.js 22.12+, Corepack, Python 3.12+, and uv.
+
+```bash
+corepack enable
+pnpm install
+uv sync --project apps/api --group dev
+
+# Website: http://127.0.0.1:4321
+pnpm dev:web
+
+# API: http://127.0.0.1:8000 (in another terminal)
+uv run --project apps/api uvicorn aiseoonline_api.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Health: `GET /api/v1/health` · API docs: `/api/docs` · OpenAPI: `/api/v1/openapi.json`.
+
+Optional AI credentials are not needed to start the API. See [local development](docs/getting-started.md) for tests and environment configuration.
 
 ## Roadmap
 
-- Application and API foundations.
-- Free SEO checking tools.
-- Site auditing and background processing.
-- AI analysis and retrieval.
-- Evaluation, monitoring, and deployment.
-
-The [roadmap](docs/roadmap.md) has additional detail. Roadmap items are proposed, not shipped. There is no local setup command until application code is introduced.
+The [roadmap](docs/roadmap.md) covers free SEO tools, site audits, AI-assisted analysis, and deployment. Planned tools are not yet available.
 
 ## Contributing
 
-Contributions, bug reports, and feature ideas are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and follow the [security reporting policy](SECURITY.md).
+Bug reports, documentation improvements, tests, and tool ideas are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 ## License
 
-Licensed under the [Apache License 2.0](LICENSE).
+[Apache License 2.0](LICENSE)
 
 Website: [aiseoonline.com](https://aiseoonline.com)
