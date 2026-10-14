@@ -1,0 +1,13 @@
+{
+  "name": "aiseoonline",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.18.0",
+  "engines": {"node": ">=22.12.0"},
+  "scripts": {
+    "dev:web": "pnpm --filter @aiseoonline/web dev",
+    "build:web": "pnpm --filter @aiseoonline/web build",
+    "check:web": "pnpm --filter @aiseoonline/web check",
+    "test:web": "pnpm --filter @aiseoonline/web test"
+  }
+}

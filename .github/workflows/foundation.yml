@@ -1,0 +1,47 @@
+name: Foundation checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+          enable-cache: true
+      - name: Install Python dependencies
+        run: uv sync --project apps/api --group dev
+      - name: Check Python style
+        run: uv run --project apps/api ruff check apps/api
+      - name: Test API
+        run: uv run --project apps/api pytest apps/api/tests -q
+
+  web:
+    name: Web build and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10.18.0'
+          run_install: false
+      - name: Install frontend dependencies
+        run: pnpm install --no-frozen-lockfile
+      - name: Test tool catalog
+        run: pnpm test:web
+      - name: Check Astro and TypeScript
+        run: pnpm check:web
+      - name: Build Astro website
+        run: pnpm build:web

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added an Astro, React, TypeScript, and Tailwind website foundation.
+- Added a versioned FastAPI health endpoint with OpenAPI documentation and validated settings.
+- Added API and frontend tests, workspace configuration, and foundation checks.
+- Added a local development guide and reserved modules for upcoming features.
 - Added project documentation, architecture notes, contribution policies, and GitHub templates.
 
-No application release has been published.
+No production application has been released.
