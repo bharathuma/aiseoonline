@@ -1,4 +1,4 @@
-/** Public tool catalog; only deployed implementations are marked available. */
+/** Public tool catalog; available means implemented in this repository, not necessarily deployed. */
 export type ToolCategory = 'Technical SEO' | 'Content' | 'Links';
 export type CategoryFilter = ToolCategory | 'All';
 
