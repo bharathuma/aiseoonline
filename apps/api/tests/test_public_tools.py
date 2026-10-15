@@ -243,6 +243,30 @@ class LiveFixture(BaseHTTPRequestHandler):
                 b"<body><h1>Heading</h1></body></html>"
             )
             kind = "text/html"
+        elif self.path == "/headings":
+            body = (b"<html><h2>Second level</h2><h4>Fourth level</h4>"
+                    b"<h1>Main subject</h1><h2>Details</h2></html>")
+            kind = "text/html"
+        elif self.path == "/social":
+            body = (b"<html><head><title>Fallback</title>"
+                    b'<meta property="og:title" content="OG Fixture">'
+                    b'<meta property="og:description" content="Actual description">'
+                    b'<meta property="og:image" content="https://example.org/card.png">'
+                    b'<meta name="twitter:card" content="summary_large_image">'
+                    b"</head></html>")
+            kind = "text/html"
+        elif self.path == "/links":
+            body = (b'<html><a href="/ok">Valid</a>'
+                    b'<a href="/missing">Missing</a>'
+                    b'<a href="/failed-link">Server issue</a>'
+                    b'<a href="https://external.org/other">External</a></html>')
+            kind = "text/html"
+        elif self.path == "/ok":
+            body, kind = b"<html><h1>OK</h1></html>", "text/html"
+        elif self.path == "/failed-link":
+            self.send_response(503)
+            self.end_headers()
+            return
         else:
             self.send_response(404)
             self.end_headers()
@@ -328,3 +352,82 @@ def test_oversized_xml_is_rejected_before_parse(
     response = client.post("/api/v1/tools/sitemap", json={"url": "http://example.org/sitemap.xml"})
     assert response.status_code == 413
     assert response.json()["error"]["code"] == "crawl_limit"
+
+
+@pytest.mark.parametrize(
+    ("tool", "path", "expected_key"),
+    [("headings", "/headings", "headings"), ("links", "/links", "links"),
+     ("social", "/social", "open_graph")],
+)
+def test_final_tools_fetch_actual_local_html(
+    client: TestClient, live_site: ThreadingHTTPServer,
+    tool: str, path: str, expected_key: str,
+) -> None:
+    result = client.post(f"/api/v1/tools/{tool}", json={"url": "http://example.org" + path})
+    assert result.status_code == 200, result.text
+    assert expected_key in result.json()["facts"]
+    assert result.json()["tool"] == tool
+
+
+def test_heading_outline_has_real_order_and_advisory_jumps(
+    client: TestClient, live_site: ThreadingHTTPServer,
+) -> None:
+    result = client.post("/api/v1/tools/headings", json={"url": "http://example.org/headings"})
+    assert result.status_code == 200, result.text
+    facts = result.json()["facts"]
+    assert [h["level"] for h in facts["headings"]] == [2, 4, 1, 2]
+    assert facts["counts"]["h1"] == 1
+    assert any(i["code"] == "heading.skipped_level" for i in result.json()["issues"])
+
+
+def test_link_checker_verifies_only_three_same_origin_destinations(
+    client: TestClient, live_site: ThreadingHTTPServer,
+) -> None:
+    result = client.post("/api/v1/tools/links", json={"url": "http://example.org/links"})
+    assert result.status_code == 200, result.text
+    facts = result.json()["facts"]
+    assert facts["internal_links"] == 3
+    assert facts["external_links"] == 1
+    assert facts["probed_destinations"] == 3
+    assert facts["verified_broken"] == 1
+    records = {item["url"]: item for item in facts["links"]}
+    assert records["http://example.org/missing"]["status"] == 404
+    assert records["http://example.org/ok"]["status"] == 200
+    assert records["https://external.org/other"]["state"] == "not_checked"
+    assert any(i["code"] == "links.broken_verified" for i in result.json()["issues"])
+    assert any(i["code"] == "links.upstream_error" for i in result.json()["issues"])
+
+
+def test_link_checker_respects_robots_on_probed_target(
+    client: TestClient, live_site: ThreadingHTTPServer,
+) -> None:
+    live_site.RequestHandlerClass.robots = (
+        b"User-agent: *\\nDisallow: /missing\\n"
+    )
+    result = client.post("/api/v1/tools/links", json={"url": "http://example.org/links"})
+    assert result.status_code == 200, result.text
+    records = {item["url"]: item for item in result.json()["facts"]["links"]}
+    assert records["http://example.org/missing"]["state"] == "robots_blocked"
+    assert records["http://example.org/missing"]["status"] is None
+    assert result.json()["facts"]["verified_broken"] == 0
+
+
+def test_social_data_and_approximation_are_explicit(
+    client: TestClient, live_site: ThreadingHTTPServer,
+) -> None:
+    result = client.post("/api/v1/tools/social", json={"url": "http://example.org/social"})
+    assert result.status_code == 200, result.text
+    facts = result.json()["facts"]
+    assert facts["open_graph"]["og:title"] == ["OG Fixture"]
+    assert facts["twitter_x"]["twitter:card"] == ["summary_large_image"]
+    assert facts["approximate_preview"]["title"] == "OG Fixture"
+    assert "Approximation" in facts["preview_disclaimer"]
+
+
+@pytest.mark.parametrize("tool", ["headings", "links", "social"])
+def test_final_tools_reject_private_urls_before_network(client: TestClient, tool: str) -> None:
+    response = client.post(
+        f"/api/v1/tools/{tool}", json={"url": "http://169.254.169.254/latest/"}
+    )
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "validation_error"
