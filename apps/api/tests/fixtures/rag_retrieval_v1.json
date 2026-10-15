@@ -42,28 +42,28 @@
   "queries": [
     {
       "id": "q-clay",
-      "query": "How should ceramic planter drainage and watering work?",
+      "query": "ceramic planter watering",
       "relevant_ids": [
         "clay"
       ]
     },
     {
       "id": "q-robots",
-      "query": "robots disallow crawler access paths",
+      "query": "robots disallow crawler",
       "relevant_ids": [
         "robots"
       ]
     },
     {
       "id": "q-canonical",
-      "query": "preferred canonical URL duplicate pages",
+      "query": "canonical duplicate pages",
       "relevant_ids": [
         "canonical"
       ]
     },
     {
       "id": "q-vector",
-      "query": "PostgreSQL pgvector HNSW cosine index",
+      "query": "pgvector HNSW cosine",
       "relevant_ids": [
         "postgres"
       ]
