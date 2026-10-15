@@ -1,0 +1,34 @@
+---
+const year = new Date().getUTCFullYear();
+---
+<footer class="border-t border-slate-200 bg-white">
+  <div class="site-container grid gap-10 py-14 md:grid-cols-[1.5fr_1fr_1fr]">
+    <div>
+      <a class="brand-link" href="/" aria-label="AISEOOnline homepage">
+        <span class="brand-symbol" aria-hidden="true">a</span>
+        <span>AISEO<span class="text-teal-700">Online</span></span>
+      </a>
+      <p class="mt-5 max-w-sm text-sm leading-7 text-slate-600">
+        Practical SEO tools built around clear checks and traceable evidence. The platform is under development.
+      </p>
+    </div>
+    <nav aria-label="Explore" class="footer-nav">
+      <h2>Explore</h2>
+      <a href="/tools/">SEO tools</a>
+      <a href="/audit/">AI audit</a>
+      <a href="/guides/">Guides</a>
+    </nav>
+    <nav aria-label="Project" class="footer-nav">
+      <h2>Project</h2>
+      <a href="/open-source/">Open source</a>
+      <a href="/docs/">Documentation</a>
+      <a href="https://github.com/bharathumashankar/aiseoonline" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+    </nav>
+  </div>
+  <div class="border-t border-slate-100">
+    <div class="site-container flex flex-wrap items-center justify-between gap-3 py-6 text-xs text-slate-500">
+      <span>© {year} AISEOOnline · Apache 2.0</span>
+      <span>Built for useful, trustworthy SEO checks.</span>
+    </div>
+  </div>
+</footer>

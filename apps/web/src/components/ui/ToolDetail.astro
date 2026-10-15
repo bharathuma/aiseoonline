@@ -1,0 +1,40 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import StatusNotice from './StatusNotice.astro';
+import type { ToolPreview } from '../components/toolCatalog';
+interface Props { tool: ToolPreview; }
+const { tool } = Astro.props;
+---
+<SiteLayout title={tool.name + ' — AISEOOnline'} description={tool.summary + ' Tool details and availability.'}>
+  <section class="section-space bg-white">
+    <div class="site-container max-w-4xl">
+      <nav aria-label="Breadcrumb" class="text-sm text-slate-600">
+        <a class="inline-link" href="/tools/">All tools</a><span class="mx-2" aria-hidden="true">/</span><span aria-current="page">{tool.name}</span>
+      </nav>
+      <p class="eyebrow mt-12">{tool.category}</p>
+      <h1 class="section-title mt-3">{tool.name}</h1>
+      <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600">{tool.summary}</p>
+      <div class="mt-9 max-w-2xl">
+        <StatusNotice variant="warning" title="Coming soon">
+          This tool is being developed and cannot run checks yet. There is no signup or scan form until it is available.
+        </StatusNotice>
+      </div>
+    </div>
+  </section>
+  <section class="section-space">
+    <div class="site-container max-w-4xl">
+      <h2 class="text-2xl font-bold tracking-tight text-slate-950">What this tool will check</h2>
+      <ul class="mt-7 grid gap-4 sm:grid-cols-2">
+        {tool.details.map((detail) => (
+          <li class="surface-card flex items-start gap-3">
+            <span class="mt-0.5 text-teal-700" aria-hidden="true">✓</span>
+            <span class="text-sm leading-7 text-slate-700">{detail}</span>
+          </li>
+        ))}
+      </ul>
+      <div class="mt-10">
+        <a href="/tools/" class="inline-link font-semibold">← Browse all planned tools</a>
+      </div>
+    </div>
+  </section>
+</SiteLayout>

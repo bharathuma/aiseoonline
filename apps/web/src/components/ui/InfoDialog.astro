@@ -1,0 +1,29 @@
+---
+interface Props {
+  id: string;
+  title: string;
+  trigger: string;
+}
+const { id, title, trigger } = Astro.props;
+---
+<div data-dialog-root>
+  <button type="button" class="ui-button ui-button-outline" data-dialog-open aria-haspopup="dialog">{trigger}</button>
+  <dialog id={id} aria-labelledby={id + '-title'} class="info-dialog" data-dialog>
+    <div class="flex items-start justify-between gap-5">
+      <h2 id={id + '-title'} class="text-xl font-bold text-slate-950">{title}</h2>
+      <form method="dialog">
+        <button type="submit" class="dialog-close" aria-label="Close dialog">×</button>
+      </form>
+    </div>
+    <div class="mt-4 leading-7 text-slate-700"><slot /></div>
+  </dialog>
+</div>
+<script>
+  document.querySelectorAll<HTMLElement>('[data-dialog-root]').forEach((root) => {
+    const trigger = root.querySelector<HTMLButtonElement>('[data-dialog-open]');
+    const dialog = root.querySelector<HTMLDialogElement>('[data-dialog]');
+    if (!trigger || !dialog) return;
+    trigger.addEventListener('click', () => dialog.showModal());
+    dialog.addEventListener('close', () => trigger.focus());
+  });
+</script>
