@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Standardized API error responses, server-issued request IDs, and privacy-aware application logging.
+- Added Python type and coverage checks, frontend lint/format gates, and automated dependency vulnerability audits.
+- Added reproducible dependency-locking and quality documentation.
+
 - Added a responsive website layout, shared interface components, guide pages, planned-tool pages, metadata and browser checks.
 
 - Added database models, Alembic migrations, pgvector setup, a Celery example worker, Docker Compose and infrastructure tests.

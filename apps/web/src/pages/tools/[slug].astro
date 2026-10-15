@@ -6,7 +6,10 @@ import type { ToolPreview } from '../../components/toolCatalog';
 export function getStaticPaths() {
   return plannedTools.map((tool) => ({ params: { slug: tool.slug }, props: { tool } }));
 }
-interface Props { tool: ToolPreview; }
+interface Props {
+  tool: ToolPreview;
+}
 const { tool } = Astro.props;
 ---
+
 <ToolDetail tool={tool} />

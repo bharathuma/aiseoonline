@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { filterTools, plannedTools, toolBySlug, toolCategories, toolPath } from '../src/components/toolCatalog.ts';
+import {
+  filterTools,
+  plannedTools,
+  toolBySlug,
+  toolCategories,
+  toolPath,
+} from '../src/components/toolCatalog.ts';
 
 test('empty search returns all entries', () => {
   assert.equal(filterTools(' ').length, plannedTools.length);

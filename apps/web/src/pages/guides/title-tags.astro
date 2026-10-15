@@ -1,23 +1,60 @@
 ---
 import SiteLayout from '../../layouts/SiteLayout.astro';
 ---
-<SiteLayout title="Writing useful title tags — AISEOOnline" description="Learn how to write distinctive, descriptive HTML page titles without relying on rigid character-count rules." type="article">
-  <article class="section-space bg-white"><div class="site-container max-w-3xl">
-    <nav aria-label="Breadcrumb" class="text-sm text-slate-600"><a class="inline-link" href="/guides/">Guides</a><span class="mx-2" aria-hidden="true">/</span><span aria-current="page">Title tags</span></nav>
-    <p class="eyebrow mt-12">On-page SEO</p>
-    <h1 class="section-title mt-4">Writing useful page titles</h1>
-    <p class="page-intro">A good HTML title tells readers and search engines what a page is about, without repeating the same generic phrase across your whole site.</p>
-    <div class="prose-article mt-12">
-      <h2>Start with the page's purpose</h2>
-      <p>Describe what someone can expect to find. A specific product, service, or article title is usually more useful than a broad collection of keywords.</p>
-      <h2>Write unique, readable titles</h2>
-      <p>Pages with distinct content should generally have distinct titles. Keep important terms natural, avoid repetitive wording, and add your brand where it helps readers recognize the source.</p>
-      <h2>Length is a guideline, not a guarantee</h2>
-      <p>Search engines may shorten or rewrite displayed titles depending on the query and page content. A character count can flag unusually long titles, but no fixed number guarantees how a result will appear.</p>
-      <h2>Check the rendered page</h2>
-      <ul><li>Verify that the HTML title matches the purpose of the page.</li><li>Look for missing, duplicate, or misleading titles.</li><li>Ensure the prominent page heading and content support the title.</li><li>Check that templates do not accidentally generate identical titles site-wide.</li></ul>
-      <p>Title tags are one part of a page's search presentation. They are not a substitute for accurate content, accessible navigation, or sound technical foundations.</p>
+
+<SiteLayout
+  title="Writing useful title tags — AISEOOnline"
+  description="Learn how to write distinctive, descriptive HTML page titles without relying on rigid character-count rules."
+  type="article"
+>
+  <article class="section-space bg-white">
+    <div class="site-container max-w-3xl">
+      <nav aria-label="Breadcrumb" class="text-sm text-slate-600">
+        <a class="inline-link" href="/guides/">Guides</a><span class="mx-2" aria-hidden="true"
+          >/</span
+        ><span aria-current="page">Title tags</span>
+      </nav>
+      <p class="eyebrow mt-12">On-page SEO</p>
+      <h1 class="section-title mt-4">Writing useful page titles</h1>
+      <p class="page-intro">
+        A good HTML title tells readers and search engines what a page is about, without repeating
+        the same generic phrase across your whole site.
+      </p>
+      <div class="prose-article mt-12">
+        <h2>Start with the page's purpose</h2>
+        <p>
+          Describe what someone can expect to find. A specific product, service, or article title is
+          usually more useful than a broad collection of keywords.
+        </p>
+        <h2>Write unique, readable titles</h2>
+        <p>
+          Pages with distinct content should generally have distinct titles. Keep important terms
+          natural, avoid repetitive wording, and add your brand where it helps readers recognize the
+          source.
+        </p>
+        <h2>Length is a guideline, not a guarantee</h2>
+        <p>
+          Search engines may shorten or rewrite displayed titles depending on the query and page
+          content. A character count can flag unusually long titles, but no fixed number guarantees
+          how a result will appear.
+        </p>
+        <h2>Check the rendered page</h2>
+        <ul>
+          <li>Verify that the HTML title matches the purpose of the page.</li><li>
+            Look for missing, duplicate, or misleading titles.
+          </li><li>Ensure the prominent page heading and content support the title.</li><li>
+            Check that templates do not accidentally generate identical titles site-wide.
+          </li>
+        </ul>
+        <p>
+          Title tags are one part of a page's search presentation. They are not a substitute for
+          accurate content, accessible navigation, or sound technical foundations.
+        </p>
+      </div>
+      <a
+        class="mt-10 inline-block font-semibold text-teal-800 underline underline-offset-4"
+        href="/guides/">← Back to guides</a
+      >
     </div>
-    <a class="mt-10 inline-block font-semibold text-teal-800 underline underline-offset-4" href="/guides/">← Back to guides</a>
-  </div></article>
+  </article>
 </SiteLayout>

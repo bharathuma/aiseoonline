@@ -6,7 +6,11 @@ interface Props {
 const { variant, title } = Astro.props;
 const symbol = { info: 'i', success: '✓', warning: '!', error: '×' }[variant];
 ---
-<div class:list={['status-notice', 'status-' + variant]} role={variant === 'error' ? 'alert' : 'status'}>
+
+<div
+  class:list={['status-notice', 'status-' + variant]}
+  role={variant === 'error' ? 'alert' : 'status'}
+>
   <span class="status-symbol" aria-hidden="true">{symbol}</span>
   <div>
     <strong class="block font-semibold">{title}</strong>

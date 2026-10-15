@@ -14,7 +14,12 @@ from aiseoonline_api.main import create_app
 
 def test_expected_database_tables_are_registered() -> None:
     assert set(Base.metadata.tables) == {
-        "users", "projects", "audit_jobs", "pages", "seo_findings", "ai_usage"
+        "users",
+        "projects",
+        "audit_jobs",
+        "pages",
+        "seo_findings",
+        "ai_usage",
     }
 
 
@@ -35,8 +40,11 @@ def test_database_url_is_required_when_creating_engine() -> None:
 
 
 def test_settings_hide_storage_credentials() -> None:
-    settings = Settings(_env_file=None, database_url="postgresql+psycopg://u:do-not-log@db/test",
-                        redis_url="redis://:never-show-this@redis:6379/0")
+    settings = Settings(
+        _env_file=None,
+        database_url="postgresql+psycopg://u:do-not-log@db/test",
+        redis_url="redis://:never-show-this@redis:6379/0",
+    )
     assert "do-not-log" not in repr(settings)
     assert "never-show-this" not in repr(settings)
 

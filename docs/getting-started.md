@@ -41,9 +41,9 @@ The API, worker, and migration service use the same Python dependencies. Audit c
 
 ```bash
 corepack enable
-pnpm install
+pnpm install --frozen-lockfile
 pnpm dev:web
-uv sync --project apps/api --group dev
+uv sync --project apps/api --locked --group dev
 uv run --project apps/api uvicorn aiseoonline_api.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
@@ -53,6 +53,10 @@ Without configured storage, API liveness and docs work, but `/ready` correctly r
 uv run --project apps/api alembic -c apps/api/alembic.ini upgrade head
 uv run --project apps/api alembic -c apps/api/alembic.ini current
 ```
+
+## Quality and API contracts
+
+See [quality checks](quality.md) for locked installs, linting, type checking, test coverage, vulnerability audits and branch-protection settings. See [API contracts](api-contracts.md) for the error envelope, request identifiers and response schemas.
 
 ## Tests and checks
 

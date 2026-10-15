@@ -3,12 +3,17 @@
   "private": true,
   "version": "0.1.0",
   "packageManager": "pnpm@10.18.0",
-  "engines": {"node": ">=22.12.0"},
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev:web": "pnpm --filter @aiseoonline/web dev",
     "build:web": "pnpm --filter @aiseoonline/web build",
     "check:web": "pnpm --filter @aiseoonline/web check",
     "test:web": "pnpm --filter @aiseoonline/web test",
-    "e2e:web": "pnpm --filter @aiseoonline/web e2e"
+    "e2e:web": "pnpm --filter @aiseoonline/web e2e",
+    "lint:web": "pnpm --filter @aiseoonline/web lint",
+    "format:web": "pnpm --filter @aiseoonline/web format",
+    "format:check:web": "pnpm --filter @aiseoonline/web format:check"
   }
 }

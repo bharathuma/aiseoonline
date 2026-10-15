@@ -1,8 +1,15 @@
 ---
-interface Props { message?: string; }
+interface Props {
+  message?: string;
+}
 const { message = 'Loading…' } = Astro.props;
 ---
-<div role="status" aria-live="polite" class="inline-flex items-center gap-3 text-sm font-medium text-slate-700">
+
+<div
+  role="status"
+  aria-live="polite"
+  class="inline-flex items-center gap-3 text-sm font-medium text-slate-700"
+>
   <span class="loading-ring" aria-hidden="true"></span>
   <span>{message}</span>
 </div>

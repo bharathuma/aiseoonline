@@ -1,0 +1,41 @@
+name: Dependency vulnerability checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '23 6 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Python dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+          enable-cache: true
+      - name: Export locked runtime requirements
+        run: uv export --project apps/api --locked --no-dev --no-emit-project --format requirements-txt --output-file /tmp/aiseoonline-requirements.txt
+      - name: Check published vulnerability advisories
+        run: uvx pip-audit --disable-pip --no-deps -r /tmp/aiseoonline-requirements.txt
+
+  web:
+    name: Frontend dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10.18.0'
+          run_install: false
+      - name: Audit locked production dependencies
+        run: pnpm audit --prod --audit-level high

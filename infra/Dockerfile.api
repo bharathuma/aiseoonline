@@ -8,7 +8,7 @@ ENV UV_LINK_MODE=copy \
     PYTHONPATH="/app/worker"
 COPY apps/api /app/
 COPY apps/worker /app/worker/
-RUN uv sync --no-dev && adduser --disabled-password --gecos '' appuser && chown -R appuser:appuser /app
+RUN uv sync --locked --no-dev && adduser --disabled-password --gecos '' appuser && chown -R appuser:appuser /app
 USER appuser
 EXPOSE 8000
-CMD ["uvicorn", "aiseoonline_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "aiseoonline_api.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
