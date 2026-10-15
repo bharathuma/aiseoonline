@@ -326,3 +326,129 @@ def test_persistent_langgraph_checkpoint_resumes_without_refetching() -> None:
             if user:
                 session.delete(user)
         engine.dispose()
+
+
+@pytest.mark.integration
+def test_private_audit_api_authorization_polling_cancellation_and_exports(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_url = os.environ.get("AISEO_TEST_DATABASE_URL")
+    if not database_url:
+        pytest.skip("PostgreSQL service unavailable")
+    from aiseoonline_api.agents import routes as audit_routes
+
+    owner_id, project_id = uuid4(), uuid4()
+    token = "local-dev-token-" + "x" * 48
+    settings = Settings(
+        _env_file=None, environment="test",
+        database_url=database_url, redis_url="redis://127.0.0.1:6379/0",
+        audit_jobs_enabled=True, audit_dev_token=token,
+        audit_dev_owner_id=owner_id,
+        openai_api_key="offline-only",
+        llm_input_usd_per_million=Decimal("1"),
+        llm_output_usd_per_million=Decimal("2"),
+    )
+    engine = create_database_engine(settings)
+    delivered: list[str] = []
+
+    class FakeQueue:
+        def send_task(self, name: str, args: list[str], task_id: str):
+            assert name == "aiseoonline.audit.execute"
+            assert args == [task_id]
+            delivered.append(task_id)
+
+    monkeypatch.setattr(audit_routes, "reserve_daily_budget", lambda *a: 1)
+    monkeypatch.setattr(audit_routes, "create_celery_app", lambda s: FakeQueue())
+    try:
+        with Session(engine) as session, session.begin():
+            session.add(User(id=owner_id, email=f"audit-http-{uuid4().hex}@example.test"))
+            session.flush()
+            session.add(Project(
+                id=project_id, owner_id=owner_id, domain="example.org",
+                verification_status="verified",
+            ))
+        app = create_app(settings)
+        headers = {
+            "x-dev-audit-token": token,
+            "Idempotency-Key": "http-private-fixture-001",
+        }
+        with TestClient(app) as client:
+            payload = {"project_id": str(project_id), "url": TARGET}
+            denied = client.post("/api/v1/internal/audits", json=payload)
+            assert denied.status_code in (404, 422)
+            response = client.post(
+                "/api/v1/internal/audits", json=payload, headers=headers,
+            )
+            assert response.status_code == 202, response.text
+            job_id = response.json()["id"]
+            assert delivered == [job_id]
+            repeated = client.post(
+                "/api/v1/internal/audits", json=payload, headers=headers,
+            )
+            assert repeated.status_code == 202
+            assert repeated.json()["id"] == job_id
+            assert delivered == [job_id]
+            forbidden = client.get("/api/v1/internal/audits/" + job_id)
+            assert forbidden.status_code == 404
+            progress = client.get("/api/v1/internal/audits/" + job_id, headers=headers)
+            assert progress.status_code == 200
+            assert progress.json()["status"] == "queued"
+            not_ready = client.get(
+                f"/api/v1/internal/audits/{job_id}/report", headers=headers,
+            )
+            assert not_ready.status_code == 409
+            cancelled = client.post(
+                f"/api/v1/internal/audits/{job_id}/cancel", headers=headers,
+            )
+            assert cancelled.status_code == 200
+            assert cancelled.json()["status"] == "cancelled"
+            cancelled_again = client.post(
+                f"/api/v1/internal/audits/{job_id}/cancel", headers=headers,
+            )
+            assert cancelled_again.json()["status"] == "cancelled"
+            assert client.get(
+                f"/api/v1/internal/audits/{uuid4()}", headers=headers
+            ).status_code == 404
+
+            # A prepared completed report may only be exported after authentication.
+            from aiseoonline_api.agents.models import AuditFinding, AuditReport
+
+            issue = AuditFinding(
+                finding_id="seo:fixture-html", rule_id="title.missing",
+                severity="error", priority="high", affected_url=TARGET,
+                summary="<script>alert(1)</script>",
+                correction="Add a descriptive page title",
+                evidence_quote="=HYPERLINK(1,2)", evidence_ref="title:0",
+            )
+            with Session(engine) as session, session.begin():
+                row = session.get(AuditJob, UUID(job_id))
+                assert row is not None
+                row.report_data = AuditReport(
+                    project_id=project_id, requested_url=TARGET,
+                    final_url=TARGET, captured_at=datetime.now(UTC),
+                    status="partial", findings=[issue], recommendations=[],
+                    selected_tools=[], trace=[], uncertainty="One failed step",
+                ).model_dump(mode="json")
+                row.status = "partial"
+            html = client.get(
+                f"/api/v1/internal/audits/{job_id}/report.html", headers=headers,
+            )
+            assert html.status_code == 200
+            assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html.text
+            assert "<script>alert(1)</script>" not in html.text
+            assert "default-src 'none'" in html.headers["content-security-policy"]
+            csv = client.get(
+                f"/api/v1/internal/audits/{job_id}/report.csv", headers=headers,
+            )
+            assert csv.status_code == 200
+            assert "'=HYPERLINK(1,2)" in csv.text
+            assert "deterministic" in csv.text
+            assert client.get(
+                f"/api/v1/internal/audits/{job_id}/report.csv"
+            ).status_code == 404
+    finally:
+        with Session(engine) as session, session.begin():
+            owner = session.get(User, owner_id)
+            if owner:
+                session.delete(owner)
+        engine.dispose()
