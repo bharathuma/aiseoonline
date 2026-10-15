@@ -128,6 +128,7 @@ def test_pgvector_keyword_hybrid_retrieval_and_versioned_evaluation() -> None:
                     mrr_3 = sum(reciprocal_ranks) / len(reciprocal_ranks)
                     # These numbers are observed using the labeled fixture and
                     # explicitly asserted, not claimed as live search benchmarks.
+                    print(f"RAG synthetic fixture {evaluation['version']}: Recall@3={recall_3:.3f}, MRR@3={mrr_3:.3f}")
                     assert recall_3 >= 0.75, f"Hybrid Recall@3={recall_3:.3f}"
                     assert mrr_3 >= 0.50, f"Hybrid MRR@3={mrr_3:.3f}"
 
@@ -169,6 +170,23 @@ def test_pgvector_keyword_hybrid_retrieval_and_versioned_evaluation() -> None:
                         retriever.retrieve(
                             project_id=unverified.id, owner_id=owner.id, query="ceramic planter"
                         )
+                    # Future-dated content is not evidence of a completed historical crawl.
+                    in_future = store.ingest_snapshot(
+                        project_id=project.id, owner_id=owner.id,
+                        document_type="guide",
+                        snapshot=snapshot(
+                            "https://example.org/guides/future-claims", "Future article",
+                            "Unpublished future article content", days_old=-60,
+                        ),
+                    )
+                    future_results = retriever.retrieve(
+                        project_id=project.id, owner_id=owner.id,
+                        query="unpublished future article",
+                        options=RetrievalOptions(mode="keyword"),
+                    )
+                    assert in_future.document_id not in {
+                        hit.citation.document_id for hit in future_results.hits
+                    }
                     no_cross_project = retriever.retrieve(
                         project_id=foreign_project.id, owner_id=other.id,
                         query="pgvector HNSW cosine",
@@ -198,6 +216,34 @@ def test_pgvector_keyword_hybrid_retrieval_and_versioned_evaluation() -> None:
                     assert documents["robots"] not in {
                         item.citation.document_id for item in stale.hits
                     }
+
+                    # Distinct conflicting claims must remain separately cited; retrieval
+                    # must not invent a consensus or silently choose one as fact.
+                    conflict_urls = [
+                        "https://example.org/guides/returns-14",
+                        "https://example.org/guides/returns-30",
+                    ]
+                    for claimed_days, target in zip((14, 30), conflict_urls, strict=True):
+                        store.ingest_snapshot(
+                            project_id=project.id, owner_id=owner.id,
+                            document_type="guide",
+                            snapshot=snapshot(
+                                target, "Return policy",
+                                f"Our return policy allows {claimed_days} days for returns."
+                            ),
+                        )
+                    conflicts = retriever.retrieve(
+                        project_id=project.id, owner_id=owner.id,
+                        query="return policy",
+                        options=RetrievalOptions(mode="keyword", top_k=5),
+                    )
+                    conflict_hits = [
+                        hit for hit in conflicts.hits if hit.citation.source_url in conflict_urls
+                    ]
+                    assert len(conflict_hits) == 2
+                    assert len({h.citation.source_id for h in conflict_hits}) == 2
+                    assert any("14 days" in h.text for h in conflict_hits)
+                    assert any("30 days" in h.text for h in conflict_hits)
 
                     no_match = retriever.retrieve(
                         project_id=project.id, owner_id=owner.id,
