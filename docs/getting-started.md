@@ -54,6 +54,10 @@ uv run --project apps/api alembic -c apps/api/alembic.ini upgrade head
 uv run --project apps/api alembic -c apps/api/alembic.ini current
 ```
 
+## Quality and API contracts
+
+See [quality checks](quality.md) for locked installs, linting, type checking, test coverage, vulnerability audits and branch-protection settings. See [API contracts](api-contracts.md) for the error envelope, request identifiers and response schemas.
+
 ## Tests and checks
 
 ```bash
