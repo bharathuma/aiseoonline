@@ -5,8 +5,10 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from aiseoonline_api import __version__
+from aiseoonline_api.accounts import router as account_router
 from aiseoonline_api.agents.routes import router as audit_jobs_router
 from aiseoonline_api.ai_core.meta_routes import router as ai_meta_router
 from aiseoonline_api.config import Settings, get_settings
@@ -20,6 +22,7 @@ from aiseoonline_api.request_id import RequestIdMiddleware
 from aiseoonline_api.routes.health import router as health_router
 from aiseoonline_api.routes.readiness import ReadinessResponse
 from aiseoonline_api.routes.readiness import router as readiness_router
+from aiseoonline_api.security_headers import SecurityHeadersMiddleware
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -53,7 +56,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         create_database_engine(resolved) if resolved.database_url is not None else None
     )
     register_error_handlers(application)
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=[resolved.auth_web_origin],
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "DELETE"],
+        allow_headers=["Content-Type", "X-CSRF-Token"],
+    )
+    application.add_middleware(SecurityHeadersMiddleware, settings=resolved)
     application.add_middleware(RequestIdMiddleware)
+    application.include_router(account_router, prefix="/api/v1", responses=ERROR_RESPONSES)
     application.include_router(health_router, prefix="/api/v1", responses=ERROR_RESPONSES)
     application.include_router(public_tools_router, prefix="/api/v1", responses=ERROR_RESPONSES)
     application.include_router(ai_meta_router, prefix="/api/v1", responses=ERROR_RESPONSES)
