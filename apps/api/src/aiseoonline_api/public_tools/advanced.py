@@ -152,7 +152,7 @@ def check_canonical(url: str) -> ToolReport:
             "canonical_count": len(canonical_values),
             "declarations": canonical_values,
             "http_status": page.http_status,
-            "limitation": "HTML canonical links only; no HTTP Link header or Google selection check.",
+            "limitation": "HTML canonicals only; ignores HTTP Link headers and Google selection.",
         },
         issues=findings,
     )
@@ -307,7 +307,7 @@ def check_schema(url: str) -> ToolReport:
             "types": sorted(types),
             "recognized_common_types": sorted(types & _SUPPORTED_TYPES),
             "nodes": samples,
-            "limitation": "JSON-LD syntax and basic shape only; not Google's rich-result eligibility test.",
+            "limitation": "JSON-LD structure only; not a Google rich-result eligibility test.",
         },
         issues=findings[:75],
     )
