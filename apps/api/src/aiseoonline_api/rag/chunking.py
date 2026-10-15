@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from aiseoonline_api.crawler.content import ContentSection
 
-_SPACE = re.compile(r"\\s+")
+_SPACE = re.compile(r"\s+")
 
 
 @dataclass(frozen=True)
