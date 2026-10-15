@@ -11,7 +11,7 @@ const { tool } = Astro.props;
 const kind =
   tool.id === 'metadata'
     ? 'meta'
-    : (tool.id as 'robots' | 'sitemap' | 'redirects' | 'canonical' | 'schema');
+    : (tool.id as 'robots' | 'sitemap' | 'redirects' | 'canonical' | 'schema' | 'headings' | 'links' | 'social');
 ---
 
 <SiteLayout
@@ -74,4 +74,35 @@ const kind =
       </div>
     </div>
   </section>
+  {tool.status === 'available' && ['headings', 'links', 'social'].includes(tool.id) && (
+    <section class="section-space bg-white" aria-labelledby="tool-faq">
+      <div class="site-container max-w-4xl">
+        <h2 id="tool-faq" class="text-2xl font-bold">Frequently asked questions</h2>
+        {tool.id === 'headings' && (
+          <div class="mt-6 space-y-5">
+            <h3 class="font-semibold">Does a page have to use exactly one H1?</h3>
+            <p class="text-slate-700">No. Multiple H1 elements can be valid HTML. Focus on a clear and readable document outline.</p>
+            <h3 class="font-semibold">Are heading levels a ranking rule?</h3>
+            <p class="text-slate-700">No fixed heading count or length guarantees rankings. The checker reports observed order and potential readability issues.</p>
+          </div>
+        )}
+        {tool.id === 'links' && (
+          <div class="mt-6 space-y-5">
+            <h3 class="font-semibold">Does it check every link?</h3>
+            <p class="text-slate-700">No. It classifies extracted anchors but tests only three same-origin destinations within strict budgets. External links are never fetched.</p>
+            <h3 class="font-semibold">What does “not checked” mean?</h3>
+            <p class="text-slate-700">It means the link has not been verified; it does not mean the URL works or is broken.</p>
+          </div>
+        )}
+        {tool.id === 'social' && (
+          <div class="mt-6 space-y-5">
+            <h3 class="font-semibold">Is the preview exactly what social networks show?</h3>
+            <p class="text-slate-700">No. Platforms choose their own text, images, crops and cached data. The preview is an approximation based on HTML fields.</p>
+            <h3 class="font-semibold">Does the checker download social images?</h3>
+            <p class="text-slate-700">No. Image URLs are displayed as text; images and other resources are not fetched.</p>
+          </div>
+        )}
+      </div>
+    </section>
+  )}
 </SiteLayout>
