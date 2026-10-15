@@ -176,9 +176,7 @@ def _report(request: Request, job_id: UUID) -> AuditReport | JSONResponse:
 
 
 @router.get("/internal/audits/{job_id}/report", response_model=AuditReport)
-def report_json(
-    request: Request, job_id: UUID, response: Response
-) -> AuditReport | JSONResponse:
+def report_json(request: Request, job_id: UUID, response: Response) -> AuditReport | JSONResponse:
     response.headers["Cache-Control"] = "no-store, private"
     return _report(request, job_id)
 
