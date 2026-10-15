@@ -144,3 +144,18 @@ async def sitemap(request: Request, body: UrlInput) -> ToolReport | JSONResponse
 @router.post("/tools/meta", response_model=ToolReport, summary="Inspect page metadata")
 async def metadata(request: Request, body: UrlInput) -> ToolReport | JSONResponse:
     return await execute(request, body, "meta")
+
+
+@router.post("/tools/redirects", response_model=ToolReport, summary="Inspect a bounded redirect chain")
+async def redirects(request: Request, body: UrlInput) -> ToolReport | JSONResponse:
+    return await execute(request, body, "redirects")
+
+
+@router.post("/tools/canonical", response_model=ToolReport, summary="Inspect HTML canonical declarations")
+async def canonical(request: Request, body: UrlInput) -> ToolReport | JSONResponse:
+    return await execute(request, body, "canonical")
+
+
+@router.post("/tools/schema", response_model=ToolReport, summary="Check JSON-LD syntax and structure")
+async def schema(request: Request, body: UrlInput) -> ToolReport | JSONResponse:
+    return await execute(request, body, "schema")
