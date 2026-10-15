@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Documented an evidence-based release audit with production versus development feature boundaries, blocking release risks, authentic screenshot and demo guidance, interview questions, and a manual release checklist. Added executable production API and benchmark provenance release-contract tests; **no stable release or deployment was performed**.
+- Added ten distinct public SEO tool pages with truthful structured data, public-only sitemap and robots directives, privacy/legal draft disclosures, disabled-first-party aggregate analytics and disabled future ad placeholders.
+- Added a tested production-mode private-origin Docker overlay, immutable manual GHCR artifact publishing workflow, guarded deployment/backup/restore tooling and operator recovery documentation.
+- Expanded public-tool Playwright and controlled load checks, fixed Redis quota accounting and missing social-preview rendering, and bounded project creation/read queries.
+- Added database-backed hashed sessions, project ownership and hosted HTTPS verification-file challenges, with production self-registration disabled; private agent/RAG routes remain disabled in production.
+- Added synthetic offline evaluations and a public evidence page that **preserves** an observed semantic overclaim failure (17/18 matched expectations, not model accuracy).
+
+
 - Added a development-only Celery audit lifecycle with PostgreSQL job ownership, idempotency, leases, cancellation, durable LangGraph checkpoints and private report exports.
 - Added a noindex local audit workspace, progress polling and clear separation of technical findings from AI interpretations.
 

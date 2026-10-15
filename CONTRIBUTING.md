@@ -1,31 +1,53 @@
 # Contributing
 
-AISEOOnline welcomes bug reports, documentation improvements, tests, and suggestions for useful SEO tools.
+AISEOOnline welcomes small, useful public-tool fixes, accurate documentation,
+accessibility improvements and evidence-backed test coverage. The source is
+pre-release; please avoid describing development-only private AI features
+as production functionality.
 
-## Getting started
+## Reproduce the current application
 
-Browse open issues before starting work. For significant changes, open an issue to discuss the proposed approach first.
+Follow [local setup](docs/getting-started.md) to configure independent private
+database/Redis passwords and start the Docker Compose stack. Node.js 22.12+,
+pnpm 10, Python 3.12+ and uv are needed for host-based development.
 
-The repository currently contains project documentation. Local development commands will be documented when the frontend and backend are added.
+```bash
+corepack enable
+pnpm install --frozen-lockfile
+uv sync --project apps/api --locked --group dev
+uv run --project apps/api --locked ruff check apps/api
+uv run --project apps/api --locked ruff format --check apps/api
+uv run --project apps/api --locked mypy --config-file apps/api/pyproject.toml apps/api/src
+uv run --project apps/api --locked pytest apps/api/tests -q
+pnpm lint:web && pnpm format:check:web && pnpm test:web
+pnpm check:web && pnpm build:web
+pnpm --filter @aiseoonline/web exec playwright install chromium
+pnpm e2e:web
+```
 
-## Submitting a change
+Integration tests needing PostgreSQL, Redis and Celery are run in isolated
+GitHub Actions; test skips in a host-only run are **not** evidence those
+integration paths passed locally.
 
-1. Create a branch from the latest `main` (for example, `feat/sitemap-validator`, `fix/canonical-checker`, or `docs/getting-started`).
-2. Keep changes focused and include tests where behavior changes.
-3. Update relevant documentation when adding features or changing APIs.
-4. Run the applicable checks and record what passed or could not be run.
-5. Open a pull request with a short description of the change and any known limitations.
+## Make changes
 
-## Guidelines
+1. Search existing issues before proposing a new checker or architecture.
+   For major changes, open a focused issue with acceptance criteria first.
+2. Branch from current `main`; avoid unrelated refactors.
+3. Keep deterministic checks separate from optional AI suggestions and
+   preserve actual input evidence. Explicitly handle untrusted HTML,
+   authentication, network failures, cost caps and resource ceilings.
+4. Use permission-safe synthetic fixtures and add normal, edge, failure,
+   authorization and browser tests as needed. Never commit private crawl
+   material, real API keys, screenshots containing user data or paid calls.
+5. Update user docs and security notes when behavior changes.
+6. Open a PR with what actually changed, tests **actually run** and known
+   limitations. Green PR checks do not authorize a merge or deployment.
 
-- Use deterministic code for technical SEO checks and retain the evidence behind findings.
-- Avoid unsupported ranking promises and misleading results.
-- Validate all input, particularly URLs and content fetched from other websites.
-- Keep AI operations bounded in cost and permissions, and treat retrieved text as untrusted.
-- Do not commit credentials, private crawl data, or personal information.
-- Make public tools accessible and useful on mobile devices.
-- Use sample websites and test data you own or are authorized to use.
+Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+Follow [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Contributions to this
+repository are published under [Apache License 2.0](LICENSE).
 
-For vulnerabilities, follow [SECURITY.md](SECURITY.md) rather than posting a public issue. Contributors agree that their submissions may be distributed under the project's [Apache 2.0 license](LICENSE).
-
-Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+Further information: [architecture](docs/architecture.md),
+[quality](docs/quality.md), [evaluation](docs/evaluations.md) and
+[release-readiness gates](docs/release-readiness.md).

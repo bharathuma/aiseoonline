@@ -35,7 +35,7 @@ docker compose exec redis sh -c 'REDISCLI_AUTH="$AISEO_REDIS_PASSWORD" redis-cli
 docker compose exec api python -c 'from aiseoonline_api.jobs import create_celery_app; from aiseoonline_api.config import get_settings; app=create_celery_app(get_settings()); print(app.send_task("aiseoonline.ping", args=["demo"]).get(timeout=20))'
 ```
 
-The API, worker, and migration service use the same Python dependencies. Audit crawling, authentication, and AI features are not active yet.
+The API, worker and migration service share Python dependencies. Nine anonymous deterministic checkers are implemented. Operator-provisioned account APIs and domain verification exist, while private LangGraph/RAG jobs are available only in restricted development/test configurations. Production self-registration and private audit/chat routes are intentionally disabled. No paid model credential is required for local startup; AI metadata generation fails clearly when not configured.
 
 ## Run individual apps without Docker
 
@@ -78,3 +78,12 @@ The infrastructure CI job provisions temporary PostgreSQL + pgvector and Redis s
 The pgvector extension is required, though the initial schema has no embedding columns. Store password values in the untracked `.env` only. Use URL-safe hex credentials or properly URL-encode them, and never commit secret values.
 
 For security posture and deployment boundaries, see [infra/README.md](../infra/README.md) and [SECURITY.md](../SECURITY.md).
+
+## Source review and release constraints
+
+The documentation and local test commands are **not permission to deploy**. See
+[architecture](architecture.md), [release readiness](release-readiness.md),
+[genuine demo capture](demo-guide.md), [security](security-threat-model.md),
+and [operator deployment](deployment.md). A successful Compose startup does not
+prove the public website is serving this revision or that production firewall,
+proxy-IP quotas, backups, legal terms and private data deletion are complete.
