@@ -99,6 +99,14 @@ jobs:
             echo "Stack did not become ready"
             exit 1
           fi
+          # Validate the browser-facing reverse proxy without contacting a third-party site.
+          curl -fsS http://127.0.0.1:4321/api/v1/openapi.json | grep -q '"/api/v1/tools/meta"'
+          response_code="$(curl -sS -o /tmp/seo-invalid-url.json -w '%{http_code}' \
+            -X POST -H 'Content-Type: application/json' \
+            -d '{"url":"http://127.0.0.1/"}' \
+            http://127.0.0.1:4321/api/v1/tools/meta)"
+          test "$response_code" = "422"
+          grep -q 'validation_error' /tmp/seo-invalid-url.json
           docker compose exec -T api alembic -c alembic.ini current
           docker compose exec -T api python -c 'from aiseoonline_api.config import get_settings; from aiseoonline_api.jobs import create_celery_app; result=create_celery_app(get_settings()).send_task("aiseoonline.ping", args=["compose"]); assert result.get(timeout=30)=={"status":"ok","message":"compose"}'
       - name: Show diagnostics on failure
