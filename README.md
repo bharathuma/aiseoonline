@@ -2,13 +2,13 @@
 
 Open-source SEO tools for checking, understanding, and improving websites.
 
-**Status: Website and API foundation, internal secure crawler, and deterministic SEO rules implemented. Three public SEO tool endpoints are implemented; AI features remain in development.** The code has not been deployed to the public website.
+**Status: Website and API foundation, internal secure crawler, and deterministic SEO rules implemented. Six public SEO tool endpoints are implemented; AI features remain in development.** The code has not been deployed to the public website.
 
-AISEOOnline is being built for site owners, developers, and teams who need practical SEO checks. The repository contains an Astro/React website, three free SEO checkers, a FastAPI backend, database migrations, and a background worker. The public interface includes robots.txt, XML sitemap and metadata checkers alongside planned tools and introductory guides. No multi-page or AI audit is publicly available. The internal [SEO rule engine](docs/seo-rules.md) produces source-backed findings from parsed page snapshots.
+AISEOOnline is being built for site owners, developers, and teams who need practical SEO checks. The repository contains an Astro/React website, six free SEO checkers, a FastAPI backend, database migrations, and a background worker. The public interface includes robots.txt, XML sitemap, metadata, redirects, canonical URL and JSON-LD checkers alongside planned tools and introductory guides. No multi-page or AI audit is publicly available. The internal [SEO rule engine](docs/seo-rules.md) produces source-backed findings from parsed page snapshots.
 
 ## Planned features
 
-- **SEO tools:** robots.txt, sitemaps, metadata, redirects, canonical URLs, structured data, headings, internal links, and social tags.
+- **SEO tools:** six focused public checkers are implemented; heading, internal-link and social-metadata tools remain planned.
 - **Site auditing:** bounded crawling with source-linked findings and reports.
 - **AI analysis:** evidence-backed explanations, retrieval over permitted content, and bounded audit workflows.
 
@@ -45,7 +45,7 @@ Public tool requests require Redis for shared rate limits. Use Docker Compose or
 
 ## Roadmap
 
-The [roadmap](docs/roadmap.md) covers free SEO tools, site audits, AI-assisted analysis, and deployment. The three implemented checkers are ready for local use; other tools remain planned.
+The [roadmap](docs/roadmap.md) covers free SEO tools, site audits, AI-assisted analysis, and deployment. The six implemented checkers are ready for local use; other tools remain planned.
 
 ## Contributing
 

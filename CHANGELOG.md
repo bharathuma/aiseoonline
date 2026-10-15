@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added free redirect-chain, canonical-URL and JSON-LD checkers with source-backed findings and browser tests.
+
 - Added three anonymous, quota-controlled SEO checkers: robots.txt, XML sitemap, and page metadata.
 - Connected the web forms to the FastAPI routes through the local same-origin proxy.
 

@@ -124,12 +124,25 @@ class SiteFixtureHandler(BaseHTTPRequestHandler):
             code = self.server.robots_status  # type: ignore[attr-defined]
             body = self.server.robots_body  # type: ignore[attr-defined]
             self.reply(code, body, "text/plain")
-        elif self.path in ("/redirect", "/unsafe", "/offsite", "/loop"):
+        elif self.path in (
+            "/redirect",
+            "/unsafe",
+            "/offsite",
+            "/loop",
+            "/one",
+            "/two",
+            "/three",
+            "/four",
+        ):
             location = {
                 "/redirect": "/page",
                 "/unsafe": "http://169.254.169.254/latest/meta-data/",
                 "/offsite": "http://other.example.org/",
                 "/loop": "/loop",
+                "/one": "/two",
+                "/two": "/three",
+                "/three": "/four",
+                "/four": "/page",
             }[self.path]
             self.send_response(302)
             self.send_header("Location", location)
@@ -309,3 +322,60 @@ def test_unverified_callers_cannot_request_deep_scans() -> None:
         CrawlLimits(max_bytes=2_000_000)
     with pytest.raises(ValueError):
         CrawlLimits(max_redirects=10)
+
+
+def test_redirect_inspection_keeps_each_status_and_final_destination(
+    site: ThreadingHTTPServer,
+) -> None:
+    trace = CrawlSession("http://example.org/redirect", limits=limits()).inspect_redirects()
+    assert trace.termination == "completed"
+    assert [(hop.status, hop.url) for hop in trace.hops] == [
+        (302, "http://example.org/redirect"),
+        (200, "http://example.org/page"),
+    ]
+    assert trace.hops[0].location == "http://example.org/page"
+    assert trace.final_status == 200
+
+
+@pytest.mark.parametrize("path", ["/unsafe", "/offsite"])
+def test_inspection_does_not_follow_blocked_redirect(
+    site: ThreadingHTTPServer,
+    path: str,
+) -> None:
+    trace = CrawlSession("http://example.org" + path, limits=limits()).inspect_redirects()
+    assert trace.termination == "blocked_destination"
+    assert trace.final_status is None
+    assert len(trace.hops) == 1
+    assert len(site.dialed) == 2  # type: ignore[attr-defined]
+    if path == "/unsafe":
+        assert trace.hops[0].location is None
+
+
+def test_redirect_inspection_detects_loop_and_excessive_chain(
+    site: ThreadingHTTPServer,
+) -> None:
+    loop = CrawlSession("http://example.org/loop", limits=limits()).inspect_redirects()
+    assert loop.termination == "loop"
+    assert len(loop.hops) == 1
+    chain = CrawlSession("http://example.org/one", limits=limits()).inspect_redirects()
+    assert chain.termination == "limit"
+    assert [hop.status for hop in chain.hops] == [302, 302, 302, 302]
+    assert len(site.dialed) == 7  # type: ignore[attr-defined]
+
+
+def test_redirect_inspection_reads_headers_not_body(
+    site: ThreadingHTTPServer,
+) -> None:
+    trace = CrawlSession("http://example.org/huge-length", limits=limits()).inspect_redirects()
+    assert trace.termination == "completed"
+    assert trace.final_status == 200
+    assert trace.hops[0].status == 200
+
+
+def test_redirect_inspection_enforces_robots_per_hop(
+    site: ThreadingHTTPServer,
+) -> None:
+    site.robots_body = b"User-agent: *\nDisallow: /page\n"  # type: ignore[attr-defined]
+    with pytest.raises(RobotsDenied):
+        CrawlSession("http://example.org/redirect", limits=limits()).inspect_redirects()
+    assert len(site.dialed) == 2  # type: ignore[attr-defined]

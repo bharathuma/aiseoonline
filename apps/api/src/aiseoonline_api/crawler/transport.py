@@ -35,6 +35,7 @@ def fetch_http(
     connect_timeout: float,
     dns_timeout: float,
     allowed_mime: tuple[str, ...] = ("text/html", "application/xhtml+xml", "text/plain"),
+    headers_only: bool = False,
 ) -> HttpDocument:
     """Use the validated numerical IP for the socket and the hostname for TLS."""
     remaining = deadline - time.monotonic()
@@ -77,7 +78,7 @@ def fetch_http(
                 length = int(raw_length)
             except ValueError as exc:
                 raise InvalidPage("Invalid Content-Length") from exc
-            if length < 0 or length > max_bytes:
+            if length < 0 or (not headers_only and length > max_bytes):
                 raise CrawlLimitExceeded("Response exceeds the byte budget")
         encoding = response.getheader("Content-Encoding", "identity").lower().strip()
         if encoding != "identity":
@@ -90,6 +91,8 @@ def fetch_http(
                 charset = part.split("=", 1)[1].strip().strip('"')[:48]
         location = response.getheader("Location")
         if 300 <= response.status < 400 or response.status >= 400:
+            return HttpDocument(response.status, mime, charset, location, b"")
+        if headers_only:
             return HttpDocument(response.status, mime, charset, location, b"")
         if mime not in allowed_mime:
             raise InvalidPage("Unsupported document content type")
