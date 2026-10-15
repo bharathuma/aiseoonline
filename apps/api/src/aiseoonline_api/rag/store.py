@@ -121,7 +121,7 @@ class RagStore:
         body = "\n".join(
             (chunk.heading or "") + "\n" + chunk.text for chunk in chunks
         )
-        content_hash = hash_text("rag-extraction-v1\n" + body)
+        content_hash = hash_text(f"rag-extraction-v1:{self.chunk_size}:{self.overlap}\n" + body)
         spec = self.embedding.spec
         record = self.session.scalar(
             select(RagDocument).where(
