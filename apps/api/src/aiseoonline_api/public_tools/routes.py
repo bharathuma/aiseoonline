@@ -27,18 +27,17 @@ from aiseoonline_api.public_tools.advanced import (
     check_redirects,
     check_schema,
 )
-from aiseoonline_api.public_tools.final_tools import check_headings, check_links, check_social
 from aiseoonline_api.public_tools.checks import (
     ToolReport,
     check_meta,
     check_robots,
     check_sitemap,
 )
+from aiseoonline_api.public_tools.final_tools import check_headings, check_links, check_social
 
 router = APIRouter(tags=["public SEO tools"])
 Tool = Literal[
-    "robots", "sitemap", "meta", "redirects", "canonical", "schema",
-    "headings", "links", "social"
+    "robots", "sitemap", "meta", "redirects", "canonical", "schema", "headings", "links", "social"
 ]
 _LIMIT_SCRIPT = """
 local a=redis.call('INCR', KEYS[1])
@@ -176,6 +175,7 @@ async def canonical(request: Request, body: UrlInput) -> ToolReport | JSONRespon
 )
 async def schema(request: Request, body: UrlInput) -> ToolReport | JSONResponse:
     return await execute(request, body, "schema")
+
 
 @router.post("/tools/headings", response_model=ToolReport, summary="Review HTML heading outline")
 async def headings(request: Request, body: UrlInput) -> ToolReport | JSONResponse:

@@ -415,8 +415,12 @@ class CrawlSession:
                     if time.monotonic() >= deadline:
                         raise CrawlTimeout("Link-probe budget exhausted")
                     final, response, _ = self._request(
-                        target, deadline=deadline, byte_budget=1024,
-                        allowed_by_robots=rules, crawl_delay=delay, headers_only=True,
+                        target,
+                        deadline=deadline,
+                        byte_budget=1024,
+                        allowed_by_robots=rules,
+                        crawl_delay=delay,
+                        headers_only=True,
                     )
                     results.append(LinkProbe(raw, final.value, response.status, "verified"))
                 except RobotsDenied:
