@@ -3,8 +3,21 @@
 from dataclasses import dataclass
 from html.parser import HTMLParser
 
-_SKIP = frozenset({"script", "style", "noscript", "template", "svg", "nav",
-                   "header", "footer", "aside", "form", "button"})
+_SKIP = frozenset(
+    {
+        "script",
+        "style",
+        "noscript",
+        "template",
+        "svg",
+        "nav",
+        "header",
+        "footer",
+        "aside",
+        "form",
+        "button",
+    }
+)
 _HEADINGS = frozenset({"h1", "h2", "h3", "h4", "h5", "h6"})
 _BLOCKS = frozenset({"p", "li", "blockquote", "td", "dd", "dt"})
 _MAX_TEXT = 24000
@@ -66,7 +79,7 @@ class _SectionExtractor(HTMLParser):
         clean = " ".join(data.split())
         if not clean:
             return
-        clean = clean[:_MAX_TEXT - self.used]
+        clean = clean[: _MAX_TEXT - self.used]
         self.used += len(clean)
         if self.heading_tag is not None:
             self.heading_parts.append(clean)
@@ -101,7 +114,9 @@ class _SectionExtractor(HTMLParser):
     def finish(self) -> tuple[ContentSection, ...]:
         self._flush(False)
         self._flush(True)
-        selected = self.main_sections if any(s.text.strip() for s in self.main_sections) else self.sections
+        selected = (
+            self.main_sections if any(s.text.strip() for s in self.main_sections) else self.sections
+        )
         return tuple(selected[:_MAX_SECTIONS])
 
 

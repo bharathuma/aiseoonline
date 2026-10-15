@@ -4,6 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     JSON,
     CheckConstraint,
@@ -19,7 +20,6 @@ from sqlalchemy import (
     Uuid,
     func,
 )
-from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import Mapped, mapped_column
 
 from aiseoonline_api.db.base import Base
@@ -167,8 +167,10 @@ class RagChunk(Base):
     __tablename__ = "rag_chunks"
     __table_args__ = (
         ForeignKeyConstraint(
-            ["document_id", "project_id"], ["rag_documents.id", "rag_documents.project_id"],
-            name="fk_rag_chunk_scoped_document", ondelete="CASCADE",
+            ["document_id", "project_id"],
+            ["rag_documents.id", "rag_documents.project_id"],
+            name="fk_rag_chunk_scoped_document",
+            ondelete="CASCADE",
         ),
         UniqueConstraint("document_id", "ordinal", name="uq_rag_chunk_document_ordinal"),
         Index("ix_rag_chunk_project_document", "project_id", "document_id"),

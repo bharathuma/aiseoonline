@@ -48,10 +48,14 @@ def chunks_from_sections(
                     end = boundary
             value = text[start:end].strip()
             if value:
-                chunks.append(Chunk(
-                    ordinal=len(chunks), heading=section.heading,
-                    text=value, content_hash=hash_text(value),
-                ))
+                chunks.append(
+                    Chunk(
+                        ordinal=len(chunks),
+                        heading=section.heading,
+                        text=value,
+                        content_hash=hash_text(value),
+                    )
+                )
             if end >= len(text):
                 break
             start = max(start + 1, end - overlap)

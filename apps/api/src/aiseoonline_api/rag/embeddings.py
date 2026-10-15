@@ -4,17 +4,21 @@ import hashlib
 import logging
 import math
 import time
-from dataclasses import dataclass
-from typing import Protocol, Sequence
+from collections.abc import Sequence
+from typing import Protocol
 
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from aiseoonline_api.config import Settings
 from aiseoonline_api.ai_core.contracts import (
-    BudgetExceeded, CredentialsUnavailable, InvalidModelOutput,
-    LLMTimeout, ProviderRateLimited, ProviderUnavailable,
+    BudgetExceeded,
+    CredentialsUnavailable,
+    InvalidModelOutput,
+    LLMTimeout,
+    ProviderRateLimited,
+    ProviderUnavailable,
 )
+from aiseoonline_api.config import Settings
 
 logger = logging.getLogger("aiseoonline.rag")
 DIMENSIONS = 384
@@ -54,9 +58,14 @@ def validate_vectors(vectors: list[list[float]], count: int) -> None:
 
 class OpenAIEmbeddingProvider:
     def __init__(
-        self, api_key: str, *, model: str = "text-embedding-3-small",
-        version: str = "v1", client: httpx.Client | None = None,
-        max_retries: int = 2, timeout: float = 15.0,
+        self,
+        api_key: str,
+        *,
+        model: str = "text-embedding-3-small",
+        version: str = "v1",
+        client: httpx.Client | None = None,
+        max_retries: int = 2,
+        timeout: float = 15.0,
     ) -> None:
         if not api_key.strip():
             raise CredentialsUnavailable("Embedding API key is not configured")
@@ -77,8 +86,10 @@ class OpenAIEmbeddingProvider:
         if not 1 <= len(texts) <= _MAX_BATCH or any(not t or len(t) > 2000 for t in texts):
             raise BudgetExceeded("Embedding batch exceeds configured limits")
         payload = {
-            "model": self.spec.model, "input": list(texts),
-            "dimensions": DIMENSIONS, "encoding_format": "float",
+            "model": self.spec.model,
+            "input": list(texts),
+            "dimensions": DIMENSIONS,
+            "encoding_format": "float",
         }
         for attempt in range(self.max_retries + 1):
             try:
@@ -86,7 +97,8 @@ class OpenAIEmbeddingProvider:
                     "https://api.openai.com/v1/embeddings",
                     json=payload,
                     headers={"Authorization": f"Bearer {self._key}"},
-                    timeout=self.timeout, follow_redirects=False,
+                    timeout=self.timeout,
+                    follow_redirects=False,
                 )
             except httpx.TimeoutException:
                 if attempt == self.max_retries:
@@ -103,7 +115,7 @@ class OpenAIEmbeddingProvider:
                     break
                 if attempt == self.max_retries:
                     raise ProviderUnavailable("Embedding provider exhausted retries") from None
-            time.sleep(min(2.0, 0.25 * (2 ** attempt)))
+            time.sleep(min(2.0, 0.25 * (2**attempt)))
         try:
             raw = response.json()
             rows = raw["data"]
