@@ -43,6 +43,18 @@ class StructuredData:
 
 
 @dataclass(frozen=True)
+class TitleTag:
+    text: str
+    evidence: Evidence
+
+
+@dataclass(frozen=True)
+class CanonicalTag:
+    href: str
+    evidence: Evidence
+
+
+@dataclass(frozen=True)
 class ParsedHtml:
     title: str | None
     title_evidence: Evidence | None
@@ -53,6 +65,8 @@ class ParsedHtml:
     robots: tuple[str, ...]
     structured_data: tuple[StructuredData, ...]
     encoding_repaired: bool
+    titles: tuple[TitleTag, ...] = ()
+    canonical_tags: tuple[CanonicalTag, ...] = ()
 
 
 def _clean(text: str, *, max_len: int = 4096) -> str:
@@ -65,6 +79,8 @@ class _Extractor(HTMLParser):
         self.source_url = source_url
         self.title: str | None = None
         self.title_evidence: Evidence | None = None
+        self.titles: list[TitleTag] = []
+        self.canonical_tags: list[CanonicalTag] = []
         self.meta: list[MetaTag] = []
         self.headings: list[Heading] = []
         self.canonical: list[str] = []
@@ -96,15 +112,20 @@ class _Extractor(HTMLParser):
                         part.strip().lower() for part in content.split(",")[:40] if part.strip()
                     )
         if tag == "link" and "canonical" in attrs_map.get("rel", "").lower().split():
-            if len(self.canonical) < 10 and attrs_map.get("href"):
-                self.canonical.append(_clean(attrs_map["href"]))
+            if len(self.canonical_tags) < 10:
+                href = _clean(attrs_map.get("href", ""))
+                self.canonical_tags.append(
+                    CanonicalTag(href, self._evidence("link[rel=canonical]"))
+                )
+                if href:
+                    self.canonical.append(href)
         script_type = attrs_map.get("type", "").lower().split(";", 1)[0].strip()
         if tag == "script" and script_type == "application/ld+json":
             if len(self.structured_data) < 20:
                 self._tag, self._buffer = "script", []
                 self._active_evidence = self._evidence("script[type=application/ld+json]")
             return
-        if tag == "title" and self.title is None:
+        if tag == "title" and len(self.titles) < 10:
             self._tag, self._buffer = "title", []
             self._active_evidence = self._evidence("title")
         elif len(tag) == 2 and tag[0] == "h" and tag[1] in "123456" and len(self.headings) < 100:
@@ -134,8 +155,10 @@ class _Extractor(HTMLParser):
         text = _clean("".join(self._buffer))
         evidence = self._active_evidence
         if tag == "title":
-            self.title = text or None
-            self.title_evidence = evidence
+            self.titles.append(TitleTag(text, evidence))
+            if self.title_evidence is None:
+                self.title = text or None
+                self.title_evidence = evidence
         elif tag == "script":
             self.structured_data.append(StructuredData("".join(self._buffer)[:8192], evidence))
         elif tag == "a" and self._active_link:
@@ -170,4 +193,6 @@ def parse_html(body: bytes, source_url: str, charset: str = "utf-8") -> ParsedHt
         robots=tuple(parser.robots),
         structured_data=tuple(parser.structured_data),
         encoding_repaired=repaired,
+        titles=tuple(parser.titles),
+        canonical_tags=tuple(parser.canonical_tags),
     )
