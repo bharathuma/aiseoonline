@@ -47,12 +47,12 @@ export default function PrivateAuditDashboard() {
   const [token, setToken] = useState('');
   const [projectId, setProjectId] = useState('');
   const [url, setUrl] = useState('');
-  const [key, setKey] = useState('');
   const [job, setJob] = useState<AuditStatus | null>(null);
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const current = useRef('');
+  const lastSubmission = useRef<{ body: string; key: string } | null>(null);
 
   function headers(extra: Record<string, string> = {}) {
     return { 'x-dev-audit-token': token, ...extra };
@@ -107,17 +107,22 @@ export default function PrivateAuditDashboard() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
+    const body = JSON.stringify({ project_id: projectId, url });
+    // Reuse a key only when retrying an unsuccessful submission of the same request.
+    const idempotencyKey =
+      job === null && lastSubmission.current?.body === body
+        ? lastSubmission.current.key
+        : crypto.randomUUID();
+    lastSubmission.current = { body, key: idempotencyKey };
     setBusy(true);
     setError('');
     setJob(null);
     setReport(null);
     try {
-      const idem = key || crypto.randomUUID();
-      setKey(idem);
       const result = await api('', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idem },
-        body: JSON.stringify({ project_id: projectId, url }),
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
+        body,
       });
       const state = (await result.json()) as AuditStatus;
       current.current = state.id;
