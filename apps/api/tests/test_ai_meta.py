@@ -246,3 +246,41 @@ def test_price_allocation_is_conservative_and_bounded() -> None:
     assert allocation is not None
     assert 0 < allocation[0] <= int(cfg.ai_meta_request_usd_cap * 1_000_000)
     assert allocation[1] == 2_000_000
+
+
+def test_public_url_cache_avoids_second_paid_call(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    stored: dict[str, bytes] = {}
+    calls = {"allocations": 0}
+
+    class FakeRedis:
+        def __enter__(self) -> "FakeRedis":
+            return self
+
+        def __exit__(self, *args: Any) -> None:
+            return None
+
+        def get(self, key: str) -> bytes | None:
+            return stored.get(key)
+
+        def setex(self, key: str, expiry: int, value: str) -> None:
+            assert expiry == 900
+            stored[key] = value.encode()
+
+    def allot(*args: Any) -> bool:
+        calls["allocations"] += 1
+        return True
+
+    monkeypatch.setattr(meta_routes, "_source_from_url", lambda url: (SOURCE, url))
+    monkeypatch.setattr(meta_routes, "_reserve_spend", allot)
+    monkeypatch.setattr(meta_routes.Redis, "from_url", lambda *a, **kw: FakeRedis())
+    url = "https://example.org/article"
+    first = client.post("/api/v1/tools/ai-meta", json={"url": url})
+    second = client.post("/api/v1/tools/ai-meta", json={"url": url})
+    assert first.status_code == 200, first.text
+    assert second.status_code == 200, second.text
+    assert second.json()["cached"] is True
+    assert second.json()["usage"] is None
+    assert FakeProvider.calls == 1
+    assert calls["allocations"] == 1
