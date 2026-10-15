@@ -259,6 +259,7 @@ class LiveFixture(BaseHTTPRequestHandler):
             body = (b'<html><a href="/ok">Valid</a>'
                     b'<a href="/missing">Missing</a>'
                     b'<a href="/failed-link">Server issue</a>'
+                    b'<a href="/extra">Beyond budget</a>'
                     b'<a href="https://external.org/other">External</a></html>')
             kind = "text/html"
         elif self.path == "/ok":
@@ -386,7 +387,7 @@ def test_link_checker_verifies_only_three_same_origin_destinations(
     result = client.post("/api/v1/tools/links", json={"url": "http://example.org/links"})
     assert result.status_code == 200, result.text
     facts = result.json()["facts"]
-    assert facts["internal_links"] == 3
+    assert facts["internal_links"] == 4
     assert facts["external_links"] == 1
     assert facts["probed_destinations"] == 3
     assert facts["verified_broken"] == 1
@@ -394,6 +395,7 @@ def test_link_checker_verifies_only_three_same_origin_destinations(
     assert records["http://example.org/missing"]["status"] == 404
     assert records["http://example.org/ok"]["status"] == 200
     assert records["https://external.org/other"]["state"] == "not_checked"
+    assert records["http://example.org/extra"]["state"] == "not_checked"
     assert any(i["code"] == "links.broken_verified" for i in result.json()["issues"])
     assert any(i["code"] == "links.upstream_error" for i in result.json()["issues"])
 
