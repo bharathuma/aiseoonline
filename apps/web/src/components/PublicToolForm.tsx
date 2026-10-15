@@ -324,7 +324,11 @@ export default function PublicToolForm({ kind }: { kind: ToolKind }) {
                   Approximate preview — not a platform simulation
                 </p>
                 {(() => {
-                  const preview = result.facts.approximate_preview as Record<string, unknown>;
+                  const rawPreview = result.facts.approximate_preview;
+                  const preview =
+                    rawPreview && typeof rawPreview === 'object' && !Array.isArray(rawPreview)
+                      ? (rawPreview as Record<string, unknown>)
+                      : {};
                   return (
                     <div className="mt-3 space-y-2">
                       {typeof preview.image_url === 'string' && preview.image_url.length > 0 && (

@@ -53,6 +53,10 @@ jobs:
           sleep 8
       - name: Run unit and integration tests
         run: uv run --project apps/api pytest apps/api/tests -q -rs
+      - name: Verify concurrent Redis quota enforcement
+        run: uv run --project apps/api pytest apps/api/tests/test_public_load.py -q -s
+      - name: Inspect owner-scoped PostgreSQL query plan and account journey
+        run: uv run --project apps/api pytest apps/api/tests/test_quality_integration.py -q -s
       - name: Record controlled LangGraph audit trace
         run: uv run --project apps/api pytest apps/api/tests/test_audit_agent_integration.py -q -s
       - name: Record synthetic RAG evaluation metrics

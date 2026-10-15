@@ -40,11 +40,13 @@ Tool = Literal[
     "robots", "sitemap", "meta", "redirects", "canonical", "schema", "headings", "links", "social"
 ]
 _LIMIT_SCRIPT = """
-local a=redis.call('INCR', KEYS[1])
-if a==1 then redis.call('EXPIRE', KEYS[1], 3600) end
-local b=redis.call('INCR', KEYS[2])
-if b==1 then redis.call('EXPIRE', KEYS[2], 3600) end
-if a>tonumber(ARGV[1]) or b>tonumber(ARGV[2]) then return 0 end
+local a=tonumber(redis.call('GET', KEYS[1]) or '0')
+local b=tonumber(redis.call('GET', KEYS[2]) or '0')
+if a>=tonumber(ARGV[1]) or b>=tonumber(ARGV[2]) then return 0 end
+redis.call('INCR', KEYS[1])
+if a==0 then redis.call('EXPIRE', KEYS[1], 3600) end
+redis.call('INCR', KEYS[2])
+if b==0 then redis.call('EXPIRE', KEYS[2], 3600) end
 return 1
 """
 

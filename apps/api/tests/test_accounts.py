@@ -324,3 +324,29 @@ def test_account_cannot_delete_projects_with_orphanable_audit_checkpoints(api):
         session.add(AuditJob(project_id=UUID(created.json()["id"]), owner_id=None, status="queued"))
     assert client.delete("/api/v1/account", headers=headers).status_code == 409
     assert client.get("/api/v1/account/projects").status_code == 200
+
+
+def test_project_quota_limits_metadata_reads_and_prevents_extra_writes(api):
+    client, _ = api
+    _register(client, "quota@example.org")
+    headers = _login(client, "quota@example.org")
+    for i in range(10):
+        result = client.post(
+            "/api/v1/account/projects",
+            headers=headers,
+            json={"domain": f"fixture-{i}.example.org"},
+        )
+        assert result.status_code == 201, result.text
+    extra = client.post(
+        "/api/v1/account/projects",
+        headers=headers,
+        json={"domain": "fixture-10.example.org"},
+    )
+    assert extra.status_code == 429
+    assert extra.json()["error"]["code"] == "project_quota"
+    projects = client.get("/api/v1/account/projects")
+    assert projects.status_code == 200
+    assert len(projects.json()) == 10
+    exported = client.get("/api/v1/account/export")
+    assert exported.status_code == 200
+    assert len(exported.json()["projects"]) == 10

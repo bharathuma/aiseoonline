@@ -19,7 +19,7 @@ from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 from redis import Redis
 from redis.exceptions import RedisError
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -330,7 +330,12 @@ def list_projects(request: Request) -> list[ProjectView] | Response:
         user = _require(request, session, write=False)
         if user is None:
             return _response(request, 401, "unauthorized", "Authentication required.")
-        rows = session.scalars(select(Project).where(Project.owner_id == user.id)).all()
+        rows = session.scalars(
+            select(Project)
+            .where(Project.owner_id == user.id)
+            .order_by(Project.created_at.desc(), Project.id)
+            .limit(10)
+        ).all()
         return [_view(item) for item in rows]
 
 
@@ -349,10 +354,12 @@ def create_project(request: Request, body: ProjectInput) -> Response:
             user = _require(request, session, write=True)
             if user is None:
                 return _response(request, 403, "forbidden", "Session or CSRF check failed.")
-            if (
-                len(session.scalars(select(Project.id).where(Project.owner_id == user.id)).all())
-                >= 10
-            ):
+            # Serialize concurrent project creations for this owner before checking quota.
+            session.scalar(select(User.id).where(User.id == user.id).with_for_update())
+            count = session.scalar(
+                select(func.count()).select_from(Project).where(Project.owner_id == user.id)
+            )
+            if count is None or count >= 10:
                 return _response(request, 429, "project_quota", "Project quota reached.")
             project = Project(owner_id=user.id, domain=domain)
             proof = _challenge(project)
@@ -461,7 +468,12 @@ def export_account(request: Request) -> Response:
         user = _require(request, session, write=False)
         if user is None:
             return _response(request, 401, "unauthorized", "Authentication required.")
-        projects = session.scalars(select(Project).where(Project.owner_id == user.id)).all()
+        projects = session.scalars(
+            select(Project)
+            .where(Project.owner_id == user.id)
+            .order_by(Project.created_at.desc(), Project.id)
+            .limit(10)
+        ).all()
         account = {
             "id": str(user.id),
             "email": user.email,
