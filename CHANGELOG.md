@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added three anonymous, quota-controlled SEO checkers: robots.txt, XML sitemap, and page metadata.
+- Connected the web forms to the FastAPI routes through the local same-origin proxy.
+
 - Added deterministic SEO rules, typed evidence-backed findings, normalized URL handling, and fixture tests.
 - Extended HTML extraction to retain evidence for repeated titles and canonical declarations.
 
