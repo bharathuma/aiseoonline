@@ -9,6 +9,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     Numeric,
@@ -18,6 +19,7 @@ from sqlalchemy import (
     Uuid,
     func,
 )
+from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import Mapped, mapped_column
 
 from aiseoonline_api.db.base import Base
@@ -131,4 +133,57 @@ class AiUsage(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class RagDocument(Base):
+    """One private document per project and canonical normalized page URL."""
+
+    __tablename__ = "rag_documents"
+    __table_args__ = (
+        UniqueConstraint("project_id", "source_url", name="uq_rag_document_project_url"),
+        UniqueConstraint("id", "project_id", name="uq_rag_document_id_project"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    project_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    source_url: Mapped[str] = mapped_column(Text, nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    embedding_provider: Mapped[str] = mapped_column(String(32), nullable=False)
+    embedding_model: Mapped[str] = mapped_column(String(120), nullable=False)
+    embedding_version: Mapped[str] = mapped_column(String(48), nullable=False)
+    embedding_dimensions: Mapped[int] = mapped_column(Integer, nullable=False, default=384)
+    captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    indexed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class RagChunk(Base):
+    """Private text plus vector: always filtered by verified project ownership."""
+
+    __tablename__ = "rag_chunks"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["document_id", "project_id"], ["rag_documents.id", "rag_documents.project_id"],
+            name="fk_rag_chunk_scoped_document", ondelete="CASCADE",
+        ),
+        UniqueConstraint("document_id", "ordinal", name="uq_rag_chunk_document_ordinal"),
+        Index("ix_rag_chunk_project_document", "project_id", "document_id"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    project_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    document_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+    heading: Mapped[str | None] = mapped_column(String(180))
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(
+        Vector(384).with_variant(Text(), "sqlite"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
