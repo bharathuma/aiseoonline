@@ -12,8 +12,8 @@ const kind = tool.id === 'robots' ? 'robots' : tool.id === 'sitemap' ? 'sitemap'
 ---
 
 <SiteLayout
-  title={tool.name + ' — AISEOOnline'}
-  description={tool.summary + ' Tool details and availability.'}
+  title={(tool.status === 'available' ? 'Free ' : '') + tool.name + ' — AISEOOnline'}
+  description={tool.summary + (tool.status === 'available' ? ' Run a free single-URL check with evidence and clear limitations.' : ' Tool details and availability.')}
   noindex={tool.status === 'planned'}
 >
   <section class="section-space bg-white">
