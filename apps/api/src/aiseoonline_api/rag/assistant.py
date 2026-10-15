@@ -234,13 +234,13 @@ def verify_draft(
         if source is None or _clean(claim.supporting_quote) not in _clean(source.excerpt):
             raise InvalidModelOutput("Answer referred to unverified source evidence")
         quote = _clean(claim.supporting_quote)
-        digits = set(re.findall(r"(?<!\\w)\\d+(?:[.,]\\d+)?%?(?!\\w)", claim.statement))
-        quoted_digits = set(re.findall(r"(?<!\\w)\\d+(?:[.,]\\d+)?%?(?!\\w)", quote))
+        digits = set(re.findall(r"(?<!\w)\d+(?:[.,]\d+)?%?(?!\w)", claim.statement))
+        quoted_digits = set(re.findall(r"(?<!\w)\d+(?:[.,]\d+)?%?(?!\w)", quote))
         if not digits.issubset(quoted_digits):
             raise InvalidModelOutput("Answer adds a number unsupported by its quoted evidence")
         for quantifier in ("all", "every", "none"):
-            if re.search(rf"\\b{quantifier}\\b", _clean(claim.statement)) and not re.search(
-                rf"\\b{quantifier}\\b", quote
+            if re.search(rf"\b{quantifier}\b", _clean(claim.statement)) and not re.search(
+                rf"\b{quantifier}\b", quote
             ):
                 raise InvalidModelOutput("Answer claims unsupported universal coverage")
         cited.add(source.source_id)
