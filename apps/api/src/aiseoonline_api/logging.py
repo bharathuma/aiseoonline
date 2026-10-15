@@ -14,9 +14,7 @@ _CREDENTIALS = (
         r"\1=[REDACTED]",
     ),
     (
-        re.compile(
-            r"(?i)(\b(?:postgresql|postgres|redis)(?:\+psycopg)?://[^:/@\s]+:)[^@/\s]+(@)"
-        ),
+        re.compile(r"(?i)(\b(?:postgresql|postgres|redis)(?:\+psycopg)?://[^:/@\s]+:)[^@/\s]+(@)"),
         r"\1[REDACTED]\2",
     ),
     (re.compile(r"\bsk-[A-Za-z0-9_-]{8,}\b"), "[REDACTED]"),

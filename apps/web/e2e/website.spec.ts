@@ -4,9 +4,18 @@ import AxeBuilder from '@axe-core/playwright';
 test('homepage renders useful content, metadata and working navigation', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /Find the issues/i })).toBeVisible();
-  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://aiseoonline.com/');
-  await expect(page.locator('meta[property="og:description"]')).toHaveAttribute('content', /SEO utilities|technical checks/i);
-  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('link', { name: 'Guides' }).click();
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    'href',
+    'https://aiseoonline.com/',
+  );
+  await expect(page.locator('meta[property="og:description"]')).toHaveAttribute(
+    'content',
+    /SEO utilities|technical checks/i,
+  );
+  await page
+    .getByRole('navigation', { name: 'Primary navigation' })
+    .getByRole('link', { name: 'Guides' })
+    .click();
   await expect(page).toHaveURL(/\/guides\/$/);
   await expect(page.getByRole('heading', { level: 1 })).toContainText('SEO concepts');
 });
@@ -20,9 +29,13 @@ test('tool discovery searches and filters without pretending tools are live', as
   await page.getByLabel('Category').selectOption('Links');
   await expect(page.getByRole('heading', { name: 'Internal link checker' })).toBeVisible();
   await page.getByRole('heading', { name: 'Internal link checker' }).getByRole('link').click();
-  await expect(page.getByRole('heading', { name: 'Internal link checker', level: 1 })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Internal link checker', level: 1 }),
+  ).toBeVisible();
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,follow');
-  await expect(page.getByText('This tool is being developed and cannot run checks yet.')).toBeVisible();
+  await expect(
+    page.getByText('This tool is being developed and cannot run checks yet.'),
+  ).toBeVisible();
 });
 
 test('dialog opens, closes with Escape and restores keyboard focus', async ({ page }) => {
@@ -50,17 +63,24 @@ for (const width of [375, 768, 1440]) {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     const dimensions = await page.evaluate(() => ({
       pageWidth: document.documentElement.scrollWidth,
-      viewport: document.documentElement.clientWidth
+      viewport: document.documentElement.clientWidth,
     }));
     expect(dimensions.pageWidth).toBeLessThanOrEqual(dimensions.viewport + 1);
-    await page.screenshot({ path: 'test-results/screenshots/home-' + width + '.png', fullPage: true });
+    await page.screenshot({
+      path: 'test-results/screenshots/home-' + width + '.png',
+      fullPage: true,
+    });
   });
 }
 
 test('homepage has no common WCAG A/AA violations', async ({ page }) => {
   await page.goto('/');
-  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
-  expect(results.violations.map((item) => ({ id: item.id, nodes: item.nodes.map((n) => n.target) }))).toEqual([]);
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze();
+  expect(
+    results.violations.map((item) => ({ id: item.id, nodes: item.nodes.map((n) => n.target) })),
+  ).toEqual([]);
 });
 
 test('mobile navigation works with the keyboard', async ({ page }) => {

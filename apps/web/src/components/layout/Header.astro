@@ -1,15 +1,18 @@
 ---
-interface Props { pathname: string; }
+interface Props {
+  pathname: string;
+}
 const { pathname } = Astro.props;
 const links = [
   { href: '/tools/', label: 'Tools' },
   { href: '/audit/', label: 'AI Audit' },
   { href: '/guides/', label: 'Guides' },
   { href: '/open-source/', label: 'Open Source' },
-  { href: '/docs/', label: 'Documentation' }
+  { href: '/docs/', label: 'Documentation' },
 ];
 const active = (href: string) => pathname === href || (href !== '/' && pathname.startsWith(href));
 ---
+
 <header class="relative z-30 border-b border-slate-200/70 bg-white/95">
   <div class="site-container flex min-h-19 items-center justify-between gap-5">
     <a class="brand-link shrink-0" href="/" aria-label="AISEOOnline homepage">
@@ -17,23 +20,39 @@ const active = (href: string) => pathname === href || (href !== '/' && pathname.
       <span>AISEO<span class="text-teal-700">Online</span></span>
     </a>
     <nav aria-label="Primary navigation" class="hidden items-center gap-1 lg:flex">
-      {links.map((link) => (
-        <a href={link.href} aria-current={active(link.href) ? 'page' : undefined}
-          class:list={['nav-link', { 'nav-link-active': active(link.href) }]}>
-          {link.label}
-        </a>
-      ))}
+      {
+        links.map((link) => (
+          <a
+            href={link.href}
+            aria-current={active(link.href) ? 'page' : undefined}
+            class:list={['nav-link', { 'nav-link-active': active(link.href) }]}
+          >
+            {link.label}
+          </a>
+        ))
+      }
     </nav>
     <div class="hidden items-center lg:flex">
-      <a class="ui-button ui-button-outline text-sm" href="/tools/">Explore tools <span aria-hidden="true">↗</span></a>
+      <a class="ui-button ui-button-outline text-sm" href="/tools/"
+        >Explore tools <span aria-hidden="true">↗</span></a
+      >
     </div>
     <details class="mobile-menu lg:hidden">
-      <summary class="mobile-menu-summary"><span>Menu</span><span aria-hidden="true">☰</span></summary>
+      <summary class="mobile-menu-summary"
+        ><span>Menu</span><span aria-hidden="true">☰</span></summary
+      >
       <nav aria-label="Mobile navigation" class="mobile-menu-panel">
-        {links.map((link) => (
-          <a href={link.href} aria-current={active(link.href) ? 'page' : undefined}
-            class:list={['mobile-menu-link', { 'mobile-menu-active': active(link.href) }]}>{link.label}</a>
-        ))}
+        {
+          links.map((link) => (
+            <a
+              href={link.href}
+              aria-current={active(link.href) ? 'page' : undefined}
+              class:list={['mobile-menu-link', { 'mobile-menu-active': active(link.href) }]}
+            >
+              {link.label}
+            </a>
+          ))
+        }
       </nav>
     </details>
   </div>

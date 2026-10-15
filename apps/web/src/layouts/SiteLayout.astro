@@ -10,11 +10,18 @@ interface Props {
   type?: 'website' | 'article';
   noindex?: boolean;
 }
-const { title, description, image = '/social-preview.svg', type = 'website', noindex = false } = Astro.props;
+const {
+  title,
+  description,
+  image = '/social-preview.svg',
+  type = 'website',
+  noindex = false,
+} = Astro.props;
 const site = Astro.site ?? new URL('https://aiseoonline.com');
 const canonical = new URL(Astro.url.pathname, site).toString();
 const imageUrl = new URL(image, site).toString();
 ---
+
 <!doctype html>
 <html lang="en">
   <head>

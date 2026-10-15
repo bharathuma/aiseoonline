@@ -70,9 +70,7 @@ def test_validation_never_echoes_rejected_values(client: TestClient) -> None:
         json={"size": -5, "secret": "sk-dangerous-secret-value"},
     )
     assert result.status_code == 422
-    assert result.json()["error"]["details"] == [
-        {"field": "body.size", "issue": "greater_than"}
-    ]
+    assert result.json()["error"]["details"] == [{"field": "body.size", "issue": "greater_than"}]
     assert "dangerous" not in result.text
     assert REQUEST_ID.fullmatch(result.json()["request_id"])
 

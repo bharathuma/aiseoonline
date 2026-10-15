@@ -79,5 +79,7 @@ def test_real_readiness() -> None:
     settings = Settings(_env_file=None, database_url=database, redis_url=redis_url)
     with TestClient(create_app(settings)) as client:
         assert client.get("/api/v1/ready").json() == {
-            "status": "ready", "database": "ok", "redis": "ok"
+            "status": "ready",
+            "database": "ok",
+            "redis": "ok",
         }

@@ -2,11 +2,54 @@
 import SiteLayout from '../../layouts/SiteLayout.astro';
 import UiButton from '../../components/ui/UiButton.astro';
 ---
-<SiteLayout title="Open source — AISEOOnline" description="Explore AISEOOnline's public source code, architecture, contributor guide, and development roadmap.">
-  <section class="page-banner"><div class="site-container"><p class="eyebrow">Open source</p><h1 class="section-title mt-4">Clear code. Open decisions.</h1><p class="page-intro">AISEOOnline is developed in a public repository under the Apache 2.0 license.</p><div class="mt-9"><UiButton href="https://github.com/bharathumashankar/aiseoonline" variant="primary">View repository <span aria-hidden="true">↗</span></UiButton></div></div></section>
-  <section class="section-space"><div class="site-container grid gap-6 md:grid-cols-3">
-    <article class="surface-card"><h2 class="text-lg font-bold">Source code</h2><p class="mt-3 text-sm leading-7 text-slate-600">Read the frontend, backend, tests and planned integrations as they develop.</p><a class="mt-6 inline-block text-sm font-semibold text-teal-800" href="https://github.com/bharathumashankar/aiseoonline">Browse code ↗</a></article>
-    <article class="surface-card"><h2 class="text-lg font-bold">Architecture</h2><p class="mt-3 text-sm leading-7 text-slate-600">Understand the component boundaries and design trade-offs.</p><a class="mt-6 inline-block text-sm font-semibold text-teal-800" href="https://github.com/bharathumashankar/aiseoonline/blob/main/docs/architecture.md">Architecture notes ↗</a></article>
-    <article class="surface-card"><h2 class="text-lg font-bold">Contributions</h2><p class="mt-3 text-sm leading-7 text-slate-600">Suggest an improvement, report a bug or help with documentation.</p><a class="mt-6 inline-block text-sm font-semibold text-teal-800" href="https://github.com/bharathumashankar/aiseoonline/blob/main/CONTRIBUTING.md">Contributing guide ↗</a></article>
-  </div></section>
+
+<SiteLayout
+  title="Open source — AISEOOnline"
+  description="Explore AISEOOnline's public source code, architecture, contributor guide, and development roadmap."
+>
+  <section class="page-banner">
+    <div class="site-container">
+      <p class="eyebrow">Open source</p><h1 class="section-title mt-4">
+        Clear code. Open decisions.
+      </h1><p class="page-intro">
+        AISEOOnline is developed in a public repository under the Apache 2.0 license.
+      </p><div class="mt-9">
+        <UiButton href="https://github.com/bharathumashankar/aiseoonline" variant="primary"
+          >View repository <span aria-hidden="true">↗</span></UiButton>
+      </div>
+    </div>
+  </section>
+  <section class="section-space">
+    <div class="site-container grid gap-6 md:grid-cols-3">
+      <article class="surface-card">
+        <h2 class="text-lg font-bold">Source code</h2><p
+          class="mt-3 text-sm leading-7 text-slate-600"
+        >
+          Read the frontend, backend, tests and planned integrations as they develop.
+        </p><a
+          class="mt-6 inline-block text-sm font-semibold text-teal-800"
+          href="https://github.com/bharathumashankar/aiseoonline">Browse code ↗</a>
+      </article>
+      <article class="surface-card">
+        <h2 class="text-lg font-bold">Architecture</h2><p
+          class="mt-3 text-sm leading-7 text-slate-600"
+        >
+          Understand the component boundaries and design trade-offs.
+        </p><a
+          class="mt-6 inline-block text-sm font-semibold text-teal-800"
+          href="https://github.com/bharathumashankar/aiseoonline/blob/main/docs/architecture.md"
+          >Architecture notes ↗</a>
+      </article>
+      <article class="surface-card">
+        <h2 class="text-lg font-bold">Contributions</h2><p
+          class="mt-3 text-sm leading-7 text-slate-600"
+        >
+          Suggest an improvement, report a bug or help with documentation.
+        </p><a
+          class="mt-6 inline-block text-sm font-semibold text-teal-800"
+          href="https://github.com/bharathumashankar/aiseoonline/blob/main/CONTRIBUTING.md"
+          >Contributing guide ↗</a>
+      </article>
+    </div>
+  </section>
 </SiteLayout>
