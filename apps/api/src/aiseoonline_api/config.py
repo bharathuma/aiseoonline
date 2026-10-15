@@ -3,6 +3,7 @@
 from decimal import Decimal
 from functools import lru_cache
 from typing import Literal
+from uuid import UUID
 
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -36,6 +37,12 @@ class Settings(BaseSettings):
     ai_meta_request_usd_cap: Decimal = Field(default=Decimal("0.05"), gt=0, le=5)
     rag_embedding_model: str = Field(default="text-embedding-3-small", min_length=2, max_length=120)
     rag_embedding_version: str = Field(default="v1", min_length=1, max_length=48)
+    rag_chat_enabled: bool = False
+    rag_chat_dev_token: SecretStr | None = None
+    rag_chat_dev_owner_id: UUID | None = None
+    rag_chat_embedding_usd_per_million: Decimal | None = Field(default=None, ge=0)
+    rag_chat_daily_usd_cap: Decimal = Field(default=Decimal("1.00"), gt=0, le=100)
+    rag_chat_request_usd_cap: Decimal = Field(default=Decimal("0.10"), gt=0, le=10)
 
     @model_validator(mode="after")
     def validate_production_storage(self) -> "Settings":
@@ -47,6 +54,16 @@ class Settings(BaseSettings):
             raise ValueError("Total LLM token budget must cover output tokens")
         if (self.llm_input_usd_per_million is None) != (self.llm_output_usd_per_million is None):
             raise ValueError("Configure both LLM price rates or neither")
+        if self.rag_chat_enabled:
+            if self.environment == "production":
+                raise ValueError("Private RAG chat cannot be enabled in production")
+            if (
+                self.rag_chat_dev_token is None
+                or len(self.rag_chat_dev_token.get_secret_value()) < 32
+                or not self.rag_chat_dev_token.get_secret_value().isascii()
+                or self.rag_chat_dev_owner_id is None
+            ):
+                raise ValueError("Private RAG chat needs a 32+ character token and owner UUID")
         return self
 
     def require_database_url(self) -> str:

@@ -13,6 +13,7 @@ from aiseoonline_api.db.session import create_database_engine
 from aiseoonline_api.errors import ERROR_RESPONSES, register_error_handlers
 from aiseoonline_api.logging import configure_logging
 from aiseoonline_api.public_tools.routes import router as public_tools_router
+from aiseoonline_api.rag.chat_routes import router as rag_chat_router
 from aiseoonline_api.request_id import RequestIdMiddleware
 from aiseoonline_api.routes.health import router as health_router
 from aiseoonline_api.routes.readiness import ReadinessResponse
@@ -44,6 +45,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.settings = resolved
     application.state.public_tool_slots = asyncio.Semaphore(4)
     application.state.ai_meta_slots = asyncio.Semaphore(2)
+    application.state.rag_chat_slots = asyncio.Semaphore(2)
     application.state.database_engine = (
         create_database_engine(resolved) if resolved.database_url is not None else None
     )
@@ -52,6 +54,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(health_router, prefix="/api/v1", responses=ERROR_RESPONSES)
     application.include_router(public_tools_router, prefix="/api/v1", responses=ERROR_RESPONSES)
     application.include_router(ai_meta_router, prefix="/api/v1", responses=ERROR_RESPONSES)
+    if resolved.environment != "production":
+        application.include_router(rag_chat_router, prefix="/api/v1", responses=ERROR_RESPONSES)
     application.include_router(
         readiness_router,
         prefix="/api/v1",

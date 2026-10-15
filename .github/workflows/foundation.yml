@@ -64,6 +64,8 @@ jobs:
         run: pnpm --filter @aiseoonline/web exec playwright install --with-deps chromium
       - name: Browser smoke tests
         run: pnpm e2e:web
+      - name: Development-only private chat browser tests
+        run: pnpm --filter @aiseoonline/web exec playwright test --config playwright.dev.config.ts
       - name: Upload browser report and screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -71,5 +73,6 @@ jobs:
           name: website-browser-report
           path: |
             apps/web/playwright-report/
+            apps/web/playwright-dev-report/
             apps/web/test-results/screenshots/
           if-no-files-found: ignore

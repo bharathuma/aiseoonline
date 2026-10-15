@@ -508,3 +508,10 @@ test('AI generator rejects short pasted content without contacting backend', asy
   await expect(page.getByRole('heading', { name: 'Suggestion 1' })).toHaveCount(0);
   expect(calls).toBe(0);
 });
+
+test('private assistant remains unavailable in the built production site', async ({ page }) => {
+  await page.goto('/internal/rag-chat/');
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,follow');
+  await expect(page.getByRole('heading', { name: 'Private chat is unavailable' })).toBeVisible();
+  await expect(page.getByLabel('Verified project UUID')).toHaveCount(0);
+});
