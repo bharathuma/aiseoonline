@@ -1,6 +1,6 @@
 # API
 
-FastAPI service for AISEOOnline. The versioned HTTP API currently exposes liveness and dependency readiness checks. SEO tool endpoints are not implemented yet.
+FastAPI service for AISEOOnline. The versioned HTTP API exposes health/readiness and nine deterministic SEO check endpoints. An optional internal LLM provider layer is available but is not exposed publicly.
 
 ## Local commands
 
@@ -29,4 +29,4 @@ Errors use a consistent JSON format:
 }
 ```
 
-The ID above is illustrative. Every response includes a random server-generated `X-Request-ID`, and arbitrary exception details are not returned to callers. Successful health responses remain backward compatible. See [API contracts](../../docs/api-contracts.md).
+The ID above is illustrative. Every response includes a random server-generated `X-Request-ID`, and arbitrary exception details are not returned to callers. Successful health responses remain backward compatible. See [API contracts](../../docs/api-contracts.md) and [LLM provider usage](../../docs/llm-provider.md).
