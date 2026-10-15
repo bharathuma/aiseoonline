@@ -23,11 +23,14 @@ def upgrade() -> None:
         sa.Column("access_scope", sa.String(24), nullable=False, server_default="owner_only"),
     )
     op.create_check_constraint(
-        "ck_rag_document_type", "rag_documents",
+        "ck_rag_document_type",
+        "rag_documents",
         "document_type IN ('web_page', 'guide', 'reference')",
     )
     op.create_check_constraint(
-        "ck_rag_document_access", "rag_documents", "access_scope = 'owner_only'",
+        "ck_rag_document_access",
+        "rag_documents",
+        "access_scope = 'owner_only'",
     )
     # An expression index avoids persisting a duplicate copy of private page text.
     # The query uses the exact same expression and English regconfig.
@@ -38,7 +41,8 @@ def upgrade() -> None:
     )
     op.create_index(
         "ix_rag_documents_project_type_scope",
-        "rag_documents", ["project_id", "document_type", "access_scope"],
+        "rag_documents",
+        ["project_id", "document_type", "access_scope"],
     )
 
 

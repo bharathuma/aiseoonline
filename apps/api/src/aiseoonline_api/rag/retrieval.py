@@ -90,7 +90,10 @@ class Reranker(Protocol):
 
 
 def reciprocal_rank_fusion(
-    semantic: Sequence[UUID], keyword: Sequence[UUID], *, k: int = 60,
+    semantic: Sequence[UUID],
+    keyword: Sequence[UUID],
+    *,
+    k: int = 60,
 ) -> dict[UUID, float]:
     if k < 1:
         raise ValueError("RRF offset must be positive")
@@ -103,7 +106,10 @@ def reciprocal_rank_fusion(
 
 class HybridRetriever:
     def __init__(
-        self, session: Session, provider: EmbeddingProvider, *,
+        self,
+        session: Session,
+        provider: EmbeddingProvider,
+        *,
         reranker: Reranker | None = None,
     ) -> None:
         self.session = session
@@ -122,8 +128,12 @@ class HybridRetriever:
             raise RagAccessDenied("Verified project ownership required")
 
     def retrieve(
-        self, *, project_id: UUID, owner_id: UUID,
-        query: str, options: RetrievalOptions | None = None,
+        self,
+        *,
+        project_id: UUID,
+        owner_id: UUID,
+        query: str,
+        options: RetrievalOptions | None = None,
     ) -> RetrievalResult:
         # Auth is first; no embeddings, SQL search, or project-existence leak on denial.
         self._check_owner(project_id, owner_id)
@@ -148,9 +158,7 @@ class HybridRetriever:
         ]
         if config.max_age_days is not None:
             filters.append(
-                RagDocument.captured_at >= datetime.now(UTC) - timedelta(
-                    days=config.max_age_days
-                )
+                RagDocument.captured_at >= datetime.now(UTC) - timedelta(days=config.max_age_days)
             )
         # Same project, owner and version predicates apply to BOTH retrieval channels.
         stmt = (
@@ -270,7 +278,8 @@ class HybridRetriever:
             if len(chosen) >= config.top_k:
                 break
         return RetrievalResult(
-            hits=tuple(chosen), candidate_count=len(ranked),
+            hits=tuple(chosen),
+            candidate_count=len(ranked),
             duplicate_chunks_removed=duplicate_count,
             context_budget_used=used,
             context_budget_limit=config.max_context_tokens,
