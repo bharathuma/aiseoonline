@@ -8,8 +8,9 @@ import hashlib
 import json
 import re
 from collections.abc import Callable
-from typing import Literal, TypedDict
+from typing import Any, Literal, TypedDict
 
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from pydantic import ValidationError
 
@@ -57,6 +58,14 @@ def _append(
 ) -> tuple[AuditTrace, ...]:
     # Never log page bodies, raw prompts, hostnames, or provider error messages.
     return (*state.get("trace", ()), AuditTrace(node=name, outcome=outcome, tool=tool))
+
+
+def _combine_usage(state: AuditState, measurement: dict[str, int]) -> dict[str, int]:
+    previous = state.get("token_usage") or {}
+    return {
+        name: previous.get(name, 0) + measurement.get(name, 0)
+        for name in ("input_tokens", "output_tokens", "total_tokens")
+    }
 
 
 def _priority(finding: SeoFinding) -> Literal["high", "medium", "low"]:
@@ -128,6 +137,10 @@ def verify_recommendations(
     return tuple(recommendations)
 
 
+class AuditInterrupted(Exception):
+    """Cancellation requested by a verified job controller."""
+
+
 class AuditAgent:
     """Internal service. Caller must supply a real verified-project authorization guard."""
 
@@ -138,11 +151,13 @@ class AuditAgent:
         llm: LLMProvider,
         fetch: Callable[[str], PageSnapshot] | None = None,
         rag_lookup: Callable[[AuditRequest, str], list[dict[str, str]]] | None = None,
+        on_step: Callable[[str], None] | None = None,
     ) -> None:
         self.authorize = authorize
         self.llm = llm
         self.fetch = fetch or (lambda url: CrawlSession(url).fetch_page())
         self.rag_lookup = rag_lookup
+        self.on_step = on_step
         graph = StateGraph(AuditState)
         for name, func in (
             ("authorize", self._authorize),
@@ -153,7 +168,16 @@ class AuditAgent:
             ("analyze", self._analyze),
             ("finish", self._finish),
         ):
-            graph.add_node(name, func)
+
+            def wrap(node: Any, step: str) -> Any:
+                async def guarded(state: AuditState) -> dict[str, object]:
+                    if self.on_step:
+                        self.on_step(step)
+                    return await node(state)
+
+                return guarded
+
+            graph.add_node(name, wrap(func, name))
         graph.add_edge(START, "authorize")
         graph.add_edge("authorize", "collect")
         graph.add_conditional_edges(
@@ -170,6 +194,7 @@ class AuditAgent:
         graph.add_edge("tool", "select")
         graph.add_edge("analyze", "finish")
         graph.add_edge("finish", END)
+        self._graph_builder = graph
         self.graph = graph.compile()
 
     async def _authorize(self, state: AuditState) -> dict[str, object]:
@@ -252,6 +277,7 @@ class AuditAgent:
             return {
                 "next_tool": None if picked == "stop" else picked,
                 "model_calls": model_calls + 1,
+                "token_usage": _combine_usage(state, answer.usage.model_dump()),
                 "trace": _append(
                     state,
                     "select",
@@ -341,7 +367,7 @@ class AuditAgent:
                 "recommendations": recommendations,
                 "model": response.model,
                 "model_calls": calls + 1,
-                "token_usage": response.usage.model_dump(),
+                "token_usage": _combine_usage(state, response.usage.model_dump()),
                 "trace": _append(state, "analyze", "grounded"),
             }
         except (LLMError, ValidationError, ValueError):
@@ -380,7 +406,13 @@ class AuditAgent:
         )
         return {"report": report, "trace": tuple(report.trace)}
 
-    async def run(self, request: AuditRequest) -> AuditReport:
+    async def run(
+        self,
+        request: AuditRequest,
+        *,
+        checkpointer: Any = None,
+        thread_id: str | None = None,
+    ) -> AuditReport:
         state: AuditState = {
             "request": request,
             "used_tools": (),
@@ -390,6 +422,28 @@ class AuditAgent:
             "model_calls": 0,
         }
         # Even infinite/slow provider streams cannot run this graph indefinitely.
+        # Reauthorize on every execution, including checkpoint recovery.
+        normalize_url(request.url)
+        self.authorize(request)
+        graph = (
+            self._graph_builder.compile(checkpointer=checkpointer) if checkpointer else self.graph
+        )
+        config: RunnableConfig = {
+            "recursion_limit": 14,
+            "configurable": {"thread_id": thread_id or ""},
+        }
+        initial: AuditState | None = state
+        if checkpointer is not None:
+            if not thread_id:
+                raise ValueError("Persistent audits require a thread ID")
+            checkpoint = await graph.aget_state(config)
+            if checkpoint.values:
+                previous = checkpoint.values.get("request")
+                if AuditRequest.model_validate(previous) != request:
+                    raise ValueError("Checkpoint request does not match authorized job")
+                if checkpoint.values.get("report") is not None:
+                    return AuditReport.model_validate(checkpoint.values["report"])
+                initial = None  # Resume from the last completed graph node.
         async with asyncio.timeout(request.max_seconds):
-            finished = await self.graph.ainvoke(state, config={"recursion_limit": 14})
-        return finished["report"]
+            finished = await graph.ainvoke(initial, config=config)
+        return AuditReport.model_validate(finished["report"])

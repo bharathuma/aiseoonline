@@ -40,6 +40,12 @@ class Settings(BaseSettings):
     rag_chat_enabled: bool = False
     rag_chat_dev_token: SecretStr | None = None
     rag_chat_dev_owner_id: UUID | None = None
+    audit_jobs_enabled: bool = False
+    audit_dev_token: SecretStr | None = None
+    audit_dev_owner_id: UUID | None = None
+    audit_daily_job_cap: int = Field(default=12, ge=1, le=100)
+    audit_daily_usd_cap: Decimal = Field(default=Decimal("1.00"), gt=0, le=100)
+    audit_request_usd_cap: Decimal = Field(default=Decimal("0.30"), gt=0, le=10)
     rag_chat_embedding_usd_per_million: Decimal | None = Field(default=None, ge=0)
     rag_chat_daily_usd_cap: Decimal = Field(default=Decimal("1.00"), gt=0, le=100)
     rag_chat_request_usd_cap: Decimal = Field(default=Decimal("0.10"), gt=0, le=10)
@@ -54,6 +60,18 @@ class Settings(BaseSettings):
             raise ValueError("Total LLM token budget must cover output tokens")
         if (self.llm_input_usd_per_million is None) != (self.llm_output_usd_per_million is None):
             raise ValueError("Configure both LLM price rates or neither")
+        if self.audit_jobs_enabled:
+            if self.environment == "production":
+                raise ValueError("Private audit job routes cannot be enabled in production")
+            if (
+                self.audit_dev_token is None
+                or len(self.audit_dev_token.get_secret_value()) < 32
+                or not self.audit_dev_token.get_secret_value().isascii()
+                or self.audit_dev_owner_id is None
+                or self.database_url is None
+                or self.redis_url is None
+            ):
+                raise ValueError("Private audits require token, owner ID, PostgreSQL and Redis")
         if self.rag_chat_enabled:
             if self.environment == "production":
                 raise ValueError("Private RAG chat cannot be enabled in production")

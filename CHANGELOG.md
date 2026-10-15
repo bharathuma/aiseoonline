@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added a development-only Celery audit lifecycle with PostgreSQL job ownership, idempotency, leases, cancellation, durable LangGraph checkpoints and private report exports.
+- Added a noindex local audit workspace, progress polling and clear separation of technical findings from AI interpretations.
+
 - Added an internal verified-owner LangGraph SEO audit workflow with model-selected read-only LangChain tools, bounded state transitions, deterministic issue classification, evidence-validated recommendations and sanitized traces.
 - Added offline graph/tool tests and PostgreSQL-backed project isolation and RAG tool integration tests; no public audit route or website-changing actions.
 

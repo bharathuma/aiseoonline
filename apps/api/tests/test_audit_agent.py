@@ -145,6 +145,7 @@ def test_graph_actually_selects_two_different_tools_then_stops():
     assert result.selected_tools == ["headings", "canonicals"]
     assert len(result.recommendations) == 1
     assert len(provider.requests) == 4  # 3 decisions + one grounded report
+    assert result.token_usage == {"input_tokens": 280, "output_tokens": 120, "total_tokens": 400}
     assert calls["fetch"] == 1
     assert calls["authorize"] >= 2
     names = [event.node for event in result.trace]

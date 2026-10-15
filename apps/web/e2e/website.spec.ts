@@ -515,3 +515,174 @@ test('private assistant remains unavailable in the built production site', async
   await expect(page.getByRole('heading', { name: 'Private chat is unavailable' })).toBeVisible();
   await expect(page.getByLabel('Verified project UUID')).toHaveCount(0);
 });
+
+test('private audit workspace is noindexed and shows bounded background progress', async ({
+  page,
+}) => {
+  const id = '7b7f1234-5678-4678-9876-111122223333';
+  const project = '12341234-5678-4678-9876-111122223333';
+  await page.route('**/api/v1/internal/audits', async (route) => {
+    expect(route.request().headers()['x-dev-audit-token']).toBe('fixture-token-only');
+    await route.fulfill({
+      status: 202,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id,
+        status: 'queued',
+        progress_step: 'queued',
+        progress_percent: 0,
+        attempts: 0,
+        cancel_requested: false,
+        report_ready: false,
+        error_code: null,
+      }),
+    });
+  });
+  await page.route('**/api/v1/internal/audits/' + id, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id,
+        status: 'running',
+        progress_step: 'checks',
+        progress_percent: 40,
+        attempts: 1,
+        cancel_requested: false,
+        report_ready: false,
+        error_code: null,
+      }),
+    });
+  });
+  await page.goto('/internal/audit/');
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,follow');
+  await page.getByLabel('Local development audit token').fill('fixture-token-only');
+  await page.getByLabel('Verified project UUID').fill(project);
+  await page.getByLabel('Single public page URL').fill('https://example.org/audit');
+  await page.getByRole('button', { name: 'Start private audit' }).click();
+  await expect(page.getByRole('heading', { name: /Audit status: queued/ })).toBeVisible();
+  await expect(page.getByText('Step: checks · Attempt 1')).toBeVisible();
+  await expect(page.getByLabel('Progress: 40%')).toHaveAttribute('value', '40');
+  await expect(page.getByRole('button', { name: 'Cancel audit' })).toBeVisible();
+});
+
+test('private audit report distinguishes technical evidence from AI interpretation', async ({
+  page,
+}) => {
+  const id = '7b7f1234-5678-4678-9876-111122223334';
+  await page.route('**/api/v1/internal/audits', async (route) => {
+    await route.fulfill({
+      status: 202,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id,
+        status: 'completed',
+        progress_step: 'completed',
+        progress_percent: 100,
+        attempts: 1,
+        cancel_requested: false,
+        report_ready: true,
+        error_code: null,
+      }),
+    });
+  });
+  await page.route('**/api/v1/internal/audits/' + id + '/report', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        status: 'completed',
+        scope: 'One verified page',
+        uncertainty: 'No deeper crawl',
+        findings: [
+          {
+            finding_id: 'seo:abc',
+            severity: 'error',
+            affected_url: 'https://example.org/audit',
+            summary: 'Missing title',
+            evidence_quote: '<script>alert(1)</script>',
+            evidence_ref: 'title:0',
+            correction: 'Add a descriptive title',
+          },
+        ],
+        recommendations: [
+          {
+            finding_id: 'seo:abc',
+            affected_url: 'https://example.org/audit',
+            advice: 'Consider a specific descriptive title',
+            supporting_quote: 'title missing',
+            requires_human_approval: true,
+          },
+        ],
+      }),
+    });
+  });
+  await page.goto('/internal/audit/');
+  await page.getByLabel('Local development audit token').fill('fixture-token-only');
+  await page.getByLabel('Verified project UUID').fill('12341234-5678-4678-9876-111122223333');
+  await page.getByLabel('Single public page URL').fill('https://example.org/audit');
+  await page.getByRole('button', { name: 'Start private audit' }).click();
+  await expect(page.getByRole('heading', { name: 'Observed technical findings' })).toBeVisible();
+  await expect(page.getByText('Missing title')).toBeVisible();
+  await expect(page.getByText('<script>alert(1)</script>')).toBeVisible();
+  await expect(page.locator('script:has-text("alert(1)")')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: /AI interpretations/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Download CSV' })).toBeVisible();
+});
+
+test('private audit retries reuse a key while separate audits receive new keys', async ({
+  page,
+}) => {
+  const submittedKeys: string[] = [];
+  const completedIds = [
+    '7b7f1234-5678-4678-9876-111122223335',
+    '7b7f1234-5678-4678-9876-111122223336',
+  ];
+  let requests = 0;
+  await page.route('**/api/v1/internal/audits', async (route) => {
+    requests++;
+    submittedKeys.push(route.request().headers()['idempotency-key'] ?? '');
+    if (requests === 1) {
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: { code: 'queue_pending', message: 'Audit dispatch delayed.' },
+        }),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 202,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: completedIds[requests - 2],
+        status: 'completed',
+        progress_step: 'completed',
+        progress_percent: 100,
+        attempts: 1,
+        cancel_requested: false,
+        report_ready: false,
+        error_code: null,
+      }),
+    });
+  });
+
+  await page.goto('/internal/audit/');
+  await page.getByLabel('Local development audit token').fill('fixture-token-only');
+  await page.getByLabel('Verified project UUID').fill('12341234-5678-4678-9876-111122223333');
+  await page.getByLabel('Single public page URL').fill('https://example.org/audit');
+  const submit = page.getByRole('button', { name: 'Start private audit' });
+  await submit.click();
+  await expect(page.getByRole('alert')).toContainText('Audit dispatch delayed.');
+  await submit.click();
+  await expect(page.getByRole('heading', { name: 'Audit status: completed' })).toBeVisible();
+
+  await page.getByLabel('Single public page URL').fill('https://example.org/another-page');
+  await submit.click();
+  await expect(page.getByText('Job identifier: ' + completedIds[1])).toBeVisible();
+  expect(submittedKeys).toHaveLength(3);
+  expect(submittedKeys[0]).toBeTruthy();
+  expect(submittedKeys[0]).toBe(submittedKeys[1]);
+  expect(submittedKeys[2]).not.toBe(submittedKeys[1]);
+});
