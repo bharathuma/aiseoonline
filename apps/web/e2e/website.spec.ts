@@ -686,3 +686,15 @@ test('private audit retries reuse a key while separate audits receive new keys',
   expect(submittedKeys[0]).toBe(submittedKeys[1]);
   expect(submittedKeys[2]).not.toBe(submittedKeys[1]);
 });
+
+test('benchmark page describes measured scope without fabricated scores', async ({ page }) => {
+  await page.goto('/open-source/benchmarks/');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Benchmarks');
+  await expect(page.getByRole('heading', { name: 'What these measurements mean' })).toBeVisible();
+  await expect(page.getByText(/not a live retrieval index or real embeddings/)).toBeVisible();
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    'href',
+    'https://aiseoonline.com/open-source/benchmarks/',
+  );
+  await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+});

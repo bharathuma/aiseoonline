@@ -1,0 +1,163 @@
+---
+import SiteLayout from '../../../layouts/SiteLayout.astro';
+import report from '../../../data/benchmarks.json';
+
+interface Group {
+  cases: number;
+  matched: number;
+  match_rate: number | null;
+  mean_recall_at_3?: number;
+  hit_at_1?: number;
+}
+const labels: Record<string, string> = {
+  rrf_fixture: 'Candidate rank-fusion fixtures',
+  rag_guard: 'RAG citation and claim safeguards',
+  agent_graph: 'Agent workflow and safety fixtures',
+  structured_meta: 'Metadata output validation',
+};
+const groups = Object.entries(report.groups as Record<string, Group>);
+const published = report.verified && report.case_count > 0 && groups.length > 0;
+const knownMisses = report.cases.filter((item) => !item.matched_expectation);
+const measuredDate = report.run_at_utc
+  ? new Date(report.run_at_utc).toLocaleDateString('en-GB', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'UTC',
+    })
+  : null;
+---
+
+<SiteLayout
+  title="Open benchmarks — AISEOOnline"
+  description="Reproducible evaluation measurements, fixture provenance, run dates, and clearly stated limits."
+>
+  <section class="page-banner">
+    <div class="site-container">
+      <p class="eyebrow">Open-source evaluation</p>
+      <h1 class="section-title mt-4">Benchmarks with evidence.</h1>
+      <p class="page-intro">
+        Reported measurements come from versioned synthetic cases and executable checks, not claimed
+        model intelligence or fabricated accuracy scores.
+      </p>
+    </div>
+  </section>
+  <section class="section-space">
+    <div class="site-container max-w-5xl">
+      {
+        published ? (
+          <>
+            <div class="rounded-xl border border-teal-200 bg-white p-6">
+              <p class="text-sm font-semibold text-teal-900">Recorded offline benchmark</p>
+              <p class="mt-2 text-sm text-slate-600">
+                {report.case_count} cases · {report.dataset_version} · executed {measuredDate} (UTC)
+              </p>
+              <p class="mt-2 text-sm text-slate-600">
+                Scripted provider and synthetic inputs; no paid model was queried for these scores.
+              </p>
+              <p class="mt-3 text-sm">
+                <a class="font-semibold text-teal-800 underline" href={report.verification.run_url}>
+                  Inspect the recorded GitHub Actions run ↗
+                </a>
+              </p>
+            </div>
+            <div class="mt-8 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+              <table class="w-full border-collapse text-left text-sm">
+                <caption class="px-5 py-4 text-left font-bold text-slate-900">
+                  Offline expectation checks, not live model accuracy
+                </caption>
+                <thead class="bg-slate-100 text-slate-700">
+                  <tr>
+                    <th class="px-5 py-3" scope="col">
+                      Evaluation group
+                    </th>
+                    <th class="px-5 py-3" scope="col">
+                      Cases
+                    </th>
+                    <th class="px-5 py-3" scope="col">
+                      Matched
+                    </th>
+                    <th class="px-5 py-3" scope="col">
+                      Agreement
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {groups.map(([name, value]) => (
+                    <tr class="border-t border-slate-200">
+                      <th scope="row" class="px-5 py-4 font-semibold text-slate-900">
+                        {labels[name] ?? name}
+                      </th>
+                      <td class="px-5 py-4">{value.cases}</td>
+                      <td class="px-5 py-4">{value.matched}</td>
+                      <td class="px-5 py-4">
+                        {value.match_rate === null
+                          ? 'Not measured'
+                          : `${(value.match_rate * 100).toFixed(1)}%`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {knownMisses.length > 0 && (
+              <aside class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-6">
+                <h2 class="text-base font-bold text-amber-950">Observed limitations</h2>
+                <p class="mt-2 text-sm leading-7 text-amber-900">
+                  {knownMisses.length} fixture expectations did not match observed behavior. In the
+                  semantic-overclaim test, an incorrect factual conclusion passed the exact-quote
+                  citation guard. This is an actual measured failure, not a passing evaluation or an
+                  estimate of real-world model error rates.
+                </p>
+              </aside>
+            )}
+          </>
+        ) : (
+          <div class="rounded-xl border border-slate-200 bg-white p-6" role="status">
+            <h2 class="text-lg font-bold">No verified measurements published yet</h2>
+            <p class="mt-3 text-slate-600">
+              Benchmark scores will be shown only after an offline evaluation has executed and its
+              report has been reviewed. The public page does not estimate missing results.
+            </p>
+          </div>
+        )
+      }
+      <section class="mt-10 space-y-4 text-slate-700" aria-labelledby="method">
+        <h2 id="method" class="text-2xl font-bold text-slate-900">What these measurements mean</h2>
+        <p>
+          The dataset contains synthetic SEO references and labeled regression examples. Rank fusion
+          uses supplied candidate lists, <strong
+            >not a live retrieval index or real embeddings</strong
+          >. RAG checks measure whether the existing citation guard accepts or rejects expected
+          outputs. Agent scenarios run a real LangGraph workflow using scripted model decisions and
+          synthetic HTML; metadata tests invoke actual structured-output validators.
+        </p>
+        <p>
+          A matching expectation does not establish semantic accuracy, generalization, search
+          ranking gains, production reliability, or a superior LLM. Exact-quote grounding checks can
+          miss paraphrased factual contradictions. No comparison of commercial models is made.
+        </p>
+        <p>
+          Each run records case outcomes, prompt-template versions, fixture hash, timestamp, and
+          execution mode. Reproducible commands and known limitations are available in the
+          <a
+            class="font-semibold text-teal-800 underline"
+            href="https://github.com/bharathumashankar/aiseoonline/blob/main/docs/evaluations.md"
+          >
+            evaluation methodology
+          </a>. Explore the <a
+            class="font-semibold text-teal-800 underline"
+            href="https://github.com/bharathumashankar/aiseoonline/tree/main/apps/api/evaluations/fixtures"
+          >
+            public test fixtures</a
+          >.
+        </p>
+      </section>
+      <div class="mt-9">
+        <a class="font-semibold text-teal-800 underline" href="/open-source/">
+          ← Open-source overview
+        </a>
+      </div>
+    </div>
+  </section>
+</SiteLayout>
