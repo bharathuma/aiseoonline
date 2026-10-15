@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from aiseoonline_api import __version__
+from aiseoonline_api.agents.routes import router as audit_jobs_router
 from aiseoonline_api.ai_core.meta_routes import router as ai_meta_router
 from aiseoonline_api.config import Settings, get_settings
 from aiseoonline_api.db.session import create_database_engine
@@ -56,6 +57,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(ai_meta_router, prefix="/api/v1", responses=ERROR_RESPONSES)
     if resolved.environment != "production":
         application.include_router(rag_chat_router, prefix="/api/v1", responses=ERROR_RESPONSES)
+        application.include_router(audit_jobs_router, prefix="/api/v1", responses=ERROR_RESPONSES)
     application.include_router(
         readiness_router,
         prefix="/api/v1",
