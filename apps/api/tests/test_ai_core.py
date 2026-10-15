@@ -338,9 +338,9 @@ def test_streaming_enforces_total_wall_clock_deadline() -> None:
 
     class SlowChunks(httpx.AsyncByteStream):
         async def __aiter__(self):
-            yield b'data: {"choices":[{"delta":{"content":"partial"},"finish_reason":null}]}\\n\\n'
+            yield b'data: {"choices":[{"delta":{"content":"partial"},"finish_reason":null}]}\n\n'
             await asyncio.sleep(1.2)
-            yield b'data: [DONE]\\n\\n'
+            yield b'data: [DONE]\n\n'
 
     async def scenario() -> None:
         async with client_for(
