@@ -366,7 +366,7 @@ def test_redirect_inspection_reads_headers_not_body(
 def test_redirect_inspection_enforces_robots_per_hop(
     site: ThreadingHTTPServer,
 ) -> None:
-    site.robots_body = b"User-agent: *\\nDisallow: /page\\n"  # type: ignore[attr-defined]
+    site.robots_body = b"User-agent: *\nDisallow: /page\n"  # type: ignore[attr-defined]
     with pytest.raises(RobotsDenied):
         CrawlSession("http://example.org/redirect", limits=limits()).inspect_redirects()
     assert len(site.dialed) == 2  # type: ignore[attr-defined]
