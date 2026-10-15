@@ -8,6 +8,7 @@ import pytest
 from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 
+from aiseoonline_api.ai_core.contracts import ProviderUnavailable
 from aiseoonline_api.config import Settings
 from aiseoonline_api.crawler import PageSnapshot, parse_html
 from aiseoonline_api.db.models import Project, RagChunk, RagDocument, User
@@ -132,6 +133,25 @@ def test_pgvector_private_lifecycle_and_similarity_queries() -> None:
                         for x in store.search(
                             project_id=pa.id, owner_id=a.id, query="stoneware bowls"
                         )
+                    )
+
+                    class FailingEmbedding(FixtureEmbeddingProvider):
+                        def embed(self, texts):
+                            raise ProviderUnavailable("controlled fixture failure")
+
+                    with pytest.raises(ProviderUnavailable):
+                        RagStore(session, FailingEmbedding()).ingest_snapshot(
+                            project_id=pa.id, owner_id=a.id,
+                            snapshot=sample_snapshot(
+                                "Unexpected update should never replace the old index. " * 8
+                            ),
+                        )
+                    # Embedding fails before any DELETE or document rewrite.
+                    preserved = session.get(RagDocument, created.document_id)
+                    assert preserved is not None
+                    assert preserved.content_hash == updated.content_hash
+                    assert store.search(
+                        project_id=pa.id, owner_id=a.id, query="stoneware bowls"
                     )
 
                     reindexed = RagStore(session, FixtureEmbeddingProvider("fixture-v2"))
