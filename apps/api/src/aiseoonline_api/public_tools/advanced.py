@@ -4,7 +4,7 @@ import json
 from datetime import UTC, datetime
 from urllib.parse import urljoin, urlsplit
 
-from aiseoonline_api.crawler import CrawlSession, UnsafeTarget, normalize_url
+from aiseoonline_api.crawler import CrawlSession, PageSnapshot, UnsafeTarget, normalize_url
 from aiseoonline_api.public_tools.checks import ToolReport, make_issue
 from aiseoonline_api.seo_core.rules import analyze_page
 
@@ -97,7 +97,11 @@ def check_redirects(url: str) -> ToolReport:
 
 
 def check_canonical(url: str) -> ToolReport:
-    page = CrawlSession(url).fetch_page()
+    return analyze_canonical_snapshot(CrawlSession(url).fetch_page())
+
+
+def analyze_canonical_snapshot(page: PageSnapshot) -> ToolReport:
+    """Use the public canonical-check rules without making another network request."""
     result = analyze_page(page)
     source = normalize_url(page.final_url).value
     canonical_values: list[dict[str, str | int | None]] = []
