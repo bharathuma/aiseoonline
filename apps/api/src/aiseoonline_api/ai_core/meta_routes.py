@@ -59,7 +59,7 @@ _SPEND_SCRIPT = """
 local spent=tonumber(redis.call('GET', KEYS[1]) or '0')
 if spent+tonumber(ARGV[1])>tonumber(ARGV[2]) then return -1 end
 redis.call('INCRBY', KEYS[1], ARGV[1])
-redis.call('EXPIRE', KEYS[1], 86400)
+if spent==0 then redis.call('EXPIRE', KEYS[1], 90000) end
 return 1
 """
 
@@ -119,7 +119,7 @@ def _check_peer(redis_url: str, peer: str) -> int:
 
 def _reserve_spend(redis_url: str, allocation: int, limit: int) -> bool:
     with Redis.from_url(redis_url, socket_timeout=0.8, socket_connect_timeout=0.8) as client:
-        return bool(client.eval(_SPEND_SCRIPT, 1, "ai:daily:spend", allocation, limit))
+        return bool(client.eval(_SPEND_SCRIPT, 1, "ai:daily:" + datetime.now(UTC).strftime("%Y%m%d"), allocation, limit))
 
 
 def _source_from_url(url: str) -> tuple[str, str]:
