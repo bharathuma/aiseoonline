@@ -53,6 +53,8 @@ jobs:
           sleep 8
       - name: Run unit and integration tests
         run: uv run --project apps/api pytest apps/api/tests -q -rs
+      - name: Record synthetic RAG evaluation metrics
+        run: uv run --project apps/api pytest apps/api/tests/test_rag_retrieval_integration.py -q -s
       - name: Show worker logs after failure
         if: failure()
         run: cat /tmp/aiseoonline-worker.log || true
