@@ -1,0 +1,10 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import ToolDirectory from '../../components/ToolDirectory.tsx';
+---
+<SiteLayout title="SEO tools — AISEOOnline" description="Browse planned free SEO tools for sitemaps, robots.txt, metadata, redirects, structured data and internal links.">
+  <section class="page-banner">
+    <div class="site-container"><p class="eyebrow">SEO tools</p><h1 class="section-title mt-4">A focused toolkit for the checks that matter.</h1><p class="page-intro">Explore the tools under development, from technical site signals to content and internal links.</p></div>
+  </section>
+  <section class="section-space"><div class="site-container"><ToolDirectory client:load /></div></section>
+</SiteLayout>

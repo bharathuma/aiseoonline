@@ -1,0 +1,32 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import StatusNotice from '../../components/ui/StatusNotice.astro';
+import InfoDialog from '../../components/ui/InfoDialog.astro';
+import UiButton from '../../components/ui/UiButton.astro';
+---
+<SiteLayout title="AI SEO audit — AISEOOnline" description="Learn about AISEOOnline's planned evidence-based website auditing workflow and safeguards.">
+  <section class="page-banner">
+    <div class="site-container max-w-5xl">
+      <p class="eyebrow">AI SEO audit</p>
+      <h1 class="section-title mt-4">From technical checks to a clearer action plan.</h1>
+      <p class="page-intro">We're building a site audit that gathers real evidence first, then uses AI to help organize and explain the findings.</p>
+      <div class="mt-8 max-w-2xl"><StatusNotice variant="warning" title="The AI audit is not available yet">The audit workflow is under development. Scans and account registration have not been enabled.</StatusNotice></div>
+      <div class="mt-7 flex flex-wrap gap-3">
+        <UiButton href="/tools/" variant="primary">Browse planned tools</UiButton>
+        <InfoDialog id="audit-approach" title="How the audit is designed" trigger="How will it work?">
+          <p>For authorized websites, the audit will fetch pages within defined limits, apply deterministic checks, and retain URLs and evidence for the findings.</p>
+          <p class="mt-3">AI-generated explanations will be grounded in those results. Private data will be scoped by project, and automated edits will not run without approval.</p>
+        </InfoDialog>
+      </div>
+      <noscript><p class="mt-4 text-sm text-slate-600">The workflow collects evidence, runs deterministic SEO rules and organizes findings. The dialog requires JavaScript.</p></noscript>
+    </div>
+  </section>
+  <section class="section-space">
+    <div class="site-container grid gap-6 md:grid-cols-3">
+      <article class="surface-card"><span class="step-number">01</span><h2 class="mt-5 text-lg font-bold">Collect evidence</h2><p class="mt-3 text-sm leading-7 text-slate-600">Fetch only permitted pages using clear network and resource limits.</p></article>
+      <article class="surface-card"><span class="step-number">02</span><h2 class="mt-5 text-lg font-bold">Find issues</h2><p class="mt-3 text-sm leading-7 text-slate-600">Apply repeatable technical SEO checks and preserve the affected URLs.</p></article>
+      <article class="surface-card"><span class="step-number">03</span><h2 class="mt-5 text-lg font-bold">Explain fixes</h2><p class="mt-3 text-sm leading-7 text-slate-600">Connect findings to practical recommendations, citing the supporting evidence.</p></article>
+    </div>
+  </section>
+  <section class="section-space bg-white"><div class="site-container max-w-3xl"><h2 class="text-2xl font-bold">Designed for accountable results</h2><p class="mt-5 leading-8 text-slate-600">A website audit should distinguish observable technical issues from interpretations and suggestions. Automated explanations can help prioritize work, but they don't guarantee ranking changes or replace professional judgment.</p></div></section>
+</SiteLayout>

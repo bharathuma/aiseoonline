@@ -1,0 +1,15 @@
+---
+interface Props {
+  variant: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+}
+const { variant, title } = Astro.props;
+const symbol = { info: 'i', success: '✓', warning: '!', error: '×' }[variant];
+---
+<div class:list={['status-notice', 'status-' + variant]} role={variant === 'error' ? 'alert' : 'status'}>
+  <span class="status-symbol" aria-hidden="true">{symbol}</span>
+  <div>
+    <strong class="block font-semibold">{title}</strong>
+    <div class="mt-1 text-sm leading-6"><slot /></div>
+  </div>
+</div>

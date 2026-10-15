@@ -62,9 +62,12 @@ uv run --project apps/api ruff check apps/api
 pnpm test:web
 pnpm check:web
 pnpm build:web
+# Browser tests (after installing Playwright Chromium)
+pnpm --filter @aiseoonline/web exec playwright install chromium
+pnpm e2e:web
 ```
 
-The infrastructure CI job provisions temporary PostgreSQL + pgvector and Redis services to exercise migrations, DB operations and the sample Celery worker. The existing frontend workflow builds the Astro site. Tests involving a live model provider are not needed.
+The infrastructure CI job provisions temporary PostgreSQL + pgvector and Redis services to exercise migrations, DB operations and the sample Celery worker. The existing frontend workflow builds the Astro site and runs Chromium browser tests with responsive screenshots attached as CI artifacts. Tests involving a live model provider are not needed.
 
 ## Notes
 

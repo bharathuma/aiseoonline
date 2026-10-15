@@ -1,0 +1,5 @@
+---
+interface Props { class?: string; }
+const { class: extra = '' } = Astro.props;
+---
+<article class:list={['surface-card', extra]}><slot /></article>
