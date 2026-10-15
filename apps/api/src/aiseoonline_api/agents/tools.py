@@ -10,6 +10,8 @@ from typing import Any
 from langchain_core.tools import StructuredTool
 
 from aiseoonline_api.crawler import PageSnapshot
+from aiseoonline_api.public_tools.advanced import analyze_canonical_snapshot
+from aiseoonline_api.public_tools.final_tools import analyze_heading_snapshot
 from aiseoonline_api.seo_core.models import SeoFinding
 
 _TOOL_DESCRIPTIONS = {
@@ -55,25 +57,17 @@ def build_tools(
         return [item.rule_id for item in findings if item.rule_id.startswith(prefix)][:12]
 
     def headings() -> dict[str, Any]:
+        report = analyze_heading_snapshot(snapshot)
         return {
-            "outline": [
-                {
-                    "level": h.level,
-                    "text": h.text[:90],
-                    "ref": f"{h.evidence.element}:{h.evidence.ordinal}",
-                }
-                for h in snapshot.html.headings[:25]
-            ],
-            "rules": related("heading."),
+            "outline": report.facts["headings"][:25],
+            "rules": [issue.code for issue in report.issues[:12]],
         }
 
     def canonicals() -> dict[str, Any]:
+        report = analyze_canonical_snapshot(snapshot)
         return {
-            "declarations": [
-                {"href": c.href[:180], "ref": str(c.evidence.ordinal)}
-                for c in snapshot.html.canonical_tags[:8]
-            ],
-            "rules": related("canonical."),
+            "declarations": report.facts["declarations"][:8],
+            "rules": [issue.code for issue in report.issues[:12]],
         }
 
     def structured_data() -> dict[str, Any]:
