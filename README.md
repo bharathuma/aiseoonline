@@ -2,7 +2,7 @@
 
 Open-source SEO tools for checking, understanding, and improving websites.
 
-**Status: Website and API foundation, internal secure crawler, and deterministic SEO rules implemented. Public SEO tools and AI features remain in development.** This repository has not been deployed to the public website.
+**Status: Website and API foundation, internal secure crawler, and deterministic SEO rules implemented. Three public SEO tool endpoints are implemented; AI features remain in development.** The code has not been deployed to the public website.
 
 AISEOOnline is being built for site owners, developers, and teams who need practical SEO checks. The repository contains an Astro/React website, three free SEO checkers, a FastAPI backend, database migrations, and a background worker. The public interface includes robots.txt, XML sitemap and metadata checkers alongside planned tools and introductory guides. No multi-page or AI audit is publicly available. The internal [SEO rule engine](docs/seo-rules.md) produces source-backed findings from parsed page snapshots.
 
@@ -41,11 +41,11 @@ uv run --project apps/api uvicorn aiseoonline_api.main:app --reload --host 127.0
 
 Health: `GET /api/v1/health` · API docs: `/api/docs` · OpenAPI: `/api/v1/openapi.json`.
 
-Optional AI credentials are not needed to start the API. See [local development](docs/getting-started.md) for tests and environment configuration.
+Public tool requests require Redis for shared rate limits. Use Docker Compose or configure AISEO_REDIS_URL; if Redis is unavailable, the check endpoints return 503. Optional AI credentials are not needed to start the API. See [local development](docs/getting-started.md) for tests and environment configuration.
 
 ## Roadmap
 
-The [roadmap](docs/roadmap.md) covers free SEO tools, site audits, AI-assisted analysis, and deployment. Planned tools are not yet available.
+The [roadmap](docs/roadmap.md) covers free SEO tools, site audits, AI-assisted analysis, and deployment. The three implemented checkers are ready for local use; other tools remain planned.
 
 ## Contributing
 
