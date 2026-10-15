@@ -15,3 +15,11 @@
 **/*.log
 **/storage
 **/secrets
+
+# Private operator assets and database dumps must never enter image build context.
+**/*.dump
+**/*.backup
+**/backups
+**/*.pem
+**/*.key
+**/private-env*

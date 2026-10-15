@@ -22,3 +22,11 @@ docker compose exec api alembic -c alembic.ini current
 The first migration creates the pgvector extension; PostgreSQL must have the extension installed and the migration role must have permission to create extensions. `pgvector/pgvector:pg16` provides that extension. Production requires separately configured TLS, backups, least-privilege roles, secrets storage, and private worker egress restrictions. This Compose file is for **local development**, not an internet-exposed production deployment.
 
 Docker volumes persist DB and Redis data. `docker compose down` keeps them; `docker compose down -v` irreversibly deletes local data.
+
+## Staging and production-mode release
+
+The development Compose file is **not** the production topology. Use the
+isolated `infra/compose.deploy.yaml` override, manually reviewed digest-pinned
+images, a protected Cloudflare Tunnel and the [deployment and disaster recovery
+runbook](../docs/deployment.md). CI runs a disposable production-mode smoke
+stack; no workflow automatically deploys to a real domain or host.
