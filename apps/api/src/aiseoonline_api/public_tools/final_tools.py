@@ -227,6 +227,8 @@ def check_social(url: str) -> ToolReport:
                 "No og:* or twitter:* metadata in the fetched HTML",
             )
         )
+    fallback_host = urlsplit(page.final_url).hostname or ""
+    site_name = (tags.get("og:site_name") or [fallback_host])[0]
     return ToolReport(
         tool="social",
         requested_url=page.requested_url,
@@ -240,7 +242,7 @@ def check_social(url: str) -> ToolReport:
                 "title": title[0] if title else None,
                 "description": description[0] if description else None,
                 "image_url": image[0] if image else None,
-                "site_name": (tags.get("og:site_name") or [urlsplit(page.final_url).hostname or ""])[0],
+                "site_name": site_name,
             },
             "preview_disclaimer": "Approximation only. Platforms may choose different text, "
             "image crops, and cached previews. Images are not fetched.",
