@@ -355,7 +355,9 @@ class AuditAgent:
         snapshot = state.get("snapshot")
         issues = state.get("findings", ())
         errors = state.get("errors", ())
-        status = "partial" if errors else "completed"
+        status: Literal["completed", "partial", "insufficient_evidence"] = (
+            "partial" if errors else "completed"
+        )
         if snapshot is None or not issues:
             status = "partial" if errors else "insufficient_evidence"
         report = AuditReport(
