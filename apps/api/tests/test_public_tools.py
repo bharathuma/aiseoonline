@@ -1,6 +1,10 @@
 """Controlled fixtures for the first free SEO tools; no external HTTP requests."""
 
+import socket
+import threading
+from collections.abc import Iterator
 from datetime import UTC, datetime
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from types import SimpleNamespace
 
 import pytest
@@ -189,3 +193,102 @@ def test_ssrf_fails_at_url_parser_before_any_transport() -> None:
     with pytest.raises(UnsafeTarget):
         from aiseoonline_api.crawler import normalize_url
         normalize_url("http://10.0.0.4/")
+
+
+class LiveFixture(BaseHTTPRequestHandler):
+    robots = b"User-agent: *\\nAllow: /\\n"
+    sitemap = SITEMAP
+
+    def do_GET(self) -> None:
+        if self.path == "/robots.txt":
+            body, kind = self.robots, "text/plain"
+        elif self.path == "/sitemap.xml":
+            body, kind = self.sitemap, "application/xml"
+        elif self.path == "/page":
+            body = (b"<html><head><title>Fixture page</title>"
+                    b'<meta name="description" content="Fixture description"></head>'
+                    b"<body><h1>Heading</h1></body></html>")
+            kind = "text/html"
+        else:
+            self.send_response(404)
+            self.end_headers()
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", kind)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        try:
+            self.wfile.write(body)
+        except BrokenPipeError:
+            pass
+
+    def log_message(self, *args: object) -> None:
+        pass
+
+
+@pytest.fixture
+def live_site(monkeypatch: pytest.MonkeyPatch) -> Iterator[ThreadingHTTPServer]:
+    server = ThreadingHTTPServer(("127.0.0.1", 0), LiveFixture)
+    server.RequestHandlerClass.robots = b"User-agent: *\\nAllow: /\\n"
+    server.RequestHandlerClass.sitemap = SITEMAP
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    def dns(host: str, port: int, **kwargs: object) -> list[tuple[object, ...]]:
+        assert host == "example.org"
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", port))]
+
+    def connect(address: tuple[str, int], **kwargs: object) -> socket.socket:
+        assert address[0] == "93.184.216.34"
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(float(kwargs.get("timeout", 3)))
+        sock.connect(server.server_address)
+        return sock
+
+    monkeypatch.setattr(socket, "getaddrinfo", dns)
+    monkeypatch.setattr(socket, "create_connection", connect)
+    try:
+        yield server
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_three_public_tools_really_fetch_and_parse_local_fixture(
+    client: TestClient, live_site: ThreadingHTTPServer,
+) -> None:
+    for path, expected_key, expected in (
+        ("robots", "directives", 2),
+        ("sitemap", "entries", 3),
+        ("meta", "title", "Fixture page"),
+    ):
+        url = "https://example.org/" if path == "robots" else (
+            "http://example.org/page" if path == "meta" else
+            "http://example.org/sitemap.xml"
+        )
+        if path == "robots":
+            url = "http://example.org/"
+        response = client.post(f"/api/v1/tools/{path}", json={"url": url})
+        assert response.status_code == 200, response.text
+        assert response.json()["facts"][expected_key] == expected
+
+
+def test_robot_disallow_rejects_page_without_fetching_it(
+    client: TestClient, live_site: ThreadingHTTPServer,
+) -> None:
+    live_site.RequestHandlerClass.robots = b"User-agent: *\\nDisallow: /page\\n"
+    response = client.post("/api/v1/tools/meta", json={"url": "http://example.org/page"})
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "robots_denied"
+
+
+def test_oversized_xml_is_rejected_before_parse(
+    client: TestClient, live_site: ThreadingHTTPServer,
+) -> None:
+    live_site.RequestHandlerClass.sitemap = b"x" * 525000
+    response = client.post(
+        "/api/v1/tools/sitemap", json={"url": "http://example.org/sitemap.xml"}
+    )
+    assert response.status_code == 413
+    assert response.json()["error"]["code"] == "crawl_limit"
