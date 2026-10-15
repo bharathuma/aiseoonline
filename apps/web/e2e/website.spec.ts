@@ -94,3 +94,57 @@ test('mobile navigation works with the keyboard', async ({ page }) => {
   await mobileNav.getByRole('link', { name: 'Documentation' }).click();
   await expect(page).toHaveURL(/\/docs\/$/);
 });
+
+test('meta checker submits input and displays evidence from API', async ({ page }) => {
+  await page.route('**/api/v1/tools/meta', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        tool: 'meta',
+        requested_url: 'https://example.org/',
+        final_url: 'https://example.org/',
+        checked_at: '2026-10-15T12:00:00Z',
+        facts: { title: 'Fixture title', descriptions: ['Real page text'] },
+        issues: [{
+          code: 'title.length', severity: 'info', message: 'Review page title length',
+          recommendation: 'Write a descriptive title.', evidence: 'title#1: Fixture title',
+        }],
+      }),
+    });
+  });
+  await page.goto('/tools/meta-tag-checker/');
+  await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+  await page.getByLabel('Webpage URL').fill('https://example.org/');
+  await page.getByRole('button', { name: 'Run free check' }).click();
+  await expect(page.getByText('Fixture title')).toBeVisible();
+  await expect(page.getByText('Review page title length')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Download JSON' })).toBeVisible();
+});
+
+test('public checker surfaces quota errors without claiming success', async ({ page }) => {
+  await page.route('**/api/v1/tools/robots', async (route) => {
+    await route.fulfill({
+      status: 429, contentType: 'application/json',
+      body: JSON.stringify({
+        error: { code: 'rate_limited', message: 'Too many checks. Try again later.' },
+        request_id: 'abc',
+      }),
+    });
+  });
+  await page.goto('/tools/robots-txt-validator/');
+  await page.getByLabel('Website URL').fill('https://example.org/');
+  await page.getByRole('button', { name: 'Run free check' }).click();
+  await expect(page.getByRole('alert')).toContainText('Too many checks.');
+  await expect(page.getByRole('heading', { name: 'Check complete' })).toHaveCount(0);
+});
+
+test('all three live tool pages are indexable and have forms', async ({ page }) => {
+  for (const slug of [
+    'robots-txt-validator', 'xml-sitemap-validator', 'meta-tag-checker',
+  ]) {
+    await page.goto('/tools/' + slug + '/');
+    await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Run free check' })).toBeVisible();
+  }
+});
