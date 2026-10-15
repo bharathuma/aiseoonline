@@ -23,7 +23,7 @@ test('homepage renders useful content, metadata and working navigation', async (
 test('tool discovery searches and filters without pretending tools are live', async ({ page }) => {
   await page.goto('/tools/');
   await page.getByRole('searchbox', { name: 'Search tools' }).fill('sitemap');
-  await expect(page.getByRole('status').filter({ hasText: '1 planned tool found' })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: '1 tool found' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'XML sitemap validator' })).toBeVisible();
   await page.getByRole('searchbox', { name: 'Search tools' }).fill('');
   await page.getByLabel('Category').selectOption('Links');
