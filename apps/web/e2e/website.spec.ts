@@ -516,26 +516,41 @@ test('private assistant remains unavailable in the built production site', async
   await expect(page.getByLabel('Verified project UUID')).toHaveCount(0);
 });
 
-
-test('private audit workspace is noindexed and shows bounded background progress', async ({ page }) => {
+test('private audit workspace is noindexed and shows bounded background progress', async ({
+  page,
+}) => {
   const id = '7b7f1234-5678-4678-9876-111122223333';
   const project = '12341234-5678-4678-9876-111122223333';
   await page.route('**/api/v1/internal/audits', async (route) => {
     expect(route.request().headers()['x-dev-audit-token']).toBe('fixture-token-only');
     await route.fulfill({
-      status: 202, contentType: 'application/json',
+      status: 202,
+      contentType: 'application/json',
       body: JSON.stringify({
-        id, status: 'queued', progress_step: 'queued', progress_percent: 0,
-        attempts: 0, cancel_requested: false, report_ready: false, error_code: null,
+        id,
+        status: 'queued',
+        progress_step: 'queued',
+        progress_percent: 0,
+        attempts: 0,
+        cancel_requested: false,
+        report_ready: false,
+        error_code: null,
       }),
     });
   });
   await page.route('**/api/v1/internal/audits/' + id, async (route) => {
     await route.fulfill({
-      status: 200, contentType: 'application/json',
+      status: 200,
+      contentType: 'application/json',
       body: JSON.stringify({
-        id, status: 'running', progress_step: 'checks', progress_percent: 40,
-        attempts: 1, cancel_requested: false, report_ready: false, error_code: null,
+        id,
+        status: 'running',
+        progress_step: 'checks',
+        progress_percent: 40,
+        attempts: 1,
+        cancel_requested: false,
+        report_ready: false,
+        error_code: null,
       }),
     });
   });
@@ -551,32 +566,54 @@ test('private audit workspace is noindexed and shows bounded background progress
   await expect(page.getByRole('button', { name: 'Cancel audit' })).toBeVisible();
 });
 
-test('private audit report distinguishes technical evidence from AI interpretation', async ({ page }) => {
+test('private audit report distinguishes technical evidence from AI interpretation', async ({
+  page,
+}) => {
   const id = '7b7f1234-5678-4678-9876-111122223334';
   await page.route('**/api/v1/internal/audits', async (route) => {
     await route.fulfill({
-      status: 202, contentType: 'application/json',
+      status: 202,
+      contentType: 'application/json',
       body: JSON.stringify({
-        id, status: 'completed', progress_step: 'completed', progress_percent: 100,
-        attempts: 1, cancel_requested: false, report_ready: true, error_code: null,
+        id,
+        status: 'completed',
+        progress_step: 'completed',
+        progress_percent: 100,
+        attempts: 1,
+        cancel_requested: false,
+        report_ready: true,
+        error_code: null,
       }),
     });
   });
   await page.route('**/api/v1/internal/audits/' + id + '/report', async (route) => {
     await route.fulfill({
-      status: 200, contentType: 'application/json',
+      status: 200,
+      contentType: 'application/json',
       body: JSON.stringify({
-        status: 'completed', scope: 'One verified page', uncertainty: 'No deeper crawl',
-        findings: [{
-          finding_id: 'seo:abc', severity: 'error', affected_url: 'https://example.org/audit',
-          summary: 'Missing title', evidence_quote: '<script>alert(1)</script>',
-          evidence_ref: 'title:0', correction: 'Add a descriptive title',
-        }],
-        recommendations: [{
-          finding_id: 'seo:abc', affected_url: 'https://example.org/audit',
-          advice: 'Consider a specific descriptive title',
-          supporting_quote: 'title missing', requires_human_approval: true,
-        }],
+        status: 'completed',
+        scope: 'One verified page',
+        uncertainty: 'No deeper crawl',
+        findings: [
+          {
+            finding_id: 'seo:abc',
+            severity: 'error',
+            affected_url: 'https://example.org/audit',
+            summary: 'Missing title',
+            evidence_quote: '<script>alert(1)</script>',
+            evidence_ref: 'title:0',
+            correction: 'Add a descriptive title',
+          },
+        ],
+        recommendations: [
+          {
+            finding_id: 'seo:abc',
+            affected_url: 'https://example.org/audit',
+            advice: 'Consider a specific descriptive title',
+            supporting_quote: 'title missing',
+            requires_human_approval: true,
+          },
+        ],
       }),
     });
   });

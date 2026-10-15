@@ -13,8 +13,16 @@ from redis.exceptions import RedisError
 from sqlalchemy.orm import Session
 
 from aiseoonline_api.agents.execution import (
-    JobConflict, JobUnavailable, JobView, authorized_job, cancel_job, create_job,
-    development_access, estimated_allocation, reserve_daily_budget, view,
+    JobConflict,
+    JobUnavailable,
+    JobView,
+    authorized_job,
+    cancel_job,
+    create_job,
+    development_access,
+    estimated_allocation,
+    reserve_daily_budget,
+    view,
 )
 from aiseoonline_api.agents.models import AuditReport, AuditRequest
 from aiseoonline_api.config import Settings
@@ -41,7 +49,8 @@ def _engine(request: Request):
 
 @router.post("/internal/audits", response_model=JobView, status_code=202)
 async def enqueue(
-    request: Request, body: CreateAudit,
+    request: Request,
+    body: CreateAudit,
     idempotency_key: str = Header(..., alias="Idempotency-Key"),
 ) -> JobView | JSONResponse:
     if not _access(request):
@@ -51,23 +60,27 @@ async def enqueue(
     if owner is None or _engine(request) is None:
         return error_response(request, 503, "service_unavailable", "Audits unavailable.")
     request_data = AuditRequest(
-        project_id=body.project_id, owner_id=owner, url=body.url,
-        max_tools=2, max_model_calls=3, max_seconds=45,
+        project_id=body.project_id,
+        owner_id=owner,
+        url=body.url,
+        max_tools=2,
+        max_model_calls=3,
+        max_seconds=45,
         use_private_rag=False,
     )
     allocation = estimated_allocation(settings)
     if allocation is None:
         return error_response(
-            request, 503, "audit_budget_unavailable",
+            request,
+            503,
+            "audit_budget_unavailable",
             "The audit provider and cost limits are not configured.",
         )
     try:
         with Session(_engine(request)) as session, session.begin():
             job, created = create_job(session, request=request_data, key=idempotency_key)
             if created:
-                remaining = await asyncio.to_thread(
-                    reserve_daily_budget, settings, allocation
-                )
+                remaining = await asyncio.to_thread(reserve_daily_budget, settings, allocation)
                 if remaining != 1:
                     raise RuntimeError("audit_budget_reached")
             identifier = job.id
@@ -79,7 +92,9 @@ async def enqueue(
     except RuntimeError as exc:
         if str(exc) == "audit_budget_reached":
             return error_response(
-                request, 429, "audit_limit_reached",
+                request,
+                429,
+                "audit_limit_reached",
                 "The daily audit request or spending allocation is exhausted.",
             )
         return error_response(request, 503, "service_unavailable", "Audit queue unavailable.")
@@ -89,13 +104,16 @@ async def enqueue(
         try:
             await asyncio.to_thread(
                 create_celery_app(settings).send_task,
-                "aiseoonline.audit.execute", args=[str(identifier)],
+                "aiseoonline.audit.execute",
+                args=[str(identifier)],
                 task_id=str(identifier),
             )
         except Exception:
             # A committed queued job will be retried by the periodic recovery sweep.
             return error_response(
-                request, 503, "queue_pending",
+                request,
+                503,
+                "queue_pending",
                 "Audit was recorded but queue dispatch is delayed. Retry with the same key.",
             )
     return result
@@ -145,7 +163,9 @@ def _report(request: Request, job_id: UUID) -> AuditReport | JSONResponse:
         return error_response(request, 404, "not_found", "Audit unavailable.")
     if raw is None:
         return error_response(
-            request, 409, "report_not_ready",
+            request,
+            409,
+            "report_not_ready",
             "The report is not available; check the audit job status.",
         )
     return AuditReport.model_validate(raw)
@@ -169,26 +189,50 @@ def report_csv(request: Request, job_id: UUID) -> Response:
         return result
     data = io.StringIO()
     writer = csv.writer(data)
-    writer.writerow(["kind", "severity", "affected_url", "finding_id",
-                     "summary_or_advice", "evidence", "correction"])
+    writer.writerow(
+        [
+            "kind",
+            "severity",
+            "affected_url",
+            "finding_id",
+            "summary_or_advice",
+            "evidence",
+            "correction",
+        ]
+    )
     for finding in result.findings:
-        writer.writerow([
-            _safe_csv(value) for value in (
-                "deterministic", finding.severity, finding.affected_url,
-                finding.finding_id, finding.summary, finding.evidence_quote,
-                finding.correction,
-            )
-        ])
+        writer.writerow(
+            [
+                _safe_csv(value)
+                for value in (
+                    "deterministic",
+                    finding.severity,
+                    finding.affected_url,
+                    finding.finding_id,
+                    finding.summary,
+                    finding.evidence_quote,
+                    finding.correction,
+                )
+            ]
+        )
     for advice in result.recommendations:
-        writer.writerow([
-            _safe_csv(value) for value in (
-                "ai_interpretation", advice.priority, advice.affected_url,
-                advice.finding_id, advice.advice, advice.supporting_quote,
-                "Human review required",
-            )
-        ])
+        writer.writerow(
+            [
+                _safe_csv(value)
+                for value in (
+                    "ai_interpretation",
+                    advice.priority,
+                    advice.affected_url,
+                    advice.finding_id,
+                    advice.advice,
+                    advice.supporting_quote,
+                    "Human review required",
+                )
+            ]
+        )
     return Response(
-        data.getvalue(), media_type="text/csv; charset=utf-8",
+        data.getvalue(),
+        media_type="text/csv; charset=utf-8",
         headers={
             "Content-Disposition": f'attachment; filename="audit-{job_id}.csv"',
             "Cache-Control": "no-store",
@@ -202,17 +246,30 @@ def report_html(request: Request, job_id: UUID) -> Response:
     if isinstance(result, JSONResponse):
         return result
     rows = "".join(
-        "<article><h3>" + escape(issue.summary) + "</h3>"
-        + "<p><strong>Severity:</strong> " + escape(issue.severity)
-        + " <strong>URL:</strong> " + escape(issue.affected_url) + "</p>"
-        + "<p><strong>Observed:</strong> " + escape(issue.evidence_quote) + "</p>"
-        + "<p><strong>Correction:</strong> " + escape(issue.correction) + "</p></article>"
+        "<article><h3>"
+        + escape(issue.summary)
+        + "</h3>"
+        + "<p><strong>Severity:</strong> "
+        + escape(issue.severity)
+        + " <strong>URL:</strong> "
+        + escape(issue.affected_url)
+        + "</p>"
+        + "<p><strong>Observed:</strong> "
+        + escape(issue.evidence_quote)
+        + "</p>"
+        + "<p><strong>Correction:</strong> "
+        + escape(issue.correction)
+        + "</p></article>"
         for issue in result.findings
     )
     recommendations = "".join(
         "<article><h3>AI interpretation — human approval required</h3>"
-        + "<p>" + escape(advice.advice) + "</p>"
-        + "<p>Supporting quote: " + escape(advice.supporting_quote) + "</p></article>"
+        + "<p>"
+        + escape(advice.advice)
+        + "</p>"
+        + "<p>Supporting quote: "
+        + escape(advice.supporting_quote)
+        + "</p></article>"
         for advice in result.recommendations
     )
     html = (
@@ -225,13 +282,17 @@ def report_html(request: Request, job_id: UUID) -> Response:
         "padding:1rem;margin:1rem 0;border-radius:.5rem}h1{color:#153849}</style>"
         "</head><body><h1>Private SEO audit</h1><p>Scope: one verified page only. "
         "Search rankings are not guaranteed. No website changes were made.</p>"
-        "<h2>Observed technical findings</h2>" + (rows or "<p>No findings.</p>")
+        "<h2>Observed technical findings</h2>"
+        + (rows or "<p>No findings.</p>")
         + "<h2>AI interpretations (not verified facts)</h2>"
         + (recommendations or "<p>No AI recommendations.</p>")
-        + "<p>Uncertainty: " + escape(result.uncertainty) + "</p></body></html>"
+        + "<p>Uncertainty: "
+        + escape(result.uncertainty)
+        + "</p></body></html>"
     )
     return HTMLResponse(
-        html, headers={
+        html,
+        headers={
             "Cache-Control": "no-store",
             "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'",
             "X-Content-Type-Options": "nosniff",

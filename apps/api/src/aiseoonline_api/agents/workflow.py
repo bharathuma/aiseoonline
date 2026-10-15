@@ -8,8 +8,7 @@ import hashlib
 import json
 import re
 from collections.abc import Callable
-from typing import Any
-from typing import Literal, TypedDict
+from typing import Any, Literal, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 from pydantic import ValidationError
@@ -160,6 +159,7 @@ class AuditAgent:
             ("analyze", self._analyze),
             ("finish", self._finish),
         ):
+
             def wrap(node: Any, step: str) -> Any:
                 async def guarded(state: AuditState) -> dict[str, object]:
                     if self.on_step:
@@ -397,7 +397,10 @@ class AuditAgent:
         return {"report": report, "trace": tuple(report.trace)}
 
     async def run(
-        self, request: AuditRequest, *, checkpointer: Any = None,
+        self,
+        request: AuditRequest,
+        *,
+        checkpointer: Any = None,
         thread_id: str | None = None,
     ) -> AuditReport:
         state: AuditState = {
@@ -412,7 +415,9 @@ class AuditAgent:
         # Reauthorize on every execution, including checkpoint recovery.
         normalize_url(request.url)
         self.authorize(request)
-        graph = self._graph_builder.compile(checkpointer=checkpointer) if checkpointer else self.graph
+        graph = (
+            self._graph_builder.compile(checkpointer=checkpointer) if checkpointer else self.graph
+        )
         config = {"recursion_limit": 14, "configurable": {"thread_id": thread_id or ""}}
         initial: AuditState | None = state
         if checkpointer is not None:

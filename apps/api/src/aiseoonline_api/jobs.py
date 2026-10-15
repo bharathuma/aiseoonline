@@ -7,9 +7,8 @@ from sqlalchemy.orm import Session
 
 from aiseoonline_api.agents.execution import overdue_jobs
 from aiseoonline_api.agents.runner import execute_audit_job
-from aiseoonline_api.db.session import create_database_engine
-
 from aiseoonline_api.config import Settings
+from aiseoonline_api.db.session import create_database_engine
 
 
 def create_celery_app(settings: Settings) -> Celery:

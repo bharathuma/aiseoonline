@@ -4,20 +4,28 @@ import asyncio
 import os
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from aiseoonline_api.agents.adapters import project_authorizer
 from aiseoonline_api.agents.execution import (
-    JobConflict, JobUnavailable, authorized_job, cancel_job, claim_job, complete_job,
-    create_job, overdue_jobs, touch_job,
+    JobConflict,
+    JobUnavailable,
+    authorized_job,
+    cancel_job,
+    claim_job,
+    complete_job,
+    create_job,
+    overdue_jobs,
+    touch_job,
 )
 from aiseoonline_api.agents.models import (
-    AgentDraft, AuditRequest, ToolChoice,
+    AgentDraft,
+    AuditRequest,
+    ToolChoice,
 )
 from aiseoonline_api.agents.runner import execute_audit_job
 from aiseoonline_api.agents.workflow import AuditAgent
@@ -26,8 +34,6 @@ from aiseoonline_api.config import Settings
 from aiseoonline_api.crawler import PageSnapshot, parse_html
 from aiseoonline_api.db.models import AuditJob, Project, SeoFinding, User
 from aiseoonline_api.db.session import create_database_engine
-from aiseoonline_api.main import create_app
-from aiseoonline_api.rag.store import RagAccessDenied
 
 TARGET = "https://example.org/audit"
 HTML = (
@@ -39,9 +45,13 @@ HTML = (
 def snapshot(url: str) -> PageSnapshot:
     content = HTML.encode()
     return PageSnapshot(
-        requested_url=url, final_url=url,
-        captured_at=datetime.now(UTC), http_status=200,
-        content_bytes=len(content), redirects=(), html=parse_html(content, url),
+        requested_url=url,
+        final_url=url,
+        captured_at=datetime.now(UTC),
+        http_status=200,
+        content_bytes=len(content),
+        redirects=(),
+        html=parse_html(content, url),
     )
 
 
@@ -58,17 +68,23 @@ class AuditFixtureModel:
         else:
             raise AssertionError("Unexpected model call")
         return ModelResult(
-            value=value, model="test-fixture", cost_usd=Decimal(0),
+            value=value,
+            model="test-fixture",
+            cost_usd=Decimal(0),
             usage=TokenUsage(input_tokens=100, output_tokens=20, total_tokens=120),
-            prompt_id=request.template_id, prompt_version=request.template_version,
+            prompt_id=request.template_id,
+            prompt_version=request.template_version,
         )
 
 
 def options(url: str) -> Settings:
     return Settings(
-        _env_file=None, environment="test",
-        database_url=url, redis_url=os.environ.get("AISEO_TEST_REDIS_URL"),
-        audit_jobs_enabled=True, audit_dev_token="dev-only-" + "x" * 48,
+        _env_file=None,
+        environment="test",
+        database_url=url,
+        redis_url=os.environ.get("AISEO_TEST_REDIS_URL"),
+        audit_jobs_enabled=True,
+        audit_dev_token="dev-only-" + "x" * 48,
         audit_dev_owner_id=uuid4(),
     )
 
@@ -88,28 +104,42 @@ def test_job_workflow_cancellation_duplicates_reports_and_cross_project_access(
     other_project_id = uuid4()
     try:
         with Session(engine) as session, session.begin():
-            session.add_all([
-                User(id=owner_id, email=f"audit-owner-{uuid4().hex}@example.test"),
-                User(id=stranger_id, email=f"audit-stranger-{uuid4().hex}@example.test"),
-            ])
+            session.add_all(
+                [
+                    User(id=owner_id, email=f"audit-owner-{uuid4().hex}@example.test"),
+                    User(id=stranger_id, email=f"audit-stranger-{uuid4().hex}@example.test"),
+                ]
+            )
             session.flush()
-            session.add_all([
-                Project(
-                    id=project_id, owner_id=owner_id, domain="example.org",
-                    verification_status="verified",
-                ),
-                Project(
-                    id=other_project_id, owner_id=stranger_id, domain="example.org",
-                    verification_status="verified",
-                ),
-            ])
+            session.add_all(
+                [
+                    Project(
+                        id=project_id,
+                        owner_id=owner_id,
+                        domain="example.org",
+                        verification_status="verified",
+                    ),
+                    Project(
+                        id=other_project_id,
+                        owner_id=stranger_id,
+                        domain="example.org",
+                        verification_status="verified",
+                    ),
+                ]
+            )
         request = AuditRequest(
-            project_id=project_id, owner_id=owner_id, url=TARGET,
-            max_tools=1, max_model_calls=2, max_seconds=45,
+            project_id=project_id,
+            owner_id=owner_id,
+            url=TARGET,
+            max_tools=1,
+            max_model_calls=2,
+            max_seconds=45,
         )
         with Session(engine) as session, session.begin():
             job, created = create_job(
-                session, request=request, key="fixture-unique-abc123",
+                session,
+                request=request,
+                key="fixture-unique-abc123",
             )
             assert created
             job_id = job.id
@@ -118,7 +148,8 @@ def test_job_workflow_cancellation_duplicates_reports_and_cross_project_access(
             assert not created and same.id == job_id
             with pytest.raises(JobConflict):
                 create_job(
-                    session, request=request.model_copy(update={"max_tools": 0}),
+                    session,
+                    request=request.model_copy(update={"max_tools": 0}),
                     key="fixture-unique-abc123",
                 )
             with pytest.raises(JobUnavailable):
@@ -131,14 +162,23 @@ def test_job_workflow_cancellation_duplicates_reports_and_cross_project_access(
             return snapshot(url)
 
         result = execute_audit_job(
-            job_id, settings=settings, provider_factory=lambda _: fixture, fetch=fetch,
+            job_id,
+            settings=settings,
+            provider_factory=lambda _: fixture,
+            fetch=fetch,
         )
         assert result == "completed"
         assert fixture.calls > 0
         assert calls["fetch"] == 1
-        assert execute_audit_job(
-            job_id, settings=settings, provider_factory=lambda _: fixture, fetch=fetch,
-        ) == "not_claimed"
+        assert (
+            execute_audit_job(
+                job_id,
+                settings=settings,
+                provider_factory=lambda _: fixture,
+                fetch=fetch,
+            )
+            == "not_claimed"
+        )
         assert calls["fetch"] == 1
         with Session(engine) as session:
             record = authorized_job(session, job_id, owner_id)
@@ -160,9 +200,15 @@ def test_job_workflow_cancellation_duplicates_reports_and_cross_project_access(
             cancelled_id = to_cancel.id
             cancelled = cancel_job(session, cancelled_id, owner_id)
             assert cancelled.status == "cancelled"
-        assert execute_audit_job(
-            cancelled_id, settings=settings, provider_factory=lambda _: fixture, fetch=fetch,
-        ) == "not_claimed"
+        assert (
+            execute_audit_job(
+                cancelled_id,
+                settings=settings,
+                provider_factory=lambda _: fixture,
+                fetch=fetch,
+            )
+            == "not_claimed"
+        )
         with Session(engine) as session, session.begin():
             stale, _ = create_job(session, request=request, key="lease-expired-123")
             lease_id = stale.id
@@ -219,13 +265,18 @@ def test_persistent_langgraph_checkpoint_resumes_without_refetching() -> None:
             session.add(User(id=owner_id, email=f"checkpoint-{uuid4().hex}@example.test"))
             session.add(
                 Project(
-                    id=project_id, owner_id=owner_id, domain="example.org",
+                    id=project_id,
+                    owner_id=owner_id,
+                    domain="example.org",
                     verification_status="verified",
                 )
             )
         req = AuditRequest(
-            project_id=project_id, owner_id=owner_id, url=TARGET,
-            max_tools=0, max_model_calls=1,
+            project_id=project_id,
+            owner_id=owner_id,
+            url=TARGET,
+            max_tools=0,
+            max_model_calls=1,
         )
         calls = {"fetch": 0, "checks": 0}
 
@@ -246,22 +297,27 @@ def test_persistent_langgraph_checkpoint_resumes_without_refetching() -> None:
                 with Session(engine) as session:
                     first = AuditAgent(
                         authorize=project_authorizer(session),
-                        llm=AuditFixtureModel(), fetch=fetch, on_step=interrupted,
+                        llm=AuditFixtureModel(),
+                        fetch=fetch,
+                        on_step=interrupted,
                     )
                     with pytest.raises(RuntimeError, match="checkpoint interruption"):
                         await first.run(req, checkpointer=checkpoint, thread_id=thread_id)
                     second = AuditAgent(
                         authorize=project_authorizer(session),
-                        llm=AuditFixtureModel(), fetch=fetch,
+                        llm=AuditFixtureModel(),
+                        fetch=fetch,
                     )
                     report = await second.run(req, checkpointer=checkpoint, thread_id=thread_id)
                     assert report.status == "completed"
                     assert report.findings
                     assert calls["fetch"] == 1
                     assert calls["checks"] == 1
-                    assert await second.run(
-                        req, checkpointer=checkpoint, thread_id=thread_id
-                    ) == report
+                    assert (
+                        await second.run(req, checkpointer=checkpoint, thread_id=thread_id)
+                        == report
+                    )
+
         asyncio.run(verify())
     finally:
         with Session(engine) as session, session.begin():

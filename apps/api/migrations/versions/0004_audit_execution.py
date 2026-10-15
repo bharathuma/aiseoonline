@@ -19,19 +19,30 @@ def upgrade() -> None:
     op.add_column("audit_jobs", sa.Column("idempotency_key", sa.String(96), nullable=True))
     op.add_column("audit_jobs", sa.Column("request_data", sa.JSON(), nullable=True))
     op.add_column("audit_jobs", sa.Column("report_data", sa.JSON(), nullable=True))
-    op.add_column("audit_jobs", sa.Column("progress_step", sa.String(32), nullable=False,
-                                           server_default="queued"))
-    op.add_column("audit_jobs", sa.Column("progress_percent", sa.Integer(), nullable=False,
-                                           server_default="0"))
-    op.add_column("audit_jobs", sa.Column("attempts", sa.Integer(), nullable=False,
-                                           server_default="0"))
+    op.add_column(
+        "audit_jobs",
+        sa.Column("progress_step", sa.String(32), nullable=False, server_default="queued"),
+    )
+    op.add_column(
+        "audit_jobs",
+        sa.Column("progress_percent", sa.Integer(), nullable=False, server_default="0"),
+    )
+    op.add_column(
+        "audit_jobs", sa.Column("attempts", sa.Integer(), nullable=False, server_default="0")
+    )
     op.add_column("audit_jobs", sa.Column("started_at", sa.DateTime(timezone=True)))
     op.add_column("audit_jobs", sa.Column("finished_at", sa.DateTime(timezone=True)))
     op.add_column("audit_jobs", sa.Column("lease_expires_at", sa.DateTime(timezone=True)))
-    op.add_column("audit_jobs", sa.Column("cancel_requested", sa.Boolean(), nullable=False,
-                                           server_default=sa.false()))
+    op.add_column(
+        "audit_jobs",
+        sa.Column("cancel_requested", sa.Boolean(), nullable=False, server_default=sa.false()),
+    )
     op.create_foreign_key(
-        "fk_audit_jobs_owner", "audit_jobs", "users", ["owner_id"], ["id"],
+        "fk_audit_jobs_owner",
+        "audit_jobs",
+        "users",
+        ["owner_id"],
+        ["id"],
         ondelete="CASCADE",
     )
     op.create_unique_constraint(
@@ -59,8 +70,17 @@ def downgrade() -> None:
     op.drop_constraint("uq_audit_project_idempotency", "audit_jobs", type_="unique")
     op.drop_constraint("fk_audit_jobs_owner", "audit_jobs", type_="foreignkey")
     for name in (
-        "cancel_requested", "lease_expires_at", "finished_at", "started_at",
-        "attempts", "progress_percent", "progress_step", "report_data",
-        "request_data", "idempotency_key", "requested_url", "owner_id",
+        "cancel_requested",
+        "lease_expires_at",
+        "finished_at",
+        "started_at",
+        "attempts",
+        "progress_percent",
+        "progress_step",
+        "report_data",
+        "request_data",
+        "idempotency_key",
+        "requested_url",
+        "owner_id",
     ):
         op.drop_column("audit_jobs", name)

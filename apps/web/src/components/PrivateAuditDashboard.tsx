@@ -12,11 +12,21 @@ type AuditStatus = {
   error_code: string | null;
 };
 type Finding = {
-  finding_id: string; severity: string; summary: string; affected_url: string;
-  evidence_quote: string; evidence_ref: string; correction: string;
+  finding_id: string;
+  severity: string;
+  summary: string;
+  affected_url: string;
+  evidence_quote: string;
+  evidence_ref: string;
+  correction: string;
 };
-type Recommendation = { finding_id: string; affected_url: string; advice: string;
-  supporting_quote: string; requires_human_approval: boolean };
+type Recommendation = {
+  finding_id: string;
+  affected_url: string;
+  advice: string;
+  supporting_quote: string;
+  requires_human_approval: boolean;
+};
 type Report = {
   status: string;
   findings: Finding[];
@@ -24,7 +34,14 @@ type Report = {
   uncertainty: string;
   scope: string;
 };
-const FINISHED = ['completed', 'partial', 'insufficient_evidence', 'cancelled', 'failed', 'timed_out'];
+const FINISHED = [
+  'completed',
+  'partial',
+  'insufficient_evidence',
+  'cancelled',
+  'failed',
+  'timed_out',
+];
 
 export default function PrivateAuditDashboard() {
   const [token, setToken] = useState('');
@@ -43,7 +60,8 @@ export default function PrivateAuditDashboard() {
 
   async function api(path: string, options: RequestInit = {}) {
     const response = await fetch('/api/v1/internal/audits' + path, {
-      ...options, headers: headers(options.headers as Record<string, string> | undefined),
+      ...options,
+      headers: headers(options.headers as Record<string, string> | undefined),
       cache: 'no-store',
     });
     if (!response.ok) {
@@ -61,7 +79,7 @@ export default function PrivateAuditDashboard() {
       if (current.current !== id) return;
       try {
         const response = await api('/' + encodeURIComponent(id));
-        const state = await response.json() as AuditStatus;
+        const state = (await response.json()) as AuditStatus;
         if (current.current === id) setJob(state);
       } catch {
         if (current.current === id) setError('Unable to refresh progress. Try again.');
@@ -73,17 +91,26 @@ export default function PrivateAuditDashboard() {
   useEffect(() => {
     if (!job?.report_ready || !token) return;
     let stopped = false;
-    api('/' + encodeURIComponent(job.id) + '/report').then(async (response) => {
-      const value = await response.json() as Report;
-      if (!stopped) setReport(value);
-    }).catch(() => { if (!stopped) setError('Report retrieval is unavailable.'); });
-    return () => { stopped = true; };
+    api('/' + encodeURIComponent(job.id) + '/report')
+      .then(async (response) => {
+        const value = (await response.json()) as Report;
+        if (!stopped) setReport(value);
+      })
+      .catch(() => {
+        if (!stopped) setError('Report retrieval is unavailable.');
+      });
+    return () => {
+      stopped = true;
+    };
   }, [job?.id, job?.report_ready, token]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
-    setBusy(true); setError(''); setJob(null); setReport(null);
+    setBusy(true);
+    setError('');
+    setJob(null);
+    setReport(null);
     try {
       const idem = key || crypto.randomUUID();
       setKey(idem);
@@ -92,7 +119,7 @@ export default function PrivateAuditDashboard() {
         headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idem },
         body: JSON.stringify({ project_id: projectId, url }),
       });
-      const state = await result.json() as AuditStatus;
+      const state = (await result.json()) as AuditStatus;
       current.current = state.id;
       setJob(state);
     } catch (err) {
@@ -106,8 +133,10 @@ export default function PrivateAuditDashboard() {
     if (!job) return;
     try {
       const result = await api('/' + job.id + '/cancel', { method: 'POST' });
-      setJob(await result.json() as AuditStatus);
-    } catch { setError('Unable to cancel audit.'); }
+      setJob((await result.json()) as AuditStatus);
+    } catch {
+      setError('Unable to cancel audit.');
+    }
   }
 
   async function exportReport(ext: 'json' | 'csv' | 'html') {
@@ -118,27 +147,53 @@ export default function PrivateAuditDashboard() {
       const body = await response.blob();
       const download = document.createElement('a');
       const objectUrl = URL.createObjectURL(body);
-      download.href = objectUrl; download.download = 'audit-' + job.id + '.' + ext;
+      download.href = objectUrl;
+      download.download = 'audit-' + job.id + '.' + ext;
       download.click();
       setTimeout(() => URL.revokeObjectURL(objectUrl), 500);
-    } catch { setError('Unable to download the report.'); }
+    } catch {
+      setError('Unable to download the report.');
+    }
   }
 
   return (
     <div className="space-y-6">
       <form onSubmit={submit} className="surface-card space-y-4">
-        <label htmlFor="audit-dev-token" className="form-label">Local development audit token</label>
-        <input id="audit-dev-token" className="form-input" type="password"
-          autoComplete="off" value={token} required
-          onChange={(e) => setToken(e.target.value)} />
-        <label htmlFor="audit-project-id" className="form-label">Verified project UUID</label>
-        <input id="audit-project-id" className="form-input" required value={projectId}
+        <label htmlFor="audit-dev-token" className="form-label">
+          Local development audit token
+        </label>
+        <input
+          id="audit-dev-token"
+          className="form-input"
+          type="password"
+          autoComplete="off"
+          value={token}
+          required
+          onChange={(e) => setToken(e.target.value)}
+        />
+        <label htmlFor="audit-project-id" className="form-label">
+          Verified project UUID
+        </label>
+        <input
+          id="audit-project-id"
+          className="form-input"
+          required
+          value={projectId}
           onChange={(e) => setProjectId(e.target.value)}
-          placeholder="00000000-0000-4000-8000-000000000000" />
-        <label htmlFor="audit-target-url" className="form-label">Single public page URL</label>
-        <input id="audit-target-url" className="form-input" required type="url"
-          value={url} onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://example.org/page" />
+          placeholder="00000000-0000-4000-8000-000000000000"
+        />
+        <label htmlFor="audit-target-url" className="form-label">
+          Single public page URL
+        </label>
+        <input
+          id="audit-target-url"
+          className="form-input"
+          required
+          type="url"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://example.org/page"
+        />
         <button className="ui-button ui-button-primary" disabled={busy}>
           {busy ? 'Scheduling…' : 'Start private audit'}
         </button>
@@ -148,7 +203,11 @@ export default function PrivateAuditDashboard() {
           session's component state, not written to storage.
         </p>
       </form>
-      {error && <div role="alert" className="status-notice status-error">{error}</div>}
+      {error && (
+        <div role="alert" className="status-notice status-error">
+          {error}
+        </div>
+      )}
       {job && (
         <section className="surface-card space-y-4" aria-label="Audit progress">
           <h2 className="text-xl font-bold">Audit status: {job.status.replaceAll('_', ' ')}</h2>
@@ -156,18 +215,26 @@ export default function PrivateAuditDashboard() {
             Step: {job.progress_step.replaceAll('_', ' ')} · Attempt {job.attempts}
           </p>
           <label htmlFor="audit-progress">Progress: {job.progress_percent}%</label>
-          <progress id="audit-progress" value={job.progress_percent} max={100}
-            className="block w-full" />
+          <progress
+            id="audit-progress"
+            value={job.progress_percent}
+            max={100}
+            className="block w-full"
+          />
           <p className="break-all text-xs text-slate-600">Job identifier: {job.id}</p>
           {!FINISHED.includes(job.status) && (
-            <button type="button" className="ui-button ui-button-outline"
-              onClick={cancel} disabled={job.cancel_requested}>
+            <button
+              type="button"
+              className="ui-button ui-button-outline"
+              onClick={cancel}
+              disabled={job.cancel_requested}
+            >
               {job.cancel_requested ? 'Cancellation requested' : 'Cancel audit'}
             </button>
           )}
-          {job.error_code && <p className="text-sm text-slate-700">
-            Safe status detail: {job.error_code}
-          </p>}
+          {job.error_code && (
+            <p className="text-sm text-slate-700">Safe status detail: {job.error_code}</p>
+          )}
         </section>
       )}
       {report && (
@@ -178,9 +245,12 @@ export default function PrivateAuditDashboard() {
             <p className="text-sm text-slate-700">{report.uncertainty}</p>
             <div className="flex flex-wrap gap-3">
               {(['json', 'csv', 'html'] as const).map((format) => (
-                <button key={format} type="button"
+                <button
+                  key={format}
+                  type="button"
                   className="ui-button ui-button-outline ui-button-small"
-                  onClick={() => exportReport(format)}>
+                  onClick={() => exportReport(format)}
+                >
                   Download {format.toUpperCase()}
                 </button>
               ))}
@@ -193,7 +263,9 @@ export default function PrivateAuditDashboard() {
               <h4 className="font-bold">{finding.summary}</h4>
               <p className="text-sm">Severity: {finding.severity}</p>
               <p className="break-all text-sm">Page: {finding.affected_url}</p>
-              <p className="text-sm">Evidence: {finding.evidence_quote} ({finding.evidence_ref})</p>
+              <p className="text-sm">
+                Evidence: {finding.evidence_quote} ({finding.evidence_ref})
+              </p>
               <p className="text-sm">Suggested correction: {finding.correction}</p>
             </article>
           ))}

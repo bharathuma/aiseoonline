@@ -13,7 +13,10 @@ from sqlalchemy.orm import Session
 
 from aiseoonline_api.agents.adapters import project_authorizer
 from aiseoonline_api.agents.execution import (
-    JobCancelled, claim_job, complete_job, touch_job,
+    JobCancelled,
+    claim_job,
+    complete_job,
+    touch_job,
 )
 from aiseoonline_api.agents.models import AuditReport
 from aiseoonline_api.agents.workflow import AuditAgent
@@ -25,8 +28,13 @@ logger = logging.getLogger("aiseoonline.audit")
 
 
 async def _execute(
-    job_id: UUID, *, settings: Settings, engine: Engine,
-    request, attempt: int, provider: LLMProvider,
+    job_id: UUID,
+    *,
+    settings: Settings,
+    engine: Engine,
+    request,
+    attempt: int,
+    provider: LLMProvider,
     fetch: Callable | None = None,
 ) -> AuditReport:
     checkpoint_url = settings.require_database_url().replace(
@@ -49,13 +57,13 @@ async def _execute(
                 fetch=fetch,
                 on_step=on_step,
             )
-            return await agent.run(
-                request, checkpointer=saver, thread_id=f"audit:{job_id}"
-            )
+            return await agent.run(request, checkpointer=saver, thread_id=f"audit:{job_id}")
 
 
 def execute_audit_job(
-    job_id: UUID, *, settings: Settings | None = None,
+    job_id: UUID,
+    *,
+    settings: Settings | None = None,
     provider_factory: Callable[[Settings], LLMProvider] | None = None,
     fetch: Callable | None = None,
 ) -> str:
@@ -114,13 +122,18 @@ def execute_audit_job(
                 async def run() -> AuditReport:
                     async with asyncio.timeout(remaining):
                         return await _execute(
-                            job_id, settings=resolved, engine=engine,
-                            request=request, attempt=attempt, provider=provider, fetch=fetch,
+                            job_id,
+                            settings=resolved,
+                            engine=engine,
+                            request=request,
+                            attempt=attempt,
+                            provider=provider,
+                            fetch=fetch,
                         )
 
                 report = asyncio.run(run())
                 outcome = report.status
-        except (TimeoutError, asyncio.TimeoutError):
+        except TimeoutError:
             outcome = "timed_out"
         except JobCancelled:
             outcome = "cancelled"
