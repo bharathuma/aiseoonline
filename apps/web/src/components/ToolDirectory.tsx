@@ -100,7 +100,8 @@ export default function ToolDirectory() {
                 </h3>
                 <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">{tool.summary}</p>
                 <span className="mt-6 text-sm font-semibold text-teal-800">
-                  {tool.status === 'available' ? 'Open free tool' : 'Read about this tool'} <span aria-hidden="true">↗</span>
+                  {tool.status === 'available' ? 'Open free tool' : 'Read about this tool'}{' '}
+                  <span aria-hidden="true">↗</span>
                 </span>
               </article>
             </li>

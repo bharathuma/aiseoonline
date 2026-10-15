@@ -56,8 +56,11 @@ export default function PublicToolForm({ kind }: { kind: ToolKind }) {
         throw new Error('Enter a public HTTP or HTTPS URL without credentials.');
       }
     } catch (exception) {
-      setError(exception instanceof Error && exception.message.startsWith('Enter ')
-        ? exception.message : 'Enter a complete public URL such as ' + spec.example);
+      setError(
+        exception instanceof Error && exception.message.startsWith('Enter ')
+          ? exception.message
+          : 'Enter a complete public URL such as ' + spec.example,
+      );
       return;
     }
     setLoading(true);
@@ -81,9 +84,13 @@ export default function PublicToolForm({ kind }: { kind: ToolKind }) {
       }
       setResult(report);
     } catch (exception) {
-      setError(exception instanceof Error && exception.name === 'AbortError'
-        ? 'The check timed out. Please try again later.'
-        : exception instanceof Error ? exception.message : 'The check failed.');
+      setError(
+        exception instanceof Error && exception.name === 'AbortError'
+          ? 'The check timed out. Please try again later.'
+          : exception instanceof Error
+            ? exception.message
+            : 'The check failed.',
+      );
     } finally {
       clearTimeout(abort);
       setLoading(false);
@@ -92,9 +99,11 @@ export default function PublicToolForm({ kind }: { kind: ToolKind }) {
 
   function exportReport() {
     if (!result) return;
-    const objectUrl = URL.createObjectURL(new Blob([JSON.stringify(result, null, 2)], {
-      type: 'application/json',
-    }));
+    const objectUrl = URL.createObjectURL(
+      new Blob([JSON.stringify(result, null, 2)], {
+        type: 'application/json',
+      }),
+    );
     const anchor = document.createElement('a');
     anchor.href = objectUrl;
     anchor.download = kind + '-report.json';
@@ -115,11 +124,22 @@ export default function PublicToolForm({ kind }: { kind: ToolKind }) {
   return (
     <div className="space-y-6">
       <form onSubmit={submit} className="surface-card" aria-label="Run free SEO check">
-        <label htmlFor={'tool-url-' + kind} className="form-label">{spec.label}</label>
-        <input id={'tool-url-' + kind} className="form-input" type="url"
-          required maxLength={2048} autoComplete="url" spellCheck={false}
-          placeholder={spec.example} value={url} disabled={loading}
-          onChange={(event) => setUrl(event.target.value)} />
+        <label htmlFor={'tool-url-' + kind} className="form-label">
+          {spec.label}
+        </label>
+        <input
+          id={'tool-url-' + kind}
+          className="form-input"
+          type="url"
+          required
+          maxLength={2048}
+          autoComplete="url"
+          spellCheck={false}
+          placeholder={spec.example}
+          value={url}
+          disabled={loading}
+          onChange={(event) => setUrl(event.target.value)}
+        />
         <p className="mt-3 text-sm leading-6 text-slate-600">{spec.hint}</p>
         <div className="mt-5 flex flex-wrap items-center gap-4">
           <button className="ui-button ui-button-primary" type="submit" disabled={loading}>
@@ -129,10 +149,16 @@ export default function PublicToolForm({ kind }: { kind: ToolKind }) {
         </div>
       </form>
       <div aria-live="polite" aria-atomic="true">
-        {loading && <p role="status" className="rounded-xl bg-teal-50 p-4 font-medium text-teal-900">
-          Fetching the requested resource. This can take up to 20 seconds.
-        </p>}
-        {error && <p role="alert" className="status-notice status-error">{error}</p>}
+        {loading && (
+          <p role="status" className="rounded-xl bg-teal-50 p-4 font-medium text-teal-900">
+            Fetching the requested resource. This can take up to 20 seconds.
+          </p>
+        )}
+        {error && (
+          <p role="alert" className="status-notice status-error">
+            {error}
+          </p>
+        )}
       </div>
       {result && (
         <section aria-label="SEO check results" className="surface-card space-y-6">
@@ -141,13 +167,25 @@ export default function PublicToolForm({ kind }: { kind: ToolKind }) {
               <p className="eyebrow">Actual website response</p>
               <h2 className="mt-2 text-2xl font-bold">Check complete</h2>
               <p className="mt-2 break-all text-sm text-slate-600">{result.final_url}</p>
-              <p className="mt-1 text-xs text-slate-500">Checked {new Date(result.checked_at).toLocaleString()}</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Checked {new Date(result.checked_at).toLocaleString()}
+              </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button className="ui-button ui-button-outline ui-button-small" type="button"
-                onClick={copyReport}>{copied ? 'Copied' : 'Copy JSON'}</button>
-              <button className="ui-button ui-button-outline ui-button-small" type="button"
-                onClick={exportReport}>Download JSON</button>
+              <button
+                className="ui-button ui-button-outline ui-button-small"
+                type="button"
+                onClick={copyReport}
+              >
+                {copied ? 'Copied' : 'Copy JSON'}
+              </button>
+              <button
+                className="ui-button ui-button-outline ui-button-small"
+                type="button"
+                onClick={exportReport}
+              >
+                Download JSON
+              </button>
             </div>
           </div>
           <div>
@@ -159,8 +197,13 @@ export default function PublicToolForm({ kind }: { kind: ToolKind }) {
                     {key.replaceAll('_', ' ')}
                   </dt>
                   <dd className="mt-2 break-words text-sm text-slate-900">
-                    {Array.isArray(value) ? (value.length ? value.join(', ') : 'None found') :
-                      value === null || value === '' ? 'Not found' : String(value)}
+                    {Array.isArray(value)
+                      ? value.length
+                        ? value.join(', ')
+                        : 'None found'
+                      : value === null || value === ''
+                        ? 'Not found'
+                        : String(value)}
                   </dd>
                 </div>
               ))}
@@ -170,7 +213,8 @@ export default function PublicToolForm({ kind }: { kind: ToolKind }) {
             <h3 className="text-lg font-bold">Findings ({result.issues.length})</h3>
             {result.issues.length === 0 ? (
               <p role="status" className="mt-3 rounded-xl bg-teal-50 p-4 text-teal-900">
-                No issues found by this checker. It does not guarantee search-engine indexing or rankings.
+                No issues found by this checker. It does not guarantee search-engine indexing or
+                rankings.
               </p>
             ) : (
               <ul className="mt-4 space-y-3">
@@ -179,7 +223,9 @@ export default function PublicToolForm({ kind }: { kind: ToolKind }) {
                     <span className="category-label">{item.severity}</span>
                     <h4 className="mt-2 font-semibold text-slate-900">{item.message}</h4>
                     <p className="mt-2 text-sm text-slate-700">{item.recommendation}</p>
-                    <p className="mt-2 break-all text-xs text-slate-500">Evidence: {item.evidence}</p>
+                    <p className="mt-2 break-all text-xs text-slate-500">
+                      Evidence: {item.evidence}
+                    </p>
                   </li>
                 ))}
               </ul>

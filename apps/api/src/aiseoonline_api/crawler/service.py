@@ -130,7 +130,8 @@ class CrawlSession:
                     deadline=deadline,
                     connect_timeout=self.limits.connect_timeout,
                     dns_timeout=self.limits.dns_timeout,
-                    allowed_mime=allowed_mime or ("text/html", "application/xhtml+xml", "text/plain"),
+                    allowed_mime=allowed_mime
+                    or ("text/html", "application/xhtml+xml", "text/plain"),
                 )
             finally:
                 self._previous_request = time.monotonic()
@@ -215,19 +216,27 @@ class CrawlSession:
             robots_url = normalize_url(f"{self.seed.scheme}://{host}/robots.txt")
             if kind == "robots":
                 final, document, redirects = self._request(
-                    robots_url, deadline=deadline,
+                    robots_url,
+                    deadline=deadline,
                     byte_budget=self.limits.max_robots_bytes,
                     allowed_mime=("text/plain", "text/html"),
                 )
                 if document.status not in (200, 404, 410):
                     raise HttpStatusError(document.status)
                 return TextResource(
-                    robots_url.value, final.value, document.status,
-                    document.content_type, document.charset, document.body, redirects
+                    robots_url.value,
+                    final.value,
+                    document.status,
+                    document.content_type,
+                    document.charset,
+                    document.body,
+                    redirects,
                 )
 
             _, robots, _ = self._request(
-                robots_url, deadline=deadline, byte_budget=self.limits.max_robots_bytes,
+                robots_url,
+                deadline=deadline,
+                byte_budget=self.limits.max_robots_bytes,
                 allowed_mime=("text/plain",),
             )
             if robots.status in (404, 410):
@@ -242,8 +251,11 @@ class CrawlSession:
             else:
                 raise RobotsDenied("robots.txt cannot be checked")
             final, document, redirects = self._request(
-                self.seed, deadline=deadline, byte_budget=min(self.limits.max_bytes, 524288),
-                allowed_by_robots=rules, crawl_delay=crawl_delay,
+                self.seed,
+                deadline=deadline,
+                byte_budget=min(self.limits.max_bytes, 524288),
+                allowed_by_robots=rules,
+                crawl_delay=crawl_delay,
                 allowed_mime=("application/xml", "text/xml", "application/rss+xml", "text/plain"),
             )
             if document.status >= 400:
@@ -251,6 +263,11 @@ class CrawlSession:
             if document.status != 200:
                 raise InvalidPage("Sitemap did not return HTTP 200")
             return TextResource(
-                self.seed.value, final.value, document.status,
-                document.content_type, document.charset, document.body, redirects
+                self.seed.value,
+                final.value,
+                document.status,
+                document.content_type,
+                document.charset,
+                document.body,
+                redirects,
             )

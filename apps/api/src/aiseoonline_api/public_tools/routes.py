@@ -60,9 +60,9 @@ def _check_quota(url: str, peer: str, redis_url: str) -> bool:
     ip_hash = hashlib.sha256(peer.encode()).hexdigest()
     host_hash = hashlib.sha256(host.encode()).hexdigest()
     with Redis.from_url(redis_url, socket_connect_timeout=0.6, socket_timeout=0.6) as client:
-        return bool(client.eval(
-            _LIMIT_SCRIPT, 2, f"seo:ip:{ip_hash}", f"seo:site:{host_hash}", 12, 120
-        ))
+        return bool(
+            client.eval(_LIMIT_SCRIPT, 2, f"seo:ip:{ip_hash}", f"seo:site:{host_hash}", 12, 120)
+        )
 
 
 async def reserve_budget(request: Request, url: str) -> bool | None:
@@ -79,11 +79,16 @@ async def reserve_budget(request: Request, url: str) -> bool | None:
 async def execute(request: Request, body: UrlInput, tool: Tool) -> ToolReport | JSONResponse:
     permitted = await reserve_budget(request, body.url)
     if permitted is None:
-        return error_response(request, 503, "service_unavailable",
-                              "Public checks are temporarily unavailable.")
+        return error_response(
+            request, 503, "service_unavailable", "Public checks are temporarily unavailable."
+        )
     if not permitted:
-        response = error_response(request, 429, "rate_limited",
-                                  "Free checks are limited to 12/hour per visitor and 120/hour per site.")
+        response = error_response(
+            request,
+            429,
+            "rate_limited",
+            "Free checks are limited to 12/hour per visitor and 120/hour per site.",
+        )
         response.headers["Retry-After"] = "3600"
         return response
     fn = {"robots": check_robots, "sitemap": check_sitemap, "meta": check_meta}[tool]
@@ -93,25 +98,27 @@ async def execute(request: Request, body: UrlInput, tool: Tool) -> ToolReport | 
             async with slots:
                 return await asyncio.to_thread(fn, body.url)
     except UnsafeTarget:
-        return error_response(request, 400, "unsafe_target",
-                              "The destination must be a public HTTP(S) site.")
+        return error_response(
+            request, 400, "unsafe_target", "The destination must be a public HTTP(S) site."
+        )
     except RobotsDenied:
-        return error_response(request, 403, "robots_denied",
-                              "The site does not permit this check.")
+        return error_response(request, 403, "robots_denied", "The site does not permit this check.")
     except CrawlLimitExceeded:
-        return error_response(request, 413, "crawl_limit",
-                              "The site exceeds this free check's resource limits.")
+        return error_response(
+            request, 413, "crawl_limit", "The site exceeds this free check's resource limits."
+        )
     except (CrawlTimeout, TimeoutError):
         return error_response(request, 504, "site_timeout", "The site did not respond in time.")
     except HttpStatusError as exc:
-        return error_response(request, 502, "site_http_error",
-                              f"The website returned HTTP {exc.status_code}.")
+        return error_response(
+            request, 502, "site_http_error", f"The website returned HTTP {exc.status_code}."
+        )
     except NetworkFailure:
-        return error_response(request, 502, "site_unreachable",
-                              "The website could not be reached.")
+        return error_response(request, 502, "site_unreachable", "The website could not be reached.")
     except (InvalidPage, ValueError):
-        return error_response(request, 422, "invalid_document",
-                              "The fetched document cannot be analyzed safely.")
+        return error_response(
+            request, 422, "invalid_document", "The fetched document cannot be analyzed safely."
+        )
     except CrawlError:
         return error_response(request, 502, "crawl_failed", "The site could not be checked.")
 

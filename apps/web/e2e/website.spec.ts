@@ -106,10 +106,15 @@ test('meta checker submits input and displays evidence from API', async ({ page 
         final_url: 'https://example.org/',
         checked_at: '2026-10-15T12:00:00Z',
         facts: { title: 'Fixture title', descriptions: ['Real page text'] },
-        issues: [{
-          code: 'title.length', severity: 'info', message: 'Review page title length',
-          recommendation: 'Write a descriptive title.', evidence: 'title#1: Fixture title',
-        }],
+        issues: [
+          {
+            code: 'title.length',
+            severity: 'info',
+            message: 'Review page title length',
+            recommendation: 'Write a descriptive title.',
+            evidence: 'title#1: Fixture title',
+          },
+        ],
       }),
     });
   });
@@ -125,7 +130,8 @@ test('meta checker submits input and displays evidence from API', async ({ page 
 test('public checker surfaces quota errors without claiming success', async ({ page }) => {
   await page.route('**/api/v1/tools/robots', async (route) => {
     await route.fulfill({
-      status: 429, contentType: 'application/json',
+      status: 429,
+      contentType: 'application/json',
       body: JSON.stringify({
         error: { code: 'rate_limited', message: 'Too many checks. Try again later.' },
         request_id: 'abc',
@@ -140,9 +146,7 @@ test('public checker surfaces quota errors without claiming success', async ({ p
 });
 
 test('all three live tool pages are indexable and have forms', async ({ page }) => {
-  for (const slug of [
-    'robots-txt-validator', 'xml-sitemap-validator', 'meta-tag-checker',
-  ]) {
+  for (const slug of ['robots-txt-validator', 'xml-sitemap-validator', 'meta-tag-checker']) {
     await page.goto('/tools/' + slug + '/');
     await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Run free check' })).toBeVisible();

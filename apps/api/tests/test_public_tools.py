@@ -18,14 +18,19 @@ from aiseoonline_api.public_tools import checks, routes
 
 def resource(body: bytes, kind: str = "text/plain", status: int = 200) -> SimpleNamespace:
     return SimpleNamespace(
-        body=body, requested_url="https://example.org/sitemap.xml",
-        final_url="https://example.org/sitemap.xml", status=status,
-        content_type=kind, charset="utf-8", redirects=()
+        body=body,
+        requested_url="https://example.org/sitemap.xml",
+        final_url="https://example.org/sitemap.xml",
+        status=status,
+        content_type=kind,
+        charset="utf-8",
+        redirects=(),
     )
 
 
-def fake_session(monkeypatch: pytest.MonkeyPatch, content: bytes, *,
-                 mime: str = "text/plain", status: int = 200) -> None:
+def fake_session(
+    monkeypatch: pytest.MonkeyPatch, content: bytes, *, mime: str = "text/plain", status: int = 200
+) -> None:
     class Session:
         def __init__(self, url: str) -> None:
             self.url = url
@@ -39,7 +44,10 @@ def fake_session(monkeypatch: pytest.MonkeyPatch, content: bytes, *,
 def test_robots_reports_lines_and_syntax_but_not_claimed_crawler_behavior(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    fake_session(monkeypatch, b"Disallow: /tmp\nUser-agent: *\nDisallow: /private\nBad line\nHost: example.org\n")
+    fake_session(
+        monkeypatch,
+        b"Disallow: /tmp\nUser-agent: *\nDisallow: /private\nBad line\nHost: example.org\n",
+    )
     result = checks.check_robots("https://example.org/")
     assert result.facts["directives"] == 4
     assert result.facts["user_agents"] == ["*"]
@@ -90,11 +98,14 @@ def test_sitemap_index_is_not_recursively_fetched(monkeypatch: pytest.MonkeyPatc
     assert result.facts["children_fetched"] is False
 
 
-@pytest.mark.parametrize("xml", [
-    b"<urlset><url>",
-    b"<!DOCTYPE a [<!ENTITY e SYSTEM 'file:///etc/passwd'>]><urlset/>",
-    b"<unknown/>",
-])
+@pytest.mark.parametrize(
+    "xml",
+    [
+        b"<urlset><url>",
+        b"<!DOCTYPE a [<!ENTITY e SYSTEM 'file:///etc/passwd'>]><urlset/>",
+        b"<unknown/>",
+    ],
+)
 def test_sitemap_invalid_xml_is_rejected(monkeypatch: pytest.MonkeyPatch, xml: bytes) -> None:
     fake_session(monkeypatch, xml, mime="application/xml")
     with pytest.raises(ValueError):
@@ -105,12 +116,16 @@ def test_meta_uses_real_snapshot_and_rule_engine(monkeypatch: pytest.MonkeyPatch
     html = parse_html(
         b'<html><head><title>Hi</title><meta name="description" '
         b'content="Evidence from fixture"/></head><body><h1>Headline</h1></body></html>',
-        "https://example.org/"
+        "https://example.org/",
     )
     snapshot = PageSnapshot(
-        requested_url="https://example.org/", final_url="https://example.org/",
-        captured_at=datetime.now(UTC), http_status=200, redirects=(),
-        content_bytes=150, html=html,
+        requested_url="https://example.org/",
+        final_url="https://example.org/",
+        captured_at=datetime.now(UTC),
+        http_status=200,
+        redirects=(),
+        content_bytes=150,
+        html=html,
     )
 
     class Session:
@@ -137,11 +152,17 @@ def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     return TestClient(create_app(Settings(_env_file=None, environment="test")))
 
 
-@pytest.mark.parametrize("bad", [
-    "http://127.0.0.1/", "http://169.254.169.254/latest/",
-    "file:///etc/passwd", "https://example.org:8080/", "http://localhost/",
-    "https://user:pass@example.org/"
-])
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "http://127.0.0.1/",
+        "http://169.254.169.254/latest/",
+        "file:///etc/passwd",
+        "https://example.org:8080/",
+        "http://localhost/",
+        "https://user:pass@example.org/",
+    ],
+)
 def test_api_rejects_unsafe_urls_before_network(client: TestClient, bad: str) -> None:
     result = client.post("/api/v1/tools/meta", json={"url": bad})
     assert result.status_code == 422
@@ -149,14 +170,22 @@ def test_api_rejects_unsafe_urls_before_network(client: TestClient, bad: str) ->
 
 
 @pytest.mark.parametrize("path", ["robots", "sitemap", "meta"])
-def test_api_exposes_real_typed_routes(client: TestClient, monkeypatch: pytest.MonkeyPatch,
-                                      path: str) -> None:
+def test_api_exposes_real_typed_routes(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, path: str
+) -> None:
     fake = lambda url: checks.ToolReport(
-        tool=path, requested_url=url, final_url=url,
-        checked_at=datetime.now(UTC), facts={"observed": 1}, issues=[]
+        tool=path,
+        requested_url=url,
+        final_url=url,
+        checked_at=datetime.now(UTC),
+        facts={"observed": 1},
+        issues=[],
     )
-    monkeypatch.setattr(routes, {"robots": "check_robots", "sitemap": "check_sitemap",
-                                 "meta": "check_meta"}[path], fake)
+    monkeypatch.setattr(
+        routes,
+        {"robots": "check_robots", "sitemap": "check_sitemap", "meta": "check_meta"}[path],
+        fake,
+    )
     result = client.post(f"/api/v1/tools/{path}", json={"url": "https://example.org/"})
     assert result.status_code == 200
     assert result.json()["facts"] == {"observed": 1}
@@ -192,6 +221,7 @@ def test_rate_limit_produces_429_and_retry_after(
 def test_ssrf_fails_at_url_parser_before_any_transport() -> None:
     with pytest.raises(UnsafeTarget):
         from aiseoonline_api.crawler import normalize_url
+
         normalize_url("http://10.0.0.4/")
 
 
@@ -205,9 +235,11 @@ class LiveFixture(BaseHTTPRequestHandler):
         elif self.path == "/sitemap.xml":
             body, kind = self.sitemap, "application/xml"
         elif self.path == "/page":
-            body = (b"<html><head><title>Fixture page</title>"
-                    b'<meta name="description" content="Fixture description"></head>'
-                    b"<body><h1>Heading</h1></body></html>")
+            body = (
+                b"<html><head><title>Fixture page</title>"
+                b'<meta name="description" content="Fixture description"></head>'
+                b"<body><h1>Heading</h1></body></html>"
+            )
             kind = "text/html"
         else:
             self.send_response(404)
@@ -256,16 +288,18 @@ def live_site(monkeypatch: pytest.MonkeyPatch) -> Iterator[ThreadingHTTPServer]:
 
 
 def test_three_public_tools_really_fetch_and_parse_local_fixture(
-    client: TestClient, live_site: ThreadingHTTPServer,
+    client: TestClient,
+    live_site: ThreadingHTTPServer,
 ) -> None:
     for path, expected_key, expected in (
         ("robots", "directives", 2),
         ("sitemap", "entries", 3),
         ("meta", "title", "Fixture page"),
     ):
-        url = "https://example.org/" if path == "robots" else (
-            "http://example.org/page" if path == "meta" else
-            "http://example.org/sitemap.xml"
+        url = (
+            "https://example.org/"
+            if path == "robots"
+            else ("http://example.org/page" if path == "meta" else "http://example.org/sitemap.xml")
         )
         if path == "robots":
             url = "http://example.org/"
@@ -275,7 +309,8 @@ def test_three_public_tools_really_fetch_and_parse_local_fixture(
 
 
 def test_robot_disallow_rejects_page_without_fetching_it(
-    client: TestClient, live_site: ThreadingHTTPServer,
+    client: TestClient,
+    live_site: ThreadingHTTPServer,
 ) -> None:
     live_site.RequestHandlerClass.robots = b"User-agent: *\nDisallow: /page\n"
     response = client.post("/api/v1/tools/meta", json={"url": "http://example.org/page"})
@@ -284,11 +319,10 @@ def test_robot_disallow_rejects_page_without_fetching_it(
 
 
 def test_oversized_xml_is_rejected_before_parse(
-    client: TestClient, live_site: ThreadingHTTPServer,
+    client: TestClient,
+    live_site: ThreadingHTTPServer,
 ) -> None:
     live_site.RequestHandlerClass.sitemap = b"x" * 525000
-    response = client.post(
-        "/api/v1/tools/sitemap", json={"url": "http://example.org/sitemap.xml"}
-    )
+    response = client.post("/api/v1/tools/sitemap", json={"url": "http://example.org/sitemap.xml"})
     assert response.status_code == 413
     assert response.json()["error"]["code"] == "crawl_limit"
