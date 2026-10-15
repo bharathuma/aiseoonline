@@ -105,7 +105,10 @@ async def validation_error(request: Request, exc: RequestValidationError) -> JSO
 
 async def unexpected_error(request: Request, exc: Exception) -> JSONResponse:
     # Never log exception text, body, headers, query string or full stack traces.
-    logger.error("Unhandled API failure")
+    logger.error(
+        "Unhandled API failure for request_id=%s",
+        getattr(request.state, "request_id", "unavailable"),
+    )
     return error_response(
         request,
         500,
