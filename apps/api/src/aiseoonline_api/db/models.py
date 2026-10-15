@@ -55,12 +55,31 @@ class Project(Base):
 
 class AuditJob(Base):
     __tablename__ = "audit_jobs"
+    __table_args__ = (
+        UniqueConstraint("project_id", "idempotency_key", name="uq_audit_project_idempotency"),
+        Index("ix_audit_jobs_leases", "status", "lease_expires_at"),
+        CheckConstraint("progress_percent BETWEEN 0 AND 100", name="ck_audit_progress_percent"),
+    )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     project_id: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), index=True
     )
     status: Mapped[str] = mapped_column(String(24), nullable=False, server_default="queued")
+    owner_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE")
+    )
+    requested_url: Mapped[str | None] = mapped_column(Text)
+    idempotency_key: Mapped[str | None] = mapped_column(String(96))
+    request_data: Mapped[dict | None] = mapped_column(JSON)
+    report_data: Mapped[dict | None] = mapped_column(JSON)
+    progress_step: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
+    progress_percent: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cancel_requested: Mapped[bool] = mapped_column(default=False, nullable=False)
     error_message: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -91,7 +110,10 @@ class Page(Base):
 
 class SeoFinding(Base):
     __tablename__ = "seo_findings"
-    __table_args__ = (Index("ix_findings_audit_severity", "audit_job_id", "severity"),)
+    __table_args__ = (
+        Index("ix_findings_audit_severity", "audit_job_id", "severity"),
+        UniqueConstraint("audit_job_id", "finding_key", name="uq_audit_finding_key"),
+    )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     audit_job_id: Mapped[UUID] = mapped_column(
@@ -101,6 +123,10 @@ class SeoFinding(Base):
         Uuid(as_uuid=True), ForeignKey("pages.id", ondelete="SET NULL")
     )
     rule_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    finding_key: Mapped[str | None] = mapped_column(String(100))
+    affected_url: Mapped[str | None] = mapped_column(Text)
+    correction: Mapped[str | None] = mapped_column(Text)
+    evidence_ref: Mapped[str | None] = mapped_column(String(120))
     severity: Mapped[str] = mapped_column(String(20), nullable=False)
     summary: Mapped[str] = mapped_column(Text, nullable=False)
     evidence: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
