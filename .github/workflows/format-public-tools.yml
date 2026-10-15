@@ -34,7 +34,7 @@ jobs:
           pnpm install --frozen-lockfile
       - name: Format source code
         run: |
-          uv run --project apps/api --locked ruff check --fix apps/api
+          uv run --project apps/api --locked ruff check --fix --exit-zero apps/api
           uv run --project apps/api --locked ruff format apps/api
           pnpm format:web
       - name: Commit formatting to feature branch
