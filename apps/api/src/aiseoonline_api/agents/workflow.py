@@ -10,6 +10,7 @@ import re
 from collections.abc import Callable
 from typing import Any, Literal, TypedDict
 
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from pydantic import ValidationError
 
@@ -418,7 +419,9 @@ class AuditAgent:
         graph = (
             self._graph_builder.compile(checkpointer=checkpointer) if checkpointer else self.graph
         )
-        config = {"recursion_limit": 14, "configurable": {"thread_id": thread_id or ""}}
+        config: RunnableConfig = {
+            "recursion_limit": 14, "configurable": {"thread_id": thread_id or ""}
+        }
         initial: AuditState | None = state
         if checkpointer is not None:
             if not thread_id:
