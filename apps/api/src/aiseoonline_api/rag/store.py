@@ -3,7 +3,6 @@
 Callers supply a SQLAlchemy Session and own commit/rollback. No public API route exists.
 """
 
-from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 from urllib.parse import urlsplit
@@ -49,9 +48,19 @@ class SearchHit(BaseModel):
 
 
 class RagStore:
-    def __init__(self, session: Session, embedding: EmbeddingProvider) -> None:
+    def __init__(
+        self, session: Session, embedding: EmbeddingProvider, *,
+        chunk_size: int = 750, overlap: int = 90, max_chunks: int = 24,
+    ) -> None:
+        if not (200 <= chunk_size <= 2000 and 0 <= overlap < chunk_size // 2):
+            raise ValueError("Invalid RAG chunk settings")
+        if not 1 <= max_chunks <= 24:
+            raise ValueError("RAG chunk count exceeds ingestion budget")
         self.session = session
         self.embedding = embedding
+        self.chunk_size = chunk_size
+        self.overlap = overlap
+        self.max_chunks = max_chunks
         if embedding.spec.dimensions != DIMENSIONS:
             raise ValueError("Embedding provider dimensions incompatible with vector index")
 
@@ -103,7 +112,10 @@ class RagStore:
         if sum(len(s.text) for s in snapshot.html.content_sections) > 18000:
             raise RagContentError("Page exceeds cleaned-content ingestion limit")
         try:
-            chunks = chunks_from_sections(snapshot.html.content_sections)
+            chunks = chunks_from_sections(
+                snapshot.html.content_sections, size=self.chunk_size,
+                overlap=self.overlap, max_chunks=self.max_chunks,
+            )
         except ValueError as exc:
             raise RagContentError("Snapshot cannot fit the chunk budget") from exc
         body = "\n".join(
