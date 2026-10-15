@@ -632,6 +632,10 @@ test('private audit report distinguishes technical evidence from AI interpretati
 
 test('private audit retries reuse a key while separate audits receive new keys', async ({ page }) => {
   const submittedKeys: string[] = [];
+  const completedIds = [
+    '7b7f1234-5678-4678-9876-111122223335',
+    '7b7f1234-5678-4678-9876-111122223336',
+  ];
   let requests = 0;
   await page.route('**/api/v1/internal/audits', async (route) => {
     requests++;
@@ -650,9 +654,7 @@ test('private audit retries reuse a key while separate audits receive new keys',
       status: 202,
       contentType: 'application/json',
       body: JSON.stringify({
-        id: requests === 2
-          ? '7b7f1234-5678-4678-9876-111122223335'
-          : '7b7f1234-5678-4678-9876-111122223336',
+        id: completedIds[requests - 2],
         status: 'completed',
         progress_step: 'completed',
         progress_percent: 100,
@@ -676,7 +678,7 @@ test('private audit retries reuse a key while separate audits receive new keys',
 
   await page.getByLabel('Single public page URL').fill('https://example.org/another-page');
   await submit.click();
-  await expect(page.getByRole('heading', { name: 'Audit status: completed' })).toBeVisible();
+  await expect(page.getByText('Job identifier: ' + completedIds[1])).toBeVisible();
   expect(submittedKeys).toHaveLength(3);
   expect(submittedKeys[0]).toBeTruthy();
   expect(submittedKeys[0]).toBe(submittedKeys[1]);
