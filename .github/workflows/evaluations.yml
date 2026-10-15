@@ -1,0 +1,36 @@
+name: Offline SEO evaluations
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fixtures:
+    name: Reproducible fixture benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+          enable-cache: true
+      - name: Install locked evaluator dependencies
+        run: uv sync --project apps/api --locked --group dev
+      - name: Run offline evaluations
+        run: |
+          uv run --project apps/api --locked python -m aiseoonline_api.evaluation --output apps/api/evaluations/reports/current.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("apps/api/evaluations/reports/current.json").read_text())
+          print("MEASURED_EVALUATION_REPORT|" + json.dumps(report, separators=(",", ":"), sort_keys=True))
+          PY
+      - name: Preserve measured report
+        uses: actions/upload-artifact@v4
+        with:
+          name: offline-evaluation-report
+          path: apps/api/evaluations/reports/current.json
+          retention-days: 30

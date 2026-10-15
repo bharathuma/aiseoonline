@@ -1,0 +1,222 @@
+{
+  "version": "seo-evaluation-v1",
+  "license": "CC0-1.0",
+  "provenance": "Synthetic fictional SEO pages authored for offline evaluation; no crawler output or private content.",
+  "documents": [
+    {
+      "id": "robots",
+      "title": "Robots access",
+      "url": "https://example.org/docs/robots",
+      "text": "A robots.txt Disallow directive requests that cooperating crawlers avoid matching paths. It does not provide access control or guarantee removal from search results."
+    },
+    {
+      "id": "canonical",
+      "title": "Canonical hints",
+      "url": "https://example.org/docs/canonicals",
+      "text": "A rel canonical link identifies a preferred URL among duplicates. Search engines may choose a different canonical because the directive is a hint."
+    },
+    {
+      "id": "description",
+      "title": "Meta description",
+      "url": "https://example.org/docs/descriptions",
+      "text": "A meta description may be used as a search snippet. A missing description can be flagged by a deterministic page audit, but snippet selection belongs to the search engine."
+    },
+    {
+      "id": "headings",
+      "title": "Heading order",
+      "url": "https://example.org/docs/headings",
+      "text": "An H1 introduces the main page topic. Skipped heading levels may make the document outline harder to navigate."
+    },
+    {
+      "id": "jsonld",
+      "title": "JSON-LD validation",
+      "url": "https://example.org/docs/schema",
+      "text": "JSON-LD needs valid JSON syntax. Syntactically valid structured data does not guarantee rich result eligibility."
+    },
+    {
+      "id": "sitemap",
+      "title": "Sitemap scope",
+      "url": "https://example.org/docs/sitemaps",
+      "text": "An XML sitemap lists candidate URLs for discovery. Sitemap inclusion is not a guarantee of indexing."
+    }
+  ],
+  "retrieval": [
+    {
+      "id": "ret-robots",
+      "query": "does robots disallow protect sensitive content",
+      "expected_ids": [
+        "robots"
+      ],
+      "semantic_ids": [
+        "robots",
+        "description",
+        "sitemap"
+      ],
+      "keyword_ids": [
+        "robots",
+        "sitemap",
+        "canonical"
+      ]
+    },
+    {
+      "id": "ret-canonical",
+      "query": "what does rel canonical mean for duplicates",
+      "expected_ids": [
+        "canonical"
+      ],
+      "semantic_ids": [
+        "canonical",
+        "description",
+        "headings"
+      ],
+      "keyword_ids": [
+        "canonical",
+        "sitemap",
+        "robots"
+      ]
+    },
+    {
+      "id": "ret-jsonld",
+      "query": "can valid JSON-LD guarantee rich results",
+      "expected_ids": [
+        "jsonld"
+      ],
+      "semantic_ids": [
+        "jsonld",
+        "sitemap",
+        "description"
+      ],
+      "keyword_ids": [
+        "jsonld",
+        "robots",
+        "headings"
+      ]
+    },
+    {
+      "id": "ret-headings",
+      "query": "skipped heading H1 page navigation",
+      "expected_ids": [
+        "headings"
+      ],
+      "semantic_ids": [
+        "headings",
+        "description",
+        "canonical"
+      ],
+      "keyword_ids": [
+        "headings",
+        "jsonld",
+        "sitemap"
+      ]
+    }
+  ],
+  "rag": [
+    {
+      "id": "rag-supported",
+      "source_id": "description",
+      "statement": "A missing meta description can be flagged by a deterministic audit.",
+      "quote": "A missing description can be flagged by a deterministic page audit",
+      "expected": "accepted",
+      "expected_fact": "missing_description"
+    },
+    {
+      "id": "rag-supported-canonical",
+      "source_id": "canonical",
+      "statement": "Search engines may choose a different canonical because it is a hint.",
+      "quote": "Search engines may choose a different canonical because the directive is a hint",
+      "expected": "accepted",
+      "expected_fact": "canonical_hint"
+    },
+    {
+      "id": "rag-unknown-citation",
+      "source_id": "made-up",
+      "statement": "The canonical signal may be ignored by some search engines.",
+      "quote": "A rel canonical link identifies a preferred URL",
+      "expected": "rejected",
+      "expected_fact": "invalid_citation"
+    },
+    {
+      "id": "rag-invented-quote",
+      "source_id": "robots",
+      "statement": "Robots files encrypt private information on the website.",
+      "quote": "Robots files encrypt private information",
+      "expected": "rejected",
+      "expected_fact": "unsupported_quote"
+    },
+    {
+      "id": "rag-made-up-number",
+      "source_id": "sitemap",
+      "statement": "Every sitemap URL is indexed within 24 hours.",
+      "quote": "Sitemap inclusion is not a guarantee of indexing",
+      "expected": "rejected",
+      "expected_fact": "unsupported_number"
+    },
+    {
+      "id": "rag-universal",
+      "source_id": "headings",
+      "statement": "All websites without an H1 lose rankings.",
+      "quote": "An H1 introduces the main page topic",
+      "expected": "rejected",
+      "expected_fact": "unsupported_universal"
+    },
+    {
+      "id": "rag-semantic-overclaim",
+      "source_id": "robots",
+      "statement": "A robots.txt file encrypts sensitive credentials on private servers.",
+      "quote": "A robots.txt Disallow directive requests that cooperating crawlers avoid matching paths",
+      "expected": "rejected",
+      "expected_fact": "semantic_unsupported_claim"
+    }
+  ],
+  "agent": [
+    {
+      "id": "agent-headings",
+      "mode": "success",
+      "tool": "headings",
+      "html": "<html><head><title>Topic page</title></head><body><h1>Overview</h1><h3>Details</h3></body></html>",
+      "expected_status": "completed",
+      "expected_finding": "heading.skipped_level"
+    },
+    {
+      "id": "agent-canonical",
+      "mode": "success",
+      "tool": "canonicals",
+      "html": "<html><head><title>Guide</title><link rel=\"canonical\" href=\"/guide\"></head><body><p>Reference content</p></body></html>",
+      "expected_status": "completed",
+      "expected_finding": "description.missing"
+    },
+    {
+      "id": "agent-unavailable",
+      "mode": "provider_unavailable",
+      "tool": null,
+      "html": "<html><head><title>Guide</title></head><body><h1>Page title</h1></body></html>",
+      "expected_status": "partial",
+      "expected_finding": "description.missing"
+    },
+    {
+      "id": "agent-denied",
+      "mode": "access_denied",
+      "tool": null,
+      "html": "<html><body><h1>Denied site</h1></body></html>",
+      "expected_status": "denied",
+      "expected_finding": null
+    }
+  ],
+  "structured": [
+    {
+      "id": "meta-valid",
+      "kind": "valid",
+      "expected": "accepted"
+    },
+    {
+      "id": "meta-repeated",
+      "kind": "duplicate_title",
+      "expected": "rejected"
+    },
+    {
+      "id": "meta-invented-evidence",
+      "kind": "invented_quote",
+      "expected": "rejected"
+    }
+  ]
+}

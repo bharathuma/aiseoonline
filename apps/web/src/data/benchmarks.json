@@ -1,0 +1,205 @@
+{
+  "case_count": 18,
+  "cases": [
+    {
+      "category": "rrf_fixture",
+      "detail": "supplied_candidate_rankings",
+      "hit_at_1": true,
+      "id": "ret-robots",
+      "matched_expectation": true,
+      "precision_at_3": 0.333333,
+      "recall_at_3": 1
+    },
+    {
+      "category": "rrf_fixture",
+      "detail": "supplied_candidate_rankings",
+      "hit_at_1": true,
+      "id": "ret-canonical",
+      "matched_expectation": true,
+      "precision_at_3": 0.333333,
+      "recall_at_3": 1
+    },
+    {
+      "category": "rrf_fixture",
+      "detail": "supplied_candidate_rankings",
+      "hit_at_1": true,
+      "id": "ret-jsonld",
+      "matched_expectation": true,
+      "precision_at_3": 0.333333,
+      "recall_at_3": 1
+    },
+    {
+      "category": "rrf_fixture",
+      "detail": "supplied_candidate_rankings",
+      "hit_at_1": true,
+      "id": "ret-headings",
+      "matched_expectation": true,
+      "precision_at_3": 0.333333,
+      "recall_at_3": 1
+    },
+    {
+      "category": "rag_guard",
+      "detail": "missing_description",
+      "expected": "accepted",
+      "id": "rag-supported",
+      "matched_expectation": true,
+      "observed": "accepted",
+      "valid_citation": true
+    },
+    {
+      "category": "rag_guard",
+      "detail": "canonical_hint",
+      "expected": "accepted",
+      "id": "rag-supported-canonical",
+      "matched_expectation": true,
+      "observed": "accepted",
+      "valid_citation": true
+    },
+    {
+      "category": "rag_guard",
+      "detail": "invalid_citation",
+      "expected": "rejected",
+      "id": "rag-unknown-citation",
+      "matched_expectation": true,
+      "observed": "rejected",
+      "valid_citation": false
+    },
+    {
+      "category": "rag_guard",
+      "detail": "unsupported_quote",
+      "expected": "rejected",
+      "id": "rag-invented-quote",
+      "matched_expectation": true,
+      "observed": "rejected",
+      "valid_citation": false
+    },
+    {
+      "category": "rag_guard",
+      "detail": "unsupported_number",
+      "expected": "rejected",
+      "id": "rag-made-up-number",
+      "matched_expectation": true,
+      "observed": "rejected",
+      "valid_citation": true
+    },
+    {
+      "category": "rag_guard",
+      "detail": "unsupported_universal",
+      "expected": "rejected",
+      "id": "rag-universal",
+      "matched_expectation": true,
+      "observed": "rejected",
+      "valid_citation": true
+    },
+    {
+      "category": "rag_guard",
+      "detail": "semantic_unsupported_claim",
+      "expected": "rejected",
+      "id": "rag-semantic-overclaim",
+      "matched_expectation": false,
+      "observed": "accepted",
+      "valid_citation": true
+    },
+    {
+      "category": "agent_graph",
+      "detail": "actual_langgraph_execution",
+      "finding_count": 5,
+      "id": "agent-headings",
+      "matched_expectation": true,
+      "status": "completed",
+      "tool_count": 1
+    },
+    {
+      "category": "agent_graph",
+      "detail": "actual_langgraph_execution",
+      "finding_count": 4,
+      "id": "agent-canonical",
+      "matched_expectation": true,
+      "status": "completed",
+      "tool_count": 1
+    },
+    {
+      "category": "agent_graph",
+      "detail": "actual_langgraph_execution",
+      "finding_count": 4,
+      "id": "agent-unavailable",
+      "matched_expectation": true,
+      "status": "partial",
+      "tool_count": 0
+    },
+    {
+      "category": "agent_graph",
+      "detail": "authorization_before_fetch",
+      "id": "agent-denied",
+      "matched_expectation": true,
+      "status": "denied",
+      "tool_count": 0
+    },
+    {
+      "category": "structured_meta",
+      "detail": "actual_schema_and_evidence_review",
+      "id": "meta-valid",
+      "matched_expectation": true,
+      "observed": "accepted"
+    },
+    {
+      "category": "structured_meta",
+      "detail": "actual_schema_and_evidence_review",
+      "id": "meta-repeated",
+      "matched_expectation": true,
+      "observed": "rejected"
+    },
+    {
+      "category": "structured_meta",
+      "detail": "actual_schema_and_evidence_review",
+      "id": "meta-invented-evidence",
+      "matched_expectation": true,
+      "observed": "rejected"
+    }
+  ],
+  "data_policy": "synthetic_only",
+  "dataset_sha256": "649577787ac5083d59dbf85ff603969f101234e174894d1812bc0e88b4ec4c47",
+  "dataset_version": "seo-evaluation-v1",
+  "groups": {
+    "agent_graph": {
+      "cases": 4,
+      "match_rate": 1,
+      "matched": 4
+    },
+    "rag_guard": {
+      "cases": 7,
+      "match_rate": 0.857143,
+      "matched": 6
+    },
+    "rrf_fixture": {
+      "cases": 4,
+      "hit_at_1": 4,
+      "match_rate": 1,
+      "matched": 4,
+      "mean_recall_at_3": 1
+    },
+    "structured_meta": {
+      "cases": 3,
+      "match_rate": 1,
+      "matched": 3
+    }
+  },
+  "measurement_scope": "Real citation verifier, audit graph, metadata validator and RRF fusion using synthetic inputs and scripted decisions; not live-model or DB retrieval quality",
+  "mode": "offline_scripted_fixture",
+  "model": "deterministic-scripted-provider",
+  "paid_calls": 0,
+  "prompt_versions": {
+    "audit_recommendations": "v1",
+    "audit_tool_selection": "v1",
+    "meta_draft": "v1"
+  },
+  "run_at_utc": "2026-10-15T11:53:42Z",
+  "schema_version": 1,
+  "verified": true,
+  "verification": {
+    "source": "GitHub Actions offline evaluation",
+    "run_url": "https://github.com/bharathumashankar/aiseoonline/actions/runs/38730574577",
+    "run_id": 38730574577,
+    "source_commit": "3982562f0f5d33aaa0e01bbad9080e3a08c2a8fc"
+  }
+}
