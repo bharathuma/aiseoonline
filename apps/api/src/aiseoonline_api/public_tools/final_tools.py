@@ -2,7 +2,13 @@
 
 from urllib.parse import urlsplit
 
-from aiseoonline_api.crawler import CrawlLimits, CrawlSession, PageSnapshot, UnsafeTarget, normalize_url
+from aiseoonline_api.crawler import (
+    CrawlLimits,
+    CrawlSession,
+    PageSnapshot,
+    UnsafeTarget,
+    normalize_url,
+)
 from aiseoonline_api.crawler.html import MetaTag
 from aiseoonline_api.public_tools.checks import ToolReport, make_issue
 from aiseoonline_api.seo_core.rules import analyze_page
