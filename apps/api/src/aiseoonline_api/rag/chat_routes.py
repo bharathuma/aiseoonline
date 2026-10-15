@@ -193,7 +193,7 @@ async def chat(request: Request, question: QuestionInput) -> GroundedAnswer | JS
                     project_id=question.project_id,
                     statements=[],
                     sources=[],
-                    uncertainty="No relevant indexed content or completed audit findings were found.",
+                    uncertainty="No relevant indexed content or completed findings were found.",
                 )
             model = make_openai_provider(settings)
             try:
