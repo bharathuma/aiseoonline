@@ -21,9 +21,10 @@ Technical findings will come from deterministic checks. Model-generated suggesti
 - Infrastructure: PostgreSQL/pgvector, Alembic, Redis/Celery, Docker Compose
 - AI infrastructure: optional OpenAI provider adapter, typed responses, budgets and versioned prompts
 - Private RAG foundation: permitted page-section extraction, section-aware chunks, embedding providers, verified-project hybrid PostgreSQL retrieval
-- Planned AI integrations: LangChain/LangGraph agents, evidence-grounded orchestration, and observability
+- Internal agent workflow: verified-owner LangGraph audit with bounded tool selection and source-backed recommendations
+- Planned AI integrations: public authenticated audit jobs and observability
 
-See [development-only RAG assistant](docs/rag-assistant.md), [private hybrid retrieval](docs/rag-retrieval.md), [private RAG ingestion](docs/rag-ingestion.md), [AI meta generator requirements](docs/ai-meta-generator.md), [architecture](docs/architecture.md), [LLM provider configuration](docs/llm-provider.md), and [design decisions](docs/adr/README.md).
+See [private LangGraph audit](docs/langgraph-audit.md), [development-only RAG assistant](docs/rag-assistant.md), [private hybrid retrieval](docs/rag-retrieval.md), [private RAG ingestion](docs/rag-ingestion.md), [AI meta generator requirements](docs/ai-meta-generator.md), [architecture](docs/architecture.md), [LLM provider configuration](docs/llm-provider.md), and [design decisions](docs/adr/README.md).
 
 ## Local development
 
