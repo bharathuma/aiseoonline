@@ -8,7 +8,9 @@ from fastapi import FastAPI
 from aiseoonline_api import __version__
 from aiseoonline_api.config import Settings, get_settings
 from aiseoonline_api.db.session import create_database_engine
+from aiseoonline_api.errors import ERROR_RESPONSES, register_error_handlers
 from aiseoonline_api.logging import configure_logging
+from aiseoonline_api.request_id import RequestIdMiddleware
 from aiseoonline_api.routes.health import router as health_router
 from aiseoonline_api.routes.readiness import router as readiness_router
 
@@ -39,8 +41,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.database_engine = (
         create_database_engine(resolved) if resolved.database_url is not None else None
     )
-    application.include_router(health_router, prefix="/api/v1")
-    application.include_router(readiness_router, prefix="/api/v1")
+    register_error_handlers(application)
+    application.add_middleware(RequestIdMiddleware)
+    application.include_router(health_router, prefix="/api/v1", responses=ERROR_RESPONSES)
+    application.include_router(readiness_router, prefix="/api/v1", responses=ERROR_RESPONSES)
     return application
 
 
