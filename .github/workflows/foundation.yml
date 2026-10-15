@@ -25,7 +25,7 @@ jobs:
       - name: Check Python formatting
         run: uv run --project apps/api --locked ruff format --check apps/api
       - name: Check Python types
-        run: uv run --project apps/api --locked mypy apps/api/src
+        run: uv run --project apps/api --locked mypy --config-file apps/api/pyproject.toml apps/api/src
       - name: Test API with coverage
         run: uv run --project apps/api --locked pytest apps/api/tests -q --cov=aiseoonline_api --cov-report=term-missing --cov-report=xml:apps/api/coverage.xml
       - name: Upload API coverage
