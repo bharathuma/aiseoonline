@@ -36,7 +36,10 @@ from aiseoonline_api.public_tools.checks import (
 )
 
 router = APIRouter(tags=["public SEO tools"])
-Tool = Literal["robots", "sitemap", "meta", "redirects", "canonical", "schema", "headings", "links", "social"]
+Tool = Literal[
+    "robots", "sitemap", "meta", "redirects", "canonical", "schema",
+    "headings", "links", "social"
+]
 _LIMIT_SCRIPT = """
 local a=redis.call('INCR', KEYS[1])
 if a==1 then redis.call('EXPIRE', KEYS[1], 3600) end
