@@ -22,6 +22,11 @@ from aiseoonline_api.crawler import (
     normalize_url,
 )
 from aiseoonline_api.errors import error_response
+from aiseoonline_api.public_tools.advanced import (
+    check_canonical,
+    check_redirects,
+    check_schema,
+)
 from aiseoonline_api.public_tools.checks import (
     ToolReport,
     check_meta,
@@ -30,7 +35,7 @@ from aiseoonline_api.public_tools.checks import (
 )
 
 router = APIRouter(tags=["public SEO tools"])
-Tool = Literal["robots", "sitemap", "meta"]
+Tool = Literal["robots", "sitemap", "meta", "redirects", "canonical", "schema"]
 _LIMIT_SCRIPT = """
 local a=redis.call('INCR', KEYS[1])
 if a==1 then redis.call('EXPIRE', KEYS[1], 3600) end
@@ -91,7 +96,10 @@ async def execute(request: Request, body: UrlInput, tool: Tool) -> ToolReport | 
         )
         response.headers["Retry-After"] = "3600"
         return response
-    fn = {"robots": check_robots, "sitemap": check_sitemap, "meta": check_meta}[tool]
+    fn = {
+        "robots": check_robots, "sitemap": check_sitemap, "meta": check_meta,
+        "redirects": check_redirects, "canonical": check_canonical, "schema": check_schema,
+    }[tool]
     slots: asyncio.Semaphore = request.app.state.public_tool_slots
     try:
         async with asyncio.timeout(16):
