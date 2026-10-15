@@ -173,3 +173,17 @@ async def canonical(request: Request, body: UrlInput) -> ToolReport | JSONRespon
 )
 async def schema(request: Request, body: UrlInput) -> ToolReport | JSONResponse:
     return await execute(request, body, "schema")
+
+@router.post("/tools/headings", response_model=ToolReport, summary="Review HTML heading outline")
+async def headings(request: Request, body: UrlInput) -> ToolReport | JSONResponse:
+    return await execute(request, body, "headings")
+
+
+@router.post("/tools/links", response_model=ToolReport, summary="Check bounded internal links")
+async def links(request: Request, body: UrlInput) -> ToolReport | JSONResponse:
+    return await execute(request, body, "links")
+
+
+@router.post("/tools/social", response_model=ToolReport, summary="Inspect social sharing metadata")
+async def social(request: Request, body: UrlInput) -> ToolReport | JSONResponse:
+    return await execute(request, body, "social")
