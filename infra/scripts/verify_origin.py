@@ -58,6 +58,10 @@ def check(base: str) -> None:
     assert not any("/rag-chat" in key for key in paths)
     status, _, _ = fetch(root + "/api/v1/account/projects")
     assert status == 401
+    status, private_headers, _ = fetch(root + "/internal/audit/")
+    assert status == 200
+    assert "noindex" in header(private_headers, "x-robots-tag")
+    assert "no-store" in header(private_headers, "cache-control")
     status, _, _ = fetch(root + "/_headers")
     assert status == 404, "Static hosting policy must not be served as content"
     print("Local private origin checks passed; Cloudflare edge was not contacted.")

@@ -11,6 +11,7 @@ from aiseoonline_api import __version__
 from aiseoonline_api.accounts import router as account_router
 from aiseoonline_api.agents.routes import router as audit_jobs_router
 from aiseoonline_api.ai_core.meta_routes import router as ai_meta_router
+from aiseoonline_api.analytics import router as analytics_router
 from aiseoonline_api.config import Settings, get_settings
 from aiseoonline_api.db.session import create_database_engine
 from aiseoonline_api.errors import ERROR_RESPONSES, register_error_handlers
@@ -66,6 +67,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.add_middleware(SecurityHeadersMiddleware, settings=resolved)
     application.add_middleware(RequestIdMiddleware)
     application.include_router(account_router, prefix="/api/v1", responses=ERROR_RESPONSES)
+    application.include_router(analytics_router, prefix="/api/v1", responses=ERROR_RESPONSES)
     application.include_router(health_router, prefix="/api/v1", responses=ERROR_RESPONSES)
     application.include_router(public_tools_router, prefix="/api/v1", responses=ERROR_RESPONSES)
     application.include_router(ai_meta_router, prefix="/api/v1", responses=ERROR_RESPONSES)

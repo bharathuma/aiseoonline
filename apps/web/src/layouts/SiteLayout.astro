@@ -20,6 +20,7 @@ const {
 const site = Astro.site ?? new URL('https://aiseoonline.com');
 const canonical = new URL(Astro.url.pathname, site).toString();
 const imageUrl = new URL(image, site).toString();
+const analyticsEnabled = import.meta.env.PUBLIC_AISEO_ANALYTICS_ENABLED === 'true';
 ---
 
 <!doctype html>
@@ -51,5 +52,33 @@ const imageUrl = new URL(image, site).toString();
     <Header pathname={Astro.url.pathname} />
     <main id="main-content"><slot /></main>
     <Footer />
+    <script is:inline define:vars={{ analyticsEnabled }}>
+      if (analyticsEnabled) {
+        (() => {
+          const key = 'aiseo_analytics_choice_v1';
+          let sent = false;
+          const report = () => {
+            if (sent || navigator.doNotTrack === '1') return;
+            try {
+              if (window.localStorage.getItem(key) !== 'allow') return;
+            } catch {
+              return;
+            }
+            sent = true;
+            const path = window.location.pathname;
+            // Only the pathname is transmitted, never queries, referrers or page text.
+            void fetch('/api/v1/analytics/pageview', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ path }),
+              credentials: 'omit',
+              keepalive: true,
+            }).catch(() => {});
+          };
+          report();
+          window.addEventListener('aiseo:analytics-consent', report);
+        })();
+      }
+    </script>
   </body>
 </html>

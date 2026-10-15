@@ -1,14 +1,17 @@
 ---
 import SiteLayout from '../../layouts/SiteLayout.astro';
-import StatusNotice from './StatusNotice.astro';
 import PublicToolForm from '../PublicToolForm.tsx';
 import AiMetaForm from '../AiMetaForm.tsx';
+import AdPlaceholder from '../AdPlaceholder.astro';
+import { toolBySlug, toolPath } from '../toolCatalog';
 import type { ToolPreview } from '../toolCatalog';
+import { toolGuides } from '../toolGuides';
 
 interface Props {
   tool: ToolPreview;
 }
 const { tool } = Astro.props;
+const guide = toolGuides[tool.id];
 const kind =
   tool.id === 'metadata'
     ? 'meta'
@@ -21,16 +24,50 @@ const kind =
         | 'headings'
         | 'links'
         | 'social');
+const related = guide.related
+  .map((slug) => toolBySlug(slug))
+  .filter((value): value is ToolPreview => value !== undefined && value.status === 'available');
+const origin = 'https://aiseoonline.com';
+const url = new URL(toolPath(tool), origin).toString();
+const structured = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Tools', item: origin + '/tools/' },
+      { '@type': 'ListItem', position: 2, name: tool.name, item: url },
+    ],
+  },
+  ...(tool.id !== 'ai-meta'
+    ? [
+        {
+          '@context': 'https://schema.org',
+          '@type': 'WebApplication',
+          name: tool.name,
+          description: guide.description,
+          url,
+          applicationCategory: 'SEO utilities',
+          operatingSystem: 'Web browser',
+          isAccessibleForFree: true,
+          offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+        },
+      ]
+    : []),
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: guide.faqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+    })),
+  },
+];
+const ldJson = JSON.stringify(structured).replace(/</g, '\\u003c');
 ---
 
-<SiteLayout
-  title={(tool.status === 'available' ? 'Free ' : '') + tool.name + ' — AISEOOnline'}
-  description={tool.summary +
-    (tool.status === 'available'
-      ? ' Run a free single-URL check with evidence and clear limitations.'
-      : ' Tool details and availability.')}
-  noindex={tool.status === 'planned'}
->
+<SiteLayout title={guide.title + ' — AISEOOnline'} description={guide.description}>
+  <script slot="head" type="application/ld+json" is:inline set:html={ldJson} />
   <section class="section-space bg-white">
     <div class="site-container max-w-4xl">
       <nav aria-label="Breadcrumb" class="text-sm text-slate-600">
@@ -40,27 +77,20 @@ const kind =
       </nav>
       <p class="eyebrow mt-12">{tool.category}</p>
       <h1 class="section-title mt-3">{tool.name}</h1>
-      <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600">{tool.summary}</p>
+      <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600">{guide.intro}</p>
       <div class="mt-9 max-w-2xl">
+        <p class="mb-5 text-sm leading-7 text-slate-600">
+          {
+            tool.id === 'ai-meta'
+              ? 'Paste your own content or enter a public URL for editable, evidence-checked drafts. AI output requires human review and may be unavailable without model credentials.'
+              : 'Enter one public URL for a bounded check. Results describe observed page evidence; they do not guarantee search engine results.'
+          }
+        </p>
         {
-          tool.status === 'available' ? (
-            <div>
-              <p class="mb-5 text-sm leading-7 text-slate-600">
-                {tool.id === 'ai-meta'
-                  ? 'Paste your own content or enter a public URL to generate editable drafts based on real input. AI output requires human review.'
-                  : 'Enter a public website URL below to run a bounded, one-resource check. Findings describe observable evidence, not guaranteed search rankings.'}
-              </p>
-              {tool.id === 'ai-meta' ? (
-                <AiMetaForm client:load />
-              ) : (
-                <PublicToolForm kind={kind} client:load />
-              )}
-            </div>
+          tool.id === 'ai-meta' ? (
+            <AiMetaForm client:load />
           ) : (
-            <StatusNotice variant="warning" title="Coming soon">
-              This tool is being developed and cannot run checks yet. There is no signup or scan
-              form until it is available.
-            </StatusNotice>
+            <PublicToolForm kind={kind} client:load />
           )
         }
       </div>
@@ -68,9 +98,7 @@ const kind =
   </section>
   <section class="section-space">
     <div class="site-container max-w-4xl">
-      <h2 class="text-2xl font-bold tracking-tight text-slate-950">
-        {tool.status === 'available' ? 'What this tool checks' : 'What this tool will check'}
-      </h2>
+      <h2 class="text-2xl font-bold tracking-tight text-slate-950">What this tool checks</h2>
       <ul class="mt-7 grid gap-4 sm:grid-cols-2">
         {
           tool.details.map((detail) => (
@@ -83,82 +111,67 @@ const kind =
           ))
         }
       </ul>
+      <AdPlaceholder />
+      <h2 class="mt-14 text-2xl font-bold tracking-tight text-slate-950">How to use the checker</h2>
+      <ol class="mt-6 list-decimal space-y-3 pl-6 leading-8 text-slate-700">
+        {guide.steps.map((step) => <li>{step}</li>)}
+      </ol>
+      <section
+        class="mt-12 rounded-xl border border-slate-200 bg-white p-6 sm:p-8"
+        aria-labelledby="example-heading"
+      >
+        <h2 id="example-heading" class="text-2xl font-bold">{guide.example.title}</h2>
+        <p class="mt-4 text-sm font-semibold text-slate-700">Example input</p>
+        <pre
+          class="mt-2 whitespace-pre-wrap break-words rounded-lg bg-slate-100 p-4 text-sm text-slate-800"><code>{guide.example.input}</code></pre>
+        <p class="mt-5 text-sm font-semibold text-slate-700">What to notice</p>
+        <p class="mt-2 leading-7 text-slate-700">{guide.example.finding}</p>
+        <p class="mt-5 text-sm font-semibold text-slate-700">Practical next step</p>
+        <p class="mt-2 leading-7 text-slate-700">{guide.example.action}</p>
+        <p class="mt-4 text-xs text-slate-600">Illustrative example, not a live test result.</p>
+      </section>
+      <h2 class="mt-14 text-2xl font-bold">Troubleshooting</h2>
+      <div class="mt-6 space-y-7">
+        {
+          guide.troubleshooting.map((issue) => (
+            <div>
+              <h3 class="font-semibold text-slate-950">{issue.title}</h3>
+              <p class="mt-2 leading-7 text-slate-700">{issue.body}</p>
+            </div>
+          ))
+        }
+      </div>
+      <h2 class="mt-14 text-2xl font-bold">Limits of this check</h2>
+      <p class="mt-4 leading-8 text-slate-700">{guide.limitations}</p>
+      <h2 class="mt-14 text-2xl font-bold">Frequently asked questions</h2>
+      <div class="mt-6 space-y-7">
+        {
+          guide.faqs.map((faq) => (
+            <div>
+              <h3 class="font-semibold text-slate-950">{faq.question}</h3>
+              <p class="mt-2 leading-7 text-slate-700">{faq.answer}</p>
+            </div>
+          ))
+        }
+      </div>
+      <nav class="mt-14" aria-label="Related SEO tools">
+        <h2 class="text-2xl font-bold">Related checks</h2>
+        <ul class="mt-6 grid gap-4 sm:grid-cols-2">
+          {
+            related.map((item) => (
+              <li class="surface-card">
+                <a href={toolPath(item)} class="inline-link font-semibold">
+                  {item.name} ↗
+                </a>
+                <p class="mt-2 text-sm leading-7 text-slate-600">{item.summary}</p>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
       <div class="mt-10">
         <a href="/tools/" class="inline-link font-semibold">← Browse all SEO tools</a>
       </div>
     </div>
   </section>
-  {
-    tool.status === 'available' && ['headings', 'links', 'social', 'ai-meta'].includes(tool.id) && (
-      <section class="section-space bg-white" aria-labelledby="tool-faq">
-        <div class="site-container max-w-4xl">
-          <h2 id="tool-faq" class="text-2xl font-bold">
-            Frequently asked questions
-          </h2>
-          {tool.id === 'headings' && (
-            <div class="mt-6 space-y-5">
-              <h3 class="font-semibold">Does a page have to use exactly one H1?</h3>
-              <p class="text-slate-700">
-                No. Multiple H1 elements can be valid HTML. Focus on a clear and readable document
-                outline.
-              </p>
-              <h3 class="font-semibold">Are heading levels a ranking rule?</h3>
-              <p class="text-slate-700">
-                No fixed heading count or length guarantees rankings. The checker reports observed
-                order and potential readability issues.
-              </p>
-            </div>
-          )}
-          {tool.id === 'links' && (
-            <div class="mt-6 space-y-5">
-              <h3 class="font-semibold">Does it check every link?</h3>
-              <p class="text-slate-700">
-                No. It classifies extracted anchors but tests only three same-origin destinations
-                within strict budgets. External links are never fetched.
-              </p>
-              <h3 class="font-semibold">What does “not checked” mean?</h3>
-              <p class="text-slate-700">
-                It means the link has not been verified; it does not mean the URL works or is
-                broken.
-              </p>
-            </div>
-          )}
-          {tool.id === 'ai-meta' && (
-            <div class="mt-6 space-y-5">
-              <h3 class="font-semibold">
-                Are 30–60 title characters and 70–160 description characters mandatory?
-              </h3>
-              <p class="text-slate-700">
-                No. They are approximate editorial guidelines, not display limits or ranking
-                factors. Actual snippets depend on pixels, query context, and each search engine.
-              </p>
-              <h3 class="font-semibold">What does the generator read from a URL?</h3>
-              <p class="text-slate-700">
-                Only the public page's fetched title, descriptions, and headings. It cannot inspect
-                private pages or JavaScript-rendered text and never performs a deep scan.
-              </p>
-              <h3 class="font-semibold">Can I publish AI suggestions without checking them?</h3>
-              <p class="text-slate-700">
-                No. Evidence is checked against the submitted text, but AI can still make
-                unsupported claims. Review, edit, and confirm every factual statement.
-              </p>
-            </div>
-          )}
-          {tool.id === 'social' && (
-            <div class="mt-6 space-y-5">
-              <h3 class="font-semibold">Is the preview exactly what social networks show?</h3>
-              <p class="text-slate-700">
-                No. Platforms choose their own text, images, crops and cached data. The preview is
-                an approximation based on HTML fields.
-              </p>
-              <h3 class="font-semibold">Does the checker download social images?</h3>
-              <p class="text-slate-700">
-                No. Image URLs are displayed as text; images and other resources are not fetched.
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
-    )
-  }
 </SiteLayout>
