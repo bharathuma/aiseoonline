@@ -18,9 +18,9 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@astrojs/react": "^5.0.0",
+    "@astrojs/react": "^7.0.1",
     "@tailwindcss/vite": "^4.1.0",
-    "astro": "^6.0.0",
+    "astro": "^7.2.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwindcss": "^4.1.0"
