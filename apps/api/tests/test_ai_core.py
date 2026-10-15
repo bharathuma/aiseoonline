@@ -35,7 +35,8 @@ class Summary(BaseModel):
 
 
 REQUEST = GenerationRequest(
-    task="Explain the observation", website_text="SEO facts are from a fixture",
+    task="Explain the observation",
+    website_text="SEO facts are from a fixture",
     max_output_tokens=128,
 )
 USAGE = {"prompt_tokens": 120, "completion_tokens": 20, "total_tokens": 140}
@@ -55,15 +56,20 @@ def client_for(
 
 
 def provider(
-    client: httpx.AsyncClient, *, pricing: ModelPricing | None = None,
+    client: httpx.AsyncClient,
+    *,
+    pricing: ModelPricing | None = None,
     sleeper=None,
 ) -> OpenAIChatProvider:
     kwargs = {"sleeper": sleeper} if sleeper is not None else {}
     return OpenAIChatProvider(
-        api_key="sk-fake-local-fixture-never-sent-online", model="gpt-4o-mini",
-        budget=TokenBudget(max_input_tokens=8192, max_output_tokens=256,
-                           max_total_tokens=8448),
-        pricing=pricing, http_client=client, max_retries=2, **kwargs,
+        api_key="sk-fake-local-fixture-never-sent-online",
+        model="gpt-4o-mini",
+        budget=TokenBudget(max_input_tokens=8192, max_output_tokens=256, max_total_tokens=8448),
+        pricing=pricing,
+        http_client=client,
+        max_retries=2,
+        **kwargs,
     )
 
 
@@ -111,8 +117,9 @@ def test_openai_structured_output_and_usage_cost_accounting() -> None:
 
     async def scenario() -> None:
         async with client_for(httpx.MockTransport(handler)) as client:
-            rates = ModelPricing(input_usd_per_million=Decimal("1"),
-                                 output_usd_per_million=Decimal("2"))
+            rates = ModelPricing(
+                input_usd_per_million=Decimal("1"), output_usd_per_million=Decimal("2")
+            )
             result = await provider(client, pricing=rates).complete(REQUEST, schema=Summary)
         assert isinstance(result.value, Summary)
         assert result.value.count == 2
@@ -129,14 +136,17 @@ def test_openai_structured_output_and_usage_cost_accounting() -> None:
     assert json.loads(seen[0]["messages"][1]["content"])["question"] == REQUEST.task
 
 
-@pytest.mark.parametrize("raw", [
-    payload('{"title":"invalid"}'),
-    payload('{"title":"Missing count","count":"not-a-number"}'),
-    payload("not json"),
-    payload('{"title":"Valid","count":1}', reason="length"),
-    {"choices": [{"message": {"content": ""}, "finish_reason": "stop"}], "usage": USAGE},
-    {"choices": [], "usage": USAGE},
-])
+@pytest.mark.parametrize(
+    "raw",
+    [
+        payload('{"title":"invalid"}'),
+        payload('{"title":"Missing count","count":"not-a-number"}'),
+        payload("not json"),
+        payload('{"title":"Valid","count":1}', reason="length"),
+        {"choices": [{"message": {"content": ""}, "finish_reason": "stop"}], "usage": USAGE},
+        {"choices": [], "usage": USAGE},
+    ],
+)
 def test_malformed_or_truncated_structured_output_is_rejected(raw: object) -> None:
     async def scenario() -> None:
         async with client_for(httpx.MockTransport(lambda req: httpx.Response(200, json=raw))) as c:
@@ -148,11 +158,12 @@ def test_malformed_or_truncated_structured_output_is_rejected(raw: object) -> No
 
 def test_missing_or_inconsistent_usage_is_rejected() -> None:
     async def scenario() -> None:
-        for value in ({}, {"prompt_tokens": 10, "completion_tokens": 20,
-                           "total_tokens": 5}):
-            async with client_for(httpx.MockTransport(
-                lambda req: httpx.Response(200, json=payload("hi", usage=value))
-            )) as client:
+        for value in ({}, {"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 5}):
+            async with client_for(
+                httpx.MockTransport(
+                    lambda req: httpx.Response(200, json=payload("hi", usage=value))
+                )
+            ) as client:
                 with pytest.raises(InvalidModelOutput):
                     await provider(client).complete(REQUEST)
 
@@ -162,9 +173,9 @@ def test_missing_or_inconsistent_usage_is_rejected() -> None:
 def test_provider_token_overrun_is_rejected() -> None:
     async def scenario() -> None:
         huge = {"prompt_tokens": 100, "completion_tokens": 250, "total_tokens": 350}
-        async with client_for(httpx.MockTransport(
-            lambda req: httpx.Response(200, json=payload("hello", usage=huge))
-        )) as client:
+        async with client_for(
+            httpx.MockTransport(lambda req: httpx.Response(200, json=payload("hello", usage=huge)))
+        ) as client:
             with pytest.raises(BudgetExceeded):
                 await provider(client).complete(REQUEST)
 
@@ -182,9 +193,11 @@ def test_prompt_budget_is_enforced_before_any_http_request() -> None:
     async def scenario() -> None:
         async with client_for(httpx.MockTransport(handler)) as c:
             p = OpenAIChatProvider(
-                api_key="testing-key", model="gpt-4o-mini",
-                budget=TokenBudget(max_input_tokens=128, max_output_tokens=256,
-                                   max_total_tokens=384),
+                api_key="testing-key",
+                model="gpt-4o-mini",
+                budget=TokenBudget(
+                    max_input_tokens=128, max_output_tokens=256, max_total_tokens=384
+                ),
                 http_client=c,
             )
             with pytest.raises(BudgetExceeded):
@@ -226,6 +239,7 @@ def test_rate_limit_terminal_status_and_no_retry_on_auth_error() -> None:
         async def scenario() -> None:
             async def skip_delay(_: float) -> None:
                 pass
+
             async with client_for(httpx.MockTransport(handler)) as c:
                 with pytest.raises(expected) as captured:
                     await provider(c, sleeper=skip_delay).complete(REQUEST)
@@ -257,18 +271,19 @@ def test_streaming_provides_deltas_measured_usage_and_done() -> None:
     asyncio.run(scenario())
 
 
-@pytest.mark.parametrize("stream_body", [
-    'data: {"choices":[{"delta":{"content":"hi"},"finish_reason":"stop"}]}\n\n'
-    'data: [DONE]\n\n',
-    "data: not-json\n\n",
-    'data: {"choices":[{"delta":{},"finish_reason":"length"}]}\n\n'
-    'data: [DONE]\n\n',
-])
+@pytest.mark.parametrize(
+    "stream_body",
+    [
+        'data: {"choices":[{"delta":{"content":"hi"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n',
+        "data: not-json\n\n",
+        'data: {"choices":[{"delta":{},"finish_reason":"length"}]}\n\ndata: [DONE]\n\n',
+    ],
+)
 def test_streaming_fails_closed_without_valid_final_usage(stream_body: str) -> None:
     async def scenario() -> None:
-        async with client_for(httpx.MockTransport(
-            lambda req: httpx.Response(200, content=stream_body)
-        )) as c:
+        async with client_for(
+            httpx.MockTransport(lambda req: httpx.Response(200, content=stream_body))
+        ) as c:
             with pytest.raises(InvalidModelOutput):
                 _ = [e async for e in provider(c).stream(REQUEST)]
 
@@ -280,7 +295,7 @@ def test_offline_fixture_provider_is_explicit_not_silent_fallback() -> None:
         fake = FixtureProvider(
             text='{"title":"fixture","count":3}',
             usage=TokenUsage(input_tokens=1, output_tokens=3, total_tokens=4),
-            deltas=('one', 'two'),
+            deltas=("one", "two"),
         )
         answer = await fake.complete(REQUEST, schema=Summary)
         assert isinstance(answer.value, Summary) and answer.value.count == 3
@@ -301,9 +316,11 @@ def test_logs_never_contain_input_content_or_api_key(caplog: pytest.LogCaptureFi
     async def scenario() -> None:
         async with client_for(httpx.MockTransport(handler)) as c:
             p = OpenAIChatProvider(
-                api_key=secret, model="gpt-4o-mini",
-                budget=TokenBudget(max_input_tokens=8192, max_output_tokens=256,
-                                   max_total_tokens=8448),
+                api_key=secret,
+                model="gpt-4o-mini",
+                budget=TokenBudget(
+                    max_input_tokens=8192, max_output_tokens=256, max_total_tokens=8448
+                ),
                 http_client=c,
             )
             await p.complete(REQUEST.model_copy(update={"website_text": site_text}))

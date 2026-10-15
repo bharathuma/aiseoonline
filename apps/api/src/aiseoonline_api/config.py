@@ -41,9 +41,7 @@ class Settings(BaseSettings):
             raise ValueError("Production requires AISEO_DATABASE_URL and AISEO_REDIS_URL")
         if self.llm_max_total_tokens < self.llm_max_output_tokens:
             raise ValueError("Total LLM token budget must cover output tokens")
-        if (self.llm_input_usd_per_million is None) != (
-            self.llm_output_usd_per_million is None
-        ):
+        if (self.llm_input_usd_per_million is None) != (self.llm_output_usd_per_million is None):
             raise ValueError("Configure both LLM price rates or neither")
         return self
 

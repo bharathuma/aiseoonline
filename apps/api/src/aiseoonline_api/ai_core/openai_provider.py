@@ -70,16 +70,17 @@ class OpenAIChatProvider:
         self._endpoint = endpoint
         self._headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         self._owns_client = http_client is None
-        self._client = http_client or httpx.AsyncClient(
-            follow_redirects=False, trust_env=False
-        )
+        self._client = http_client or httpx.AsyncClient(follow_redirects=False, trust_env=False)
 
     async def aclose(self) -> None:
         if self._owns_client:
             await self._client.aclose()
 
     def _payload(
-        self, request: GenerationRequest, schema: type[BaseModel] | None, *,
+        self,
+        request: GenerationRequest,
+        schema: type[BaseModel] | None,
+        *,
         stream: bool,
     ) -> dict[str, Any]:
         if request.max_output_tokens > self.budget.max_output_tokens:
@@ -92,8 +93,10 @@ class OpenAIChatProvider:
         estimated_input_cap = len(
             json.dumps(messages, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
         )
-        if (estimated_input_cap > self.budget.max_input_tokens or
-                estimated_input_cap + request.max_output_tokens > self.budget.max_total_tokens):
+        if (
+            estimated_input_cap > self.budget.max_input_tokens
+            or estimated_input_cap + request.max_output_tokens > self.budget.max_total_tokens
+        ):
             raise BudgetExceeded("Prompt exceeds the configured conservative input budget")
         payload: dict[str, Any] = {
             "model": self.model,
@@ -126,9 +129,11 @@ class OpenAIChatProvider:
             )
         except (KeyError, ValueError, ValidationError, TypeError):
             raise InvalidModelOutput("Provider returned invalid token usage") from None
-        if (usage.input_tokens > self.budget.max_input_tokens
-                or usage.output_tokens > request.max_output_tokens
-                or usage.total_tokens > self.budget.max_total_tokens):
+        if (
+            usage.input_tokens > self.budget.max_input_tokens
+            or usage.output_tokens > request.max_output_tokens
+            or usage.total_tokens > self.budget.max_total_tokens
+        ):
             raise BudgetExceeded("Provider token usage exceeded the configured budget")
         return usage
 
@@ -155,8 +160,11 @@ class OpenAIChatProvider:
         for attempt in range(self.max_retries + 1):
             try:
                 response = await self._client.post(
-                    self._endpoint, json=payload, headers=self._headers,
-                    timeout=self.timeout_seconds, follow_redirects=False,
+                    self._endpoint,
+                    json=payload,
+                    headers=self._headers,
+                    timeout=self.timeout_seconds,
+                    follow_redirects=False,
                 )
             except httpx.TimeoutException:
                 if attempt == self.max_retries:
@@ -174,9 +182,7 @@ class OpenAIChatProvider:
         raise ProviderUnavailable("AI provider retries exhausted")
 
     @overload
-    async def complete(
-        self, request: GenerationRequest, *, schema: type[T]
-    ) -> ModelResult[T]: ...
+    async def complete(self, request: GenerationRequest, *, schema: type[T]) -> ModelResult[T]: ...
 
     @overload
     async def complete(
@@ -209,12 +215,19 @@ class OpenAIChatProvider:
                 result_value = schema.model_validate_json(text)
             except ValidationError:
                 raise InvalidModelOutput("Structured response did not match its schema") from None
-        logger.info("LLM request finished model=%s tokens=%d template=%s",
-                    self.model, usage.total_tokens, request.template_id)
+        logger.info(
+            "LLM request finished model=%s tokens=%d template=%s",
+            self.model,
+            usage.total_tokens,
+            request.template_id,
+        )
         return ModelResult(
-            value=result_value, model=self.model, usage=usage,
+            value=result_value,
+            model=self.model,
+            usage=usage,
             cost_usd=self._cost(usage),
-            prompt_id=request.template_id, prompt_version=request.template_version,
+            prompt_id=request.template_id,
+            prompt_version=request.template_version,
         )
 
     async def stream(self, request: GenerationRequest) -> AsyncIterator[StreamEvent]:
@@ -225,8 +238,12 @@ class OpenAIChatProvider:
             for attempt in range(self.max_retries + 1):
                 try:
                     async with self._client.stream(
-                        "POST", self._endpoint, json=payload, headers=self._headers,
-                        timeout=self.timeout_seconds, follow_redirects=False,
+                        "POST",
+                        self._endpoint,
+                        json=payload,
+                        headers=self._headers,
+                        timeout=self.timeout_seconds,
+                        follow_redirects=False,
                     ) as response:
                         if response.status_code in _RETRYABLE and attempt < self.max_retries:
                             await self._backoff(attempt, response.headers.get("Retry-After"))
@@ -256,7 +273,9 @@ class OpenAIChatProvider:
                                     reason = choice.get("finish_reason")
                                     if reason is not None:
                                         if reason != "stop":
-                                            raise InvalidModelOutput("Stream ended without completion")
+                                            raise InvalidModelOutput(
+                                                "Stream ended without completion"
+                                            )
                                         finished = True
                                     delta = choice.get("delta", {}).get("content")
                                     if delta:
@@ -264,15 +283,20 @@ class OpenAIChatProvider:
                                             raise ValueError
                                         size += len(delta.encode("utf-8"))
                                         if size > request.max_output_tokens * 16:
-                                            raise BudgetExceeded("Streaming output exceeded byte guard")
+                                            raise BudgetExceeded(
+                                                "Streaming output exceeded byte guard"
+                                            )
                                         yield StreamEvent("delta", text=delta)
                             except (TypeError, KeyError, ValueError):
-                                raise InvalidModelOutput("Malformed provider stream event") from None
+                                raise InvalidModelOutput(
+                                    "Malformed provider stream event"
+                                ) from None
                         if not done or not finished or usage is None:
                             raise InvalidModelOutput("Provider stream ended without final usage")
                         yield StreamEvent("done", usage=usage, cost_usd=self._cost(usage))
-                        logger.info("LLM stream finished model=%s tokens=%d",
-                                    self.model, usage.total_tokens)
+                        logger.info(
+                            "LLM stream finished model=%s tokens=%d", self.model, usage.total_tokens
+                        )
                         return
                 except httpx.TimeoutException:
                     # Once any part of a stream starts, replaying could duplicate output.
@@ -289,8 +313,10 @@ def make_openai_provider(
     if key is None or not key.get_secret_value().strip():
         raise CredentialsUnavailable("AISEO_OPENAI_API_KEY is required for generation")
     pricing = None
-    if (settings.llm_input_usd_per_million is not None
-            and settings.llm_output_usd_per_million is not None):
+    if (
+        settings.llm_input_usd_per_million is not None
+        and settings.llm_output_usd_per_million is not None
+    ):
         pricing = ModelPricing(
             input_usd_per_million=settings.llm_input_usd_per_million,
             output_usd_per_million=settings.llm_output_usd_per_million,

@@ -1,8 +1,9 @@
 """Typed contracts for the optional, backend-only generation layer."""
 
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import AsyncIterator, Generic, Literal, Protocol, TypeVar, overload
+from typing import Generic, Literal, Protocol, TypeVar, overload
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -116,9 +117,7 @@ class StreamEvent:
 
 class LLMProvider(Protocol):
     @overload
-    async def complete(
-        self, request: GenerationRequest, *, schema: type[T]
-    ) -> ModelResult[T]: ...
+    async def complete(self, request: GenerationRequest, *, schema: type[T]) -> ModelResult[T]: ...
 
     @overload
     async def complete(

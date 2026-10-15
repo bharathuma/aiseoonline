@@ -34,9 +34,7 @@ class FixtureProvider:
         self.calls: list[GenerationRequest] = []
 
     @overload
-    async def complete(
-        self, request: GenerationRequest, *, schema: type[T]
-    ) -> ModelResult[T]: ...
+    async def complete(self, request: GenerationRequest, *, schema: type[T]) -> ModelResult[T]: ...
 
     @overload
     async def complete(
@@ -56,8 +54,12 @@ class FixtureProvider:
             except ValidationError:
                 raise InvalidModelOutput("Fixture does not satisfy structured schema") from None
         return ModelResult(
-            value=value, model="fixture", usage=self.usage, cost_usd=Decimal(0),
-            prompt_id=request.template_id, prompt_version=request.template_version,
+            value=value,
+            model="fixture",
+            usage=self.usage,
+            cost_usd=Decimal(0),
+            prompt_id=request.template_id,
+            prompt_version=request.template_version,
         )
 
     async def stream(self, request: GenerationRequest) -> AsyncIterator[StreamEvent]:
