@@ -100,9 +100,17 @@ class OpenAIChatProvider:
             "messages": messages,
             "max_completion_tokens": request.max_output_tokens,
             "stream": stream,
+            "store": False,
         }
         if schema is not None:
-            payload["response_format"] = {"type": "json_object"}
+            payload["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": schema.__name__[:64],
+                    "schema": json_schema,
+                    "strict": False,
+                },
+            }
         if stream:
             payload["stream_options"] = {"include_usage": True}
         return payload
