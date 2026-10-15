@@ -4,9 +4,10 @@ import asyncio
 import os
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -34,6 +35,7 @@ from aiseoonline_api.config import Settings
 from aiseoonline_api.crawler import PageSnapshot, parse_html
 from aiseoonline_api.db.models import AuditJob, Project, SeoFinding, User
 from aiseoonline_api.db.session import create_database_engine
+from aiseoonline_api.main import create_app
 
 TARGET = "https://example.org/audit"
 HTML = (
