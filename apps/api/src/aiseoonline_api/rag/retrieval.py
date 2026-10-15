@@ -5,12 +5,13 @@ No HTTP route and no LLM calls. SQLAlchemy owns parameters and caller owns commi
 
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
-from typing import Literal, Protocol, cast
+from typing import Any, Literal, Protocol, cast
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import func, literal_column, select
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.elements import ColumnElement
 
 from aiseoonline_api.db.models import Project, RagChunk, RagDocument
 from aiseoonline_api.rag.embeddings import EmbeddingProvider, validate_vectors
@@ -18,7 +19,7 @@ from aiseoonline_api.rag.store import RagAccessDenied
 
 DocumentType = Literal["web_page", "guide", "reference"]
 RetrievalMode = Literal["hybrid", "semantic", "keyword"]
-_ENGLISH = literal_column("'english'::regconfig")
+_ENGLISH: ColumnElement[Any] = literal_column("'english'::regconfig")
 _ALLOWED_TYPES = frozenset(("web_page", "guide", "reference"))
 
 
@@ -228,6 +229,8 @@ class HybridRetriever:
         fingerprints: set[str] = set()
         for chunk_id in ranked:
             chunk, doc = collected[chunk_id]
+            if doc.document_type not in _ALLOWED_TYPES or doc.access_scope != "owner_only":
+                continue
             if chunk.content_hash in fingerprints:
                 duplicate_count += 1
                 continue
@@ -245,7 +248,7 @@ class HybridRetriever:
                         captured_at=doc.captured_at,
                     ),
                     text=chunk.text,
-                    document_type=doc.document_type,
+                    document_type=cast(DocumentType, doc.document_type),
                     access_scope="owner_only",
                     fused_score=fused[chunk_id],
                     semantic_similarity=similarities.get(chunk_id),
