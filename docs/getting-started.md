@@ -41,9 +41,9 @@ The API, worker, and migration service use the same Python dependencies. Audit c
 
 ```bash
 corepack enable
-pnpm install
+pnpm install --frozen-lockfile
 pnpm dev:web
-uv sync --project apps/api --group dev
+uv sync --project apps/api --locked --group dev
 uv run --project apps/api uvicorn aiseoonline_api.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
