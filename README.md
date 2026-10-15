@@ -2,13 +2,13 @@
 
 Open-source SEO tools for checking, understanding, and improving websites.
 
-**Status: Website and API foundation, internal secure crawler, and deterministic SEO rules implemented. Nine deterministic SEO tool endpoints and an optional internal LLM provider layer are implemented; user-facing AI features remain planned.** The code has not been deployed to the public website.
+**Status: Website and API foundation, internal secure crawler, and deterministic SEO rules implemented. Nine deterministic SEO tools and an optional, quota-controlled AI meta generator are implemented. Further AI audit features remain planned.** The code has not been deployed to the public website.
 
-AISEOOnline is being built for site owners, developers, and teams who need practical SEO checks. The repository contains an Astro/React website, nine free SEO checkers, a FastAPI backend, database migrations, and a background worker. The public interface includes robots.txt, XML sitemap, metadata, redirects, canonical URLs, JSON-LD, headings, internal links and social metadata checkers alongside planned tools and introductory guides. No multi-page or AI audit is publicly available. The internal [SEO rule engine](docs/seo-rules.md) produces source-backed findings from parsed page snapshots.
+AISEOOnline is being built for site owners, developers, and teams who need practical SEO checks. The repository contains an Astro/React website, nine deterministic checkers and one AI meta generator, a FastAPI backend, database migrations, and a background worker. The public interface includes robots.txt, XML sitemap, metadata, redirects, canonical URLs, JSON-LD, headings, internal links and social metadata checkers alongside planned tools and introductory guides. No multi-page or full AI audit is publicly available. The internal [SEO rule engine](docs/seo-rules.md) produces source-backed findings from parsed page snapshots.
 
 ## Planned features
 
-- **SEO tools:** nine focused public checkers are implemented; advanced and AI-assisted features remain planned.
+- **SEO tools:** nine deterministic checkers and one grounded AI meta generator are implemented; larger AI audits remain planned.
 - **Site auditing:** bounded crawling with source-linked findings and reports.
 - **AI analysis:** evidence-backed explanations, retrieval over permitted content, and bounded audit workflows.
 
@@ -22,7 +22,7 @@ Technical findings will come from deterministic checks. Model-generated suggesti
 - AI infrastructure: optional OpenAI provider adapter with typed response validation, budgets, streaming and versioned prompts
 - Planned AI integrations: LangChain/LangGraph agents, retrieval, and observability
 
-See [architecture](docs/architecture.md), [LLM provider configuration](docs/llm-provider.md), and [design decisions](docs/adr/README.md).
+See [AI meta generator requirements](docs/ai-meta-generator.md), [architecture](docs/architecture.md), [LLM provider configuration](docs/llm-provider.md), and [design decisions](docs/adr/README.md).
 
 ## Local development
 
