@@ -99,7 +99,7 @@ export const plannedTools: readonly ToolPreview[] = [
     name: 'Heading structure analyzer',
     summary: 'Inspect the H1–H6 outline and page structure.',
     category: 'Content',
-    status: 'planned',
+    status: 'available',
     details: [
       'Display headings in document order.',
       'Highlight missing or unclear structure.',
@@ -112,7 +112,7 @@ export const plannedTools: readonly ToolPreview[] = [
     name: 'Internal link checker',
     summary: 'Find important internal links and broken destinations.',
     category: 'Links',
-    status: 'planned',
+    status: 'available',
     details: [
       'Classify links by destination.',
       'Check a bounded number of internal targets.',
@@ -125,7 +125,7 @@ export const plannedTools: readonly ToolPreview[] = [
     name: 'Social metadata checker',
     summary: 'Inspect Open Graph and social preview fields.',
     category: 'Content',
-    status: 'planned',
+    status: 'available',
     details: [
       'Extract social metadata from a page.',
       'Highlight missing common fields.',
