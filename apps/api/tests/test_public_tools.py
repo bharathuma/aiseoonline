@@ -402,7 +402,7 @@ def test_link_checker_respects_robots_on_probed_target(
     client: TestClient, live_site: ThreadingHTTPServer,
 ) -> None:
     live_site.RequestHandlerClass.robots = (
-        b"User-agent: *\\nDisallow: /missing\\n"
+        b"User-agent: *\nDisallow: /missing\n"
     )
     result = client.post("/api/v1/tools/links", json={"url": "http://example.org/links"})
     assert result.status_code == 200, result.text
