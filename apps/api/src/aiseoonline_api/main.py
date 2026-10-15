@@ -12,6 +12,7 @@ from aiseoonline_api.errors import ERROR_RESPONSES, register_error_handlers
 from aiseoonline_api.logging import configure_logging
 from aiseoonline_api.request_id import RequestIdMiddleware
 from aiseoonline_api.routes.health import router as health_router
+from aiseoonline_api.routes.readiness import ReadinessResponse
 from aiseoonline_api.routes.readiness import router as readiness_router
 
 
@@ -44,7 +45,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_error_handlers(application)
     application.add_middleware(RequestIdMiddleware)
     application.include_router(health_router, prefix="/api/v1", responses=ERROR_RESPONSES)
-    application.include_router(readiness_router, prefix="/api/v1", responses=ERROR_RESPONSES)
+    application.include_router(
+        readiness_router,
+        prefix="/api/v1",
+        responses={
+            **ERROR_RESPONSES,
+            503: {"model": ReadinessResponse, "description": "Dependency readiness unavailable"},
+        },
+    )
     return application
 
 
