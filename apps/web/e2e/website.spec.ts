@@ -35,10 +35,8 @@ test('tool discovery distinguishes implemented checkers and planned AI tools', a
   await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Run free check' })).toBeVisible();
   await page.goto('/tools/ai-meta-suggestions/');
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,follow');
-  await expect(
-    page.getByText('This tool is being developed and cannot run checks yet.'),
-  ).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Generate three suggestions' })).toBeVisible();
 });
 
 test('dialog opens, closes with Escape and restores keyboard focus', async ({ page }) => {
