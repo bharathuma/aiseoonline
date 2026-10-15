@@ -118,8 +118,11 @@ class RagStore:
         owner_id: UUID,
         snapshot: PageSnapshot,
         force: bool = False,
+        document_type: str = "web_page",
     ) -> IngestionResult:
         project = self._authorized_project(project_id, owner_id)
+        if document_type not in ("web_page", "guide", "reference"):
+            raise RagContentError("Unsupported document type")
         source = self._allowed_page(snapshot, project)
         if not snapshot.html.content_sections:
             raise RagContentError("Snapshot contains no cleaned body sections")
@@ -148,6 +151,8 @@ class RagStore:
             and record.embedding_model == spec.model
             and record.embedding_version == spec.version
             and record.embedding_dimensions == spec.dimensions
+            and record.document_type == document_type
+            and record.access_scope == "owner_only"
         )
         if record is not None and same_spec and record.content_hash == content_hash and not force:
             count = (
@@ -176,6 +181,8 @@ class RagStore:
             record = RagDocument(
                 project_id=project_id,
                 source_url=source,
+                document_type=document_type,
+                access_scope="owner_only",
                 content_hash=content_hash,
                 embedding_provider=spec.provider,
                 embedding_model=spec.model,
@@ -192,6 +199,8 @@ class RagStore:
                     RagChunk.project_id == project_id, RagChunk.document_id == record.id
                 )
             )
+            record.document_type = document_type
+            record.access_scope = "owner_only"
             record.content_hash = content_hash
             record.embedding_provider = spec.provider
             record.embedding_model = spec.model
