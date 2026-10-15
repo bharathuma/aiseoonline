@@ -70,7 +70,8 @@ def check_links(url: str) -> ToolReport:
         if normalized.value in seen:
             continue
         seen.add(normalized.value)
-        if len(observed) < 45:
+        in_sample = len(observed) < 45
+        if in_sample:
             observed.append({
                 "url": normalized.value, "text": entry.text,
                 "classification": "internal" if internal else "external",
@@ -79,7 +80,7 @@ def check_links(url: str) -> ToolReport:
                 "state": "verified" if normalized.value == source.value else "not_checked",
             })
         if (internal and normalized.value != source.value and len(chosen) < _MAX_LINK_PROBES
-                and len(observed) <= 45):
+                and in_sample):
             chosen.append(normalized.value)
     probes = {item.url: item for item in session.probe_same_origin_links(tuple(chosen))}
     issues = []
