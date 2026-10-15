@@ -59,8 +59,6 @@ def _append(
     # Never log page bodies, raw prompts, hostnames, or provider error messages.
     return (*state.get("trace", ()), AuditTrace(node=name, outcome=outcome, tool=tool))
 
-
-
 def _combine_usage(state: AuditState, measurement: dict[str, int]) -> dict[str, int]:
     previous = state.get("token_usage") or {}
     return {
