@@ -161,7 +161,7 @@ def test_missing_or_inconsistent_usage_is_rejected() -> None:
         for value in ({}, {"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 5}):
             async with client_for(
                 httpx.MockTransport(
-                    lambda req: httpx.Response(200, json=payload("hi", usage=value))
+                    lambda req, observed=value: httpx.Response(200, json=payload("hi", usage=observed))
                 )
             ) as client:
                 with pytest.raises(InvalidModelOutput):
@@ -232,16 +232,16 @@ def test_rate_limit_terminal_status_and_no_retry_on_auth_error() -> None:
     for code, expected in ((429, ProviderRateLimited), (401, ProviderUnavailable)):
         seen: list[int] = []
 
-        def handler(req: httpx.Request) -> httpx.Response:
-            seen.append(code)
-            return httpx.Response(code, json={"error": {"message": "private secret"}})
+        def handler(req: httpx.Request, *, status=code, calls=seen) -> httpx.Response:
+            calls.append(status)
+            return httpx.Response(status, json={"error": {"message": "private secret"}})
 
-        async def scenario() -> None:
+        async def scenario(error_type=expected) -> None:
             async def skip_delay(_: float) -> None:
                 pass
 
             async with client_for(httpx.MockTransport(handler)) as c:
-                with pytest.raises(expected) as captured:
+                with pytest.raises(error_type) as captured:
                     await provider(c, sleeper=skip_delay).complete(REQUEST)
                 assert "private secret" not in str(captured.value)
 
