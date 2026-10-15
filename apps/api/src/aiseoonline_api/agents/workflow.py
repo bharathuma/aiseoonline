@@ -279,6 +279,7 @@ class AuditAgent:
             def lookup(query: str) -> list[dict[str, str]]:
                 assert self.rag_lookup is not None
                 return self.rag_lookup(req, query)
+
         tools = build_tools(snapshot, state.get("raw_findings", ()), rag_lookup=lookup)
         if picked not in tools:
             raise InvalidModelOutput("Missing approved tool implementation")
