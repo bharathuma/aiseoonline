@@ -144,6 +144,7 @@ class HybridRetriever:
             RagDocument.embedding_dimensions == spec.dimensions,
             RagDocument.access_scope == "owner_only",
             RagDocument.document_type.in_(config.document_types),
+            RagDocument.captured_at <= datetime.now(UTC),
         ]
         if config.max_age_days is not None:
             filters.append(
