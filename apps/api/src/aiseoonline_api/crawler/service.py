@@ -95,6 +95,14 @@ class RedirectInspection:
     termination: str
 
 
+@dataclass(frozen=True)
+class LinkProbe:
+    url: str
+    final_url: str | None
+    status: int | None
+    state: str
+
+
 class CrawlSession:
     """At most one page attempt for a fixed origin. Deep mode is disabled."""
 
@@ -102,6 +110,7 @@ class CrawlSession:
         self.seed = normalize_url(seed_url)
         self.limits = limits or CrawlLimits()
         self._pages_used = 0
+        self._probed_links = False
         self._previous_request: float | None = None
         self._lock = threading.Lock()
 
@@ -363,3 +372,59 @@ class CrawlSession:
                 hops=tuple(hops),
                 termination=termination,
             )
+
+    def probe_same_origin_links(self, targets: tuple[str, ...]) -> tuple[LinkProbe, ...]:
+        """Probe at most three same-origin destinations by response headers only.
+
+        Used after fetch_page(). All probes share one five-second network deadline.
+        Each destination and redirect is subject to robots rules and the secure
+        pinned-IP transport. No document bodies or off-origin pages are fetched.
+        """
+        if len(targets) > 3:
+            raise CrawlLimitExceeded("Only three link targets may be checked")
+        with self._lock:
+            if self._pages_used != 1 or self._probed_links:
+                raise CrawlLimitExceeded("Link probes require one previously fetched page")
+            self._probed_links = True
+            deadline = time.monotonic() + 5.0
+            host = f"[{self.seed.host}]" if ":" in self.seed.host else self.seed.host
+            robots_url = normalize_url(f"{self.seed.scheme}://{host}/robots.txt")
+            try:
+                _, robots, _ = self._request(
+                    robots_url, deadline=deadline, byte_budget=self.limits.max_robots_bytes
+                )
+                if robots.status in (404, 410):
+                    rules = None
+                    delay = 0.0
+                elif robots.status == 200 and robots.content_type in ("text/plain", ""):
+                    rules = urllib.robotparser.RobotFileParser()
+                    rules.parse(robots.body.decode("utf-8", errors="replace").splitlines())
+                    delay = float(rules.crawl_delay(USER_AGENT) or 0)
+                else:
+                    raise RobotsDenied("Unable to verify robots rules")
+            except (CrawlTimeout, CrawlLimitExceeded, RobotsDenied, InvalidPage, UnsafeTarget):
+                return tuple(LinkProbe(url, None, None, "unverified") for url in targets)
+            from .urls import CrawlError
+
+            results: list[LinkProbe] = []
+            for raw in targets:
+                try:
+                    target = normalize_url(raw)
+                    if target.origin != self.seed.origin:
+                        raise UnsafeTarget("Target is outside source origin")
+                    if time.monotonic() >= deadline:
+                        raise CrawlTimeout("Link-probe budget exhausted")
+                    final, response, _ = self._request(
+                        target,
+                        deadline=deadline,
+                        byte_budget=1024,
+                        allowed_by_robots=rules,
+                        crawl_delay=delay,
+                        headers_only=True,
+                    )
+                    results.append(LinkProbe(raw, final.value, response.status, "verified"))
+                except RobotsDenied:
+                    results.append(LinkProbe(raw, None, None, "robots_blocked"))
+                except (CrawlError, ValueError):
+                    results.append(LinkProbe(raw, None, None, "unverified"))
+            return tuple(results)

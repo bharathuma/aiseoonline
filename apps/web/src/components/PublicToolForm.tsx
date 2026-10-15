@@ -1,7 +1,16 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
-type ToolKind = 'robots' | 'sitemap' | 'meta' | 'redirects' | 'canonical' | 'schema';
+type ToolKind =
+  | 'robots'
+  | 'sitemap'
+  | 'meta'
+  | 'redirects'
+  | 'canonical'
+  | 'schema'
+  | 'headings'
+  | 'links'
+  | 'social';
 type Issue = {
   code: string;
   severity: 'error' | 'warning' | 'info';
@@ -48,6 +57,21 @@ const defaults: Record<ToolKind, { label: string; example: string; hint: string 
     label: 'Webpage URL',
     example: 'https://example.org/article/',
     hint: 'Check JSON-LD syntax, @context, @type and @graph in the fetched HTML. Rich-result eligibility is not tested.',
+  },
+  headings: {
+    label: 'Webpage URL',
+    example: 'https://example.org/article/',
+    hint: 'Show the H1–H6 heading order and advisory structure checks from one HTML response.',
+  },
+  links: {
+    label: 'Webpage URL',
+    example: 'https://example.org/',
+    hint: 'Classify links on one page; check at most three same-origin destinations. External links are not fetched.',
+  },
+  social: {
+    label: 'Webpage URL',
+    example: 'https://example.org/article/',
+    hint: 'Inspect Open Graph and X/Twitter card metadata and show an approximate, non-platform-specific preview.',
   },
 };
 
@@ -227,6 +251,98 @@ export default function PublicToolForm({ kind }: { kind: ToolKind }) {
                   </li>
                 ))}
               </ol>
+            )}
+
+            {kind === 'headings' && Array.isArray(result.facts.headings) && (
+              <ol className="mt-4 space-y-2" aria-label="HTML heading outline">
+                {(
+                  result.facts.headings as Array<{ level: number; text: string; ordinal: number }>
+                ).map((heading, index) => (
+                  <li
+                    key={index}
+                    className="rounded-lg border border-slate-200 p-3"
+                    style={{ marginInlineStart: Math.min(heading.level - 1, 5) * 12 }}
+                  >
+                    <span className="text-xs font-bold text-teal-800">H{heading.level}</span>
+                    <span className="ml-3 break-words text-sm text-slate-800">
+                      {heading.text || '(empty heading)'}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+            {kind === 'links' && Array.isArray(result.facts.links) && (
+              <div
+                className="mt-4 overflow-x-auto"
+                role="region"
+                aria-label="Checked link destinations"
+                tabIndex={0}
+              >
+                <table className="w-full min-w-[440px] border-collapse text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200">
+                      <th scope="col" className="p-2">
+                        Destination
+                      </th>
+                      <th scope="col" className="p-2">
+                        Type
+                      </th>
+                      <th scope="col" className="p-2">
+                        HTTP status
+                      </th>
+                      <th scope="col" className="p-2">
+                        Verification
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(
+                      result.facts.links as Array<{
+                        url: string;
+                        classification: string;
+                        status: number | null;
+                        state: string;
+                      }>
+                    ).map((link, index) => (
+                      <tr className="border-b border-slate-100" key={index}>
+                        <td className="break-all p-2">{link.url}</td>
+                        <td className="p-2">{link.classification}</td>
+                        <td className="p-2">{link.status ?? '—'}</td>
+                        <td className="p-2">{link.state.replaceAll('_', ' ')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {kind === 'social' && (
+              <div
+                className="mt-4 rounded-xl border border-slate-200 p-4"
+                aria-label="Approximate social sharing preview"
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  Approximate preview — not a platform simulation
+                </p>
+                {(() => {
+                  const preview = result.facts.approximate_preview as Record<string, unknown>;
+                  return (
+                    <div className="mt-3 space-y-2">
+                      {typeof preview.image_url === 'string' && preview.image_url.length > 0 && (
+                        <p className="break-all text-xs text-slate-500">
+                          Image reference (not fetched): {String(preview.image_url)}
+                        </p>
+                      )}
+                      <p className="text-base font-bold">
+                        {String(preview.title ?? 'No title available')}
+                      </p>
+                      <p className="text-sm text-slate-600">
+                        {String(preview.description ?? 'No description available')}
+                      </p>
+                      <p className="text-xs text-slate-500">{String(preview.site_name ?? '')}</p>
+                    </div>
+                  );
+                })()}
+              </div>
             )}
             <dl className="mt-4 grid gap-3 sm:grid-cols-2">
               {Object.entries(result.facts).map(([key, value]) => (

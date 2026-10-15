@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added heading-outline analysis, bounded same-origin internal link status checks, and Open Graph/X social metadata inspection with an approximate preview.
+- Reused secure fetching, Redis quotas, typed reports and shared responsive tool forms.
+
 - Added free redirect-chain, canonical-URL and JSON-LD checkers with source-backed findings and browser tests.
 
 - Added three anonymous, quota-controlled SEO checkers: robots.txt, XML sitemap, and page metadata.

@@ -33,9 +33,12 @@ from aiseoonline_api.public_tools.checks import (
     check_robots,
     check_sitemap,
 )
+from aiseoonline_api.public_tools.final_tools import check_headings, check_links, check_social
 
 router = APIRouter(tags=["public SEO tools"])
-Tool = Literal["robots", "sitemap", "meta", "redirects", "canonical", "schema"]
+Tool = Literal[
+    "robots", "sitemap", "meta", "redirects", "canonical", "schema", "headings", "links", "social"
+]
 _LIMIT_SCRIPT = """
 local a=redis.call('INCR', KEYS[1])
 if a==1 then redis.call('EXPIRE', KEYS[1], 3600) end
@@ -103,6 +106,9 @@ async def execute(request: Request, body: UrlInput, tool: Tool) -> ToolReport | 
         "redirects": check_redirects,
         "canonical": check_canonical,
         "schema": check_schema,
+        "headings": check_headings,
+        "links": check_links,
+        "social": check_social,
     }[tool]
     slots: asyncio.Semaphore = request.app.state.public_tool_slots
     try:
@@ -169,3 +175,18 @@ async def canonical(request: Request, body: UrlInput) -> ToolReport | JSONRespon
 )
 async def schema(request: Request, body: UrlInput) -> ToolReport | JSONResponse:
     return await execute(request, body, "schema")
+
+
+@router.post("/tools/headings", response_model=ToolReport, summary="Review HTML heading outline")
+async def headings(request: Request, body: UrlInput) -> ToolReport | JSONResponse:
+    return await execute(request, body, "headings")
+
+
+@router.post("/tools/links", response_model=ToolReport, summary="Check bounded internal links")
+async def links(request: Request, body: UrlInput) -> ToolReport | JSONResponse:
+    return await execute(request, body, "links")
+
+
+@router.post("/tools/social", response_model=ToolReport, summary="Inspect social sharing metadata")
+async def social(request: Request, body: UrlInput) -> ToolReport | JSONResponse:
+    return await execute(request, body, "social")
