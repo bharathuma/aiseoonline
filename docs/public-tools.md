@@ -1,6 +1,6 @@
 # Public SEO tools
 
-The robots.txt validator, XML sitemap validator, and meta tag checker provide free, anonymous, single-resource checks. Their code and routes are implemented, but they are not deployed publicly by this repository.
+Six focused SEO tools provide free, anonymous, single-resource checks. Their code and routes are implemented, but they are not deployed publicly by this repository.
 
 ## Run locally
 
@@ -8,6 +8,9 @@ Start the Docker Compose stack using the instructions in [getting started](getti
 - `http://127.0.0.1:4321/tools/robots-txt-validator/`
 - `http://127.0.0.1:4321/tools/xml-sitemap-validator/`
 - `http://127.0.0.1:4321/tools/meta-tag-checker/`
+- `http://127.0.0.1:4321/tools/redirect-chain-checker/`
+- `http://127.0.0.1:4321/tools/canonical-url-checker/`
+- `http://127.0.0.1:4321/tools/structured-data-checker/`
 
 The web server forwards `/api/` to FastAPI. The same proxy is configured for the Astro development server. Redis must be available: quota enforcement fails closed with HTTP 503 when Redis is down.
 
@@ -24,6 +27,9 @@ All endpoints are `POST`, under `/api/v1/tools/`, with a JSON body containing an
 | `/robots` | Website address | The origin's `/robots.txt` only |
 | `/sitemap` | Full XML sitemap URL | Robots.txt and the one requested sitemap |
 | `/meta` | One HTML page URL | Robots.txt and the one requested page |
+| `/redirects` | Starting URL | Robots.txt and one bounded same-origin chain of HTTP response headers |
+| `/canonical` | One HTML page URL | Robots.txt and page HTML; canonical targets are not fetched |
+| `/schema` | One HTML page URL | Robots.txt and page HTML; JSON-LD remains inert data |
 
 Results contain the checked URL, timestamp, observed facts, and structured issues with evidence. Responses are JSON and can be downloaded in the browser. Error codes use the project's [API error contract](api-contracts.md).
 
@@ -35,9 +41,11 @@ Results contain the checked URL, timestamp, observed facts, and structured issue
 
 Public checks reuse the restricted crawler's DNS/IP validation, pinned connections, redirect rules, robots awareness, one-page limits, timeouts, and streamed byte caps. A sitemap is limited to 512 KiB and 1,500 inspected entries; robots.txt is capped at 96 KiB. The page checker uses the crawler's 1 MiB limit.
 
-Redis enforces a shared budget of 12 requests per connecting peer and 120 per destination hostname within rolling 60-minute expiry windows. Rate limits apply across all three tools. When reverse proxies aggregate clients behind one IP, the peer budget also aggregates them. **Deployment must configure a verified real-client IP trust boundary and edge protections** before public launch. Never trust arbitrary forwarded IP headers directly.
+Redis enforces a shared budget of 12 requests per connecting peer and 120 per destination hostname within rolling 60-minute expiry windows. Rate limits apply across all six tools. When reverse proxies aggregate clients behind one IP, the peer budget also aggregates them. **Deployment must configure a verified real-client IP trust boundary and edge protections** before public launch. Never trust arbitrary forwarded IP headers directly.
 
 No authentication or verified-site deep scan is enabled. No external targets are contacted during CI.
+
+For details of the three additional tools and their limitations, see [redirects, canonical and JSON-LD](advanced-tools.md).
 
 ## Verification
 
