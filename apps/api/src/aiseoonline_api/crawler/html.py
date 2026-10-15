@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlsplit
 
+from .content import ContentSection, extract_sections
 from .urls import InvalidPage
 
 
@@ -67,6 +68,7 @@ class ParsedHtml:
     encoding_repaired: bool
     titles: tuple[TitleTag, ...] = ()
     canonical_tags: tuple[CanonicalTag, ...] = ()
+    content_sections: tuple[ContentSection, ...] = ()
 
 
 def _clean(text: str, *, max_len: int = 4096) -> str:
@@ -195,4 +197,5 @@ def parse_html(body: bytes, source_url: str, charset: str = "utf-8") -> ParsedHt
         encoding_repaired=repaired,
         titles=tuple(parser.titles),
         canonical_tags=tuple(parser.canonical_tags),
+        content_sections=extract_sections(text),
     )

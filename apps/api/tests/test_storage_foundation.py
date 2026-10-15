@@ -20,6 +20,8 @@ def test_expected_database_tables_are_registered() -> None:
         "pages",
         "seo_findings",
         "ai_usage",
+        "rag_documents",
+        "rag_chunks",
     }
 
 
