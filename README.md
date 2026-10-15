@@ -4,7 +4,7 @@ Open-source SEO tools for checking, understanding, and improving websites.
 
 **Status: Development foundation available; SEO tools and AI features are still planned.** This repository has not been deployed to the public website.
 
-AISEOOnline is being built for site owners, developers, and teams who need practical SEO checks. The initial code contains an Astro/React website and a FastAPI backend with a health endpoint and OpenAPI documentation.
+AISEOOnline is being built for site owners, developers, and teams who need practical SEO checks. The repository contains an Astro/React website, a FastAPI backend, database migrations, and a background worker. The public interface lists planned tools and provides introductory guides; it does not offer live SEO analysis yet.
 
 ## Planned features
 
@@ -18,7 +18,8 @@ Technical findings will come from deterministic checks. Model-generated suggesti
 
 - Web: Astro, React, TypeScript, Tailwind CSS, pnpm
 - API: Python, FastAPI, Pydantic, uv
-- Planned: PostgreSQL/pgvector, Redis/Celery, LangChain/LangGraph, model APIs, and observability
+- Infrastructure: PostgreSQL/pgvector, Alembic, Redis/Celery, Docker Compose
+- Planned AI integrations: LangChain/LangGraph, model APIs, retrieval, and observability
 
 See [architecture](docs/architecture.md) and [design decisions](docs/adr/README.md).
 
