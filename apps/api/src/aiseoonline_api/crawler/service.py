@@ -1,6 +1,7 @@
 """Robots-aware, one-page-only public crawl sessions with strict budgets."""
 
 import threading
+from collections.abc import Callable
 import time
 import urllib.robotparser
 from dataclasses import dataclass
@@ -78,6 +79,22 @@ class TextResource:
     redirects: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class RedirectHop:
+    url: str
+    status: int
+    location: str | None
+
+
+@dataclass(frozen=True)
+class RedirectInspection:
+    requested_url: str
+    final_url: str
+    final_status: int | None
+    hops: tuple[RedirectHop, ...]
+    termination: str
+
+
 class CrawlSession:
     """At most one page attempt for a fixed origin. Deep mode is disabled."""
 
@@ -105,6 +122,8 @@ class CrawlSession:
         allowed_by_robots: urllib.robotparser.RobotFileParser | None = None,
         crawl_delay: float = 0,
         allowed_mime: tuple[str, ...] | None = None,
+        on_hop: Callable[[SafeURL, HttpDocument], None] | None = None,
+        headers_only: bool = False,
     ) -> tuple[SafeURL, HttpDocument, tuple[str, ...]]:
         current = start
         redirects: list[str] = []
@@ -132,10 +151,13 @@ class CrawlSession:
                     dns_timeout=self.limits.dns_timeout,
                     allowed_mime=allowed_mime
                     or ("text/html", "application/xhtml+xml", "text/plain"),
+                    headers_only=headers_only,
                 )
             finally:
                 self._previous_request = time.monotonic()
                 _GLOBAL_FETCH_SLOTS.release()
+            if on_hop is not None:
+                on_hop(current, result)
             if result.status not in _REDIRECT_STATUSES:
                 return current, result, tuple(redirects)
             if not result.location:
@@ -270,4 +292,70 @@ class CrawlSession:
                 document.charset,
                 document.body,
                 redirects,
+            )
+
+    def inspect_redirects(self) -> RedirectInspection:
+        """Trace one same-origin redirect path without fetching document bodies.
+
+        Unsafe and outside-origin destinations are never contacted. Incomplete
+        chains retain only the hops already observed from the permitted origin.
+        """
+        with self._lock:
+            if self._pages_used:
+                raise CrawlLimitExceeded("Public sessions permit one check")
+            self._pages_used += 1
+            deadline = time.monotonic() + self.limits.total_timeout
+            host = f"[{self.seed.host}]" if ":" in self.seed.host else self.seed.host
+            robots_url = normalize_url(f"{self.seed.scheme}://{host}/robots.txt")
+            _, robots, _ = self._request(
+                robots_url, deadline=deadline, byte_budget=self.limits.max_robots_bytes
+            )
+            if robots.status in (404, 410):
+                rules = None
+                delay = 0.0
+            elif robots.status == 200 and robots.content_type in ("text/plain", ""):
+                rules = urllib.robotparser.RobotFileParser()
+                rules.parse(robots.body.decode("utf-8", errors="replace").splitlines())
+                delay = float(rules.crawl_delay(USER_AGENT) or 0)
+                if delay > self.limits.total_timeout:
+                    raise RobotsDenied("Crawl-delay exceeds public scan budget")
+            else:
+                raise RobotsDenied("robots.txt cannot be checked")
+            hops: list[RedirectHop] = []
+
+            def collect(target: SafeURL, result: HttpDocument) -> None:
+                location: str | None = None
+                if result.location and result.status in _REDIRECT_STATUSES:
+                    try:
+                        location = normalize_url(urljoin(target.value, result.location)).value
+                    except (UnsafeTarget, ValueError):
+                        # Do not reflect private, credential-bearing or malformed redirects.
+                        pass
+                hops.append(RedirectHop(target.value, result.status, location))
+
+            termination = "completed"
+            try:
+                self._request(
+                    self.seed, deadline=deadline, byte_budget=1024,
+                    allowed_by_robots=rules, crawl_delay=delay,
+                    on_hop=collect, headers_only=True,
+                )
+            except CrawlLimitExceeded as exc:
+                if str(exc) == "Redirect loop detected":
+                    termination = "loop"
+                elif str(exc) == "Redirect limit exceeded":
+                    termination = "limit"
+                else:
+                    raise
+            except UnsafeTarget:
+                termination = "blocked_destination"
+            if not hops:
+                raise InvalidPage("No HTTP response was received")
+            final = hops[-1]
+            return RedirectInspection(
+                requested_url=self.seed.value,
+                final_url=final.url,
+                final_status=final.status if termination == "completed" else None,
+                hops=tuple(hops),
+                termination=termination,
             )
