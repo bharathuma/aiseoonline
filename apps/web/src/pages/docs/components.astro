@@ -1,0 +1,17 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import UiButton from '../../components/ui/UiButton.astro';
+import UiCard from '../../components/ui/UiCard.astro';
+import StatusNotice from '../../components/ui/StatusNotice.astro';
+import LoadingIndicator from '../../components/ui/LoadingIndicator.astro';
+import InfoDialog from '../../components/ui/InfoDialog.astro';
+---
+<SiteLayout title="Interface components — AISEOOnline" description="Examples of AISEOOnline buttons, notices, loading states and accessible dialogs." noindex>
+  <section class="page-banner"><div class="site-container"><p class="eyebrow">Documentation</p><h1 class="section-title mt-4">Interface components</h1><p class="page-intro">Working interface patterns and example status messages. The examples on this page are illustrative, not results from a real SEO check.</p></div></section>
+  <section class="section-space"><div class="site-container max-w-4xl space-y-9">
+    <UiCard><h2 class="text-xl font-bold">Buttons</h2><div class="mt-5 flex flex-wrap items-center gap-3"><UiButton href="/tools/">Explore tools</UiButton><UiButton href="/docs/" variant="outline">Documentation</UiButton><UiButton href="/guides/" variant="text">Read guides ↗</UiButton><UiButton disabled>Unavailable action</UiButton></div></UiCard>
+    <UiCard><h2 class="text-xl font-bold">Form controls</h2><label class="form-label mt-5" for="component-example">Example label</label><input class="form-input max-w-md" type="text" id="component-example" placeholder="Enter sample text" /><p class="mt-2 text-xs text-slate-600">This field is a visual example and does not submit data.</p></UiCard>
+    <UiCard><h2 class="text-xl font-bold">Status messages</h2><div class="mt-5 space-y-3"><StatusNotice variant="info" title="Information example">Additional context can help explain a result.</StatusNotice><StatusNotice variant="success" title="Success example">An operation completed successfully.</StatusNotice><StatusNotice variant="warning" title="Warning example">Something needs attention.</StatusNotice><StatusNotice variant="error" title="Error example">An operation could not complete.</StatusNotice></div></UiCard>
+    <UiCard><h2 class="text-xl font-bold">Loading and dialogs</h2><div class="mt-5 space-y-5"><LoadingIndicator message="Example of an in-progress operation" /><div><InfoDialog id="component-reference-dialog" title="Dialog example" trigger="Open example dialog"><p>This is a native dialog with keyboard support, a close button and focus restored to the trigger on exit.</p></InfoDialog></div></div></UiCard>
+  </div></section>
+</SiteLayout>

@@ -1,0 +1,12 @@
+---
+import ToolDetail from '../../components/ui/ToolDetail.astro';
+import { plannedTools } from '../../components/toolCatalog';
+import type { ToolPreview } from '../../components/toolCatalog';
+
+export function getStaticPaths() {
+  return plannedTools.map((tool) => ({ params: { slug: tool.slug }, props: { tool } }));
+}
+interface Props { tool: ToolPreview; }
+const { tool } = Astro.props;
+---
+<ToolDetail tool={tool} />

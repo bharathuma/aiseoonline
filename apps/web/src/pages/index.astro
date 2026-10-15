@@ -1,49 +1,91 @@
 ---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import UiButton from '../components/ui/UiButton.astro';
 import ToolDirectory from '../components/ToolDirectory.tsx';
-import '../styles/global.css';
-const title = 'AISEOOnline — Open-source SEO tools';
-const description = 'SEO tools and site auditing, built around practical checks and clear evidence. Project in development.';
 ---
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content={description} />
-    <link rel="canonical" href="https://aiseoonline.com/" />
-    <title>{title}</title>
-  </head>
-  <body class="bg-slate-50 text-slate-900 antialiased">
-    <header class="border-b border-slate-200 bg-white">
-      <nav aria-label="Main navigation" class="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
-        <a class="text-xl font-bold tracking-tight text-slate-900" href="/">AISEO<span class="text-teal-700">Online</span></a>
-        <a class="text-sm font-medium text-slate-700 underline-offset-4 hover:underline" href="https://github.com/bharathumashankar/aiseoonline" target="_blank" rel="noopener noreferrer">View on GitHub ↗</a>
-      </nav>
-    </header>
-    <main>
-      <section class="border-b border-slate-200 bg-white">
-        <div class="mx-auto max-w-6xl px-5 py-18 sm:py-24">
-          <div class="inline-flex rounded-full bg-teal-50 px-3 py-1 text-sm font-semibold text-teal-800">Open source · Under development</div>
-          <h1 class="mt-6 max-w-4xl text-4xl font-bold leading-tight tracking-tight text-slate-950 sm:text-6xl">Useful SEO tools. Clear evidence. Better decisions.</h1>
-          <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-600">We're building straightforward SEO checks and site audits, with AI-assisted explanations grounded in real findings.</p>
-          <a class="mt-8 inline-block rounded-xl bg-teal-700 px-6 py-3 font-semibold text-white hover:bg-teal-800" href="#tools">Explore planned tools</a>
+<SiteLayout title="AISEOOnline — Practical SEO tools and site audits" description="Open-source SEO utilities in development, built around clear technical checks and source-backed analysis.">
+  <section class="hero-area overflow-hidden bg-slate-950 text-white">
+    <div class="site-container relative grid items-center gap-14 py-20 lg:grid-cols-[1.08fr_.92fr] lg:gap-16 lg:py-28">
+      <div class="relative z-10">
+        <p class="hero-eyebrow"><span class="hero-dot" aria-hidden="true"></span> Open source · In development</p>
+        <h1 class="mt-8 max-w-2xl text-5xl font-bold leading-[1.08] tracking-[-.045em] text-white sm:text-6xl xl:text-7xl">
+          Find the issues.<br /><span class="text-teal-300">Understand the why.</span>
+        </h1>
+        <p class="mt-7 max-w-xl text-lg leading-8 text-slate-300">
+          Practical SEO tools for everyday site checks, with a clear path from technical findings to useful explanations.
+        </p>
+        <div class="mt-9 flex flex-wrap items-center gap-3">
+          <UiButton href="/tools/">Explore the toolkit <span aria-hidden="true">↗</span></UiButton>
+          <UiButton href="/audit/" variant="secondary">How site audits will work</UiButton>
         </div>
-      </section>
-      <div class="mx-auto max-w-6xl px-5 py-14 sm:py-18" id="tools">
-        <ToolDirectory client:load />
+        <p class="mt-6 text-sm text-slate-400">The site is being built in the open. Tools are not yet available to run.</p>
       </div>
-      <section class="border-t border-slate-200 bg-white">
-        <div class="mx-auto max-w-6xl px-5 py-12">
-          <h2 class="text-xl font-semibold">Built in the open</h2>
-          <p class="mt-3 max-w-3xl leading-7 text-slate-600">Code, architectural notes, and updates are available on GitHub. Individual tools will be published when they're ready to use.</p>
+      <aside aria-label="Illustration of the planned SEO audit process" class="concept-panel">
+        <div class="flex items-center justify-between gap-3 border-b border-white/10 px-6 py-5">
+          <span class="text-sm font-semibold tracking-wide text-white">Audit workflow</span>
+          <span class="rounded-full border border-teal-400/40 bg-teal-400/10 px-3 py-1 text-xs font-semibold text-teal-200">Concept</span>
         </div>
-      </section>
-    </main>
-    <footer class="border-t border-slate-200 py-8">
-      <div class="mx-auto flex max-w-6xl flex-wrap justify-between gap-3 px-5 text-sm text-slate-600">
-        <span>© {new Date().getFullYear()} AISEOOnline</span>
-        <a class="hover:underline" href="https://github.com/bharathumashankar/aiseoonline/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Apache 2.0 license</a>
+        <ol class="space-y-0 px-6 py-3">
+          <li class="concept-step"><span class="concept-number">01</span><div><strong>Collect page evidence</strong><p>Fetch permitted pages within clear limits.</p></div></li>
+          <li class="concept-step"><span class="concept-number">02</span><div><strong>Run technical checks</strong><p>Inspect URLs, metadata, and structure.</p></div></li>
+          <li class="concept-step"><span class="concept-number">03</span><div><strong>Explain what matters</strong><p>Prioritize findings and link to sources.</p></div></li>
+        </ol>
+        <p class="border-t border-white/10 px-6 py-4 text-xs text-slate-400">Illustrative workflow — not a live scan or audit result.</p>
+      </aside>
+    </div>
+  </section>
+
+  <section aria-labelledby="values-heading" class="border-b border-slate-200 bg-white">
+    <div class="site-container grid gap-7 py-10 md:grid-cols-3 md:gap-12">
+      <h2 id="values-heading" class="sr-only">How AISEOOnline approaches SEO</h2>
+      <div><h3 class="text-base font-bold text-slate-950">Clear by design</h3><p class="mt-2 text-sm leading-7 text-slate-600">Understand what a check found and what it couldn't verify.</p></div>
+      <div><h3 class="text-base font-bold text-slate-950">Evidence first</h3><p class="mt-2 text-sm leading-7 text-slate-600">Technical findings should be backed by actual page data.</p></div>
+      <div><h3 class="text-base font-bold text-slate-950">Useful without an account</h3><p class="mt-2 text-sm leading-7 text-slate-600">Lightweight public checks will be free to use.</p></div>
+    </div>
+  </section>
+
+  <section id="tools" class="section-space">
+    <div class="site-container"><ToolDirectory client:load /></div>
+  </section>
+
+  <section class="section-space bg-white">
+    <div class="site-container grid items-center gap-12 lg:grid-cols-[1fr_1fr]">
+      <div>
+        <p class="eyebrow">Planned AI audit</p>
+        <h2 class="section-title mt-3">Beyond a checklist. With the evidence to match.</h2>
+        <p class="mt-6 max-w-xl text-base leading-8 text-slate-600">A site-wide audit is being designed to connect individual technical findings, affected URLs, and practical next steps. Model-generated explanations will remain separate from the underlying checks.</p>
+        <div class="mt-7"><UiButton href="/audit/" variant="outline">Explore the audit approach <span aria-hidden="true">↗</span></UiButton></div>
       </div>
-    </footer>
-  </body>
-</html>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="surface-card"><span class="text-2xl text-teal-700" aria-hidden="true">◇</span><h3 class="mt-5 font-bold">Page evidence</h3><p class="mt-2 text-sm leading-7 text-slate-600">Report what was actually retrieved and checked.</p></div>
+        <div class="surface-card sm:translate-y-6"><span class="text-2xl text-teal-700" aria-hidden="true">◎</span><h3 class="mt-5 font-bold">Focused findings</h3><p class="mt-2 text-sm leading-7 text-slate-600">Organize problems without overstating their impact.</p></div>
+        <div class="surface-card"><span class="text-2xl text-teal-700" aria-hidden="true">↗</span><h3 class="mt-5 font-bold">Next steps</h3><p class="mt-2 text-sm leading-7 text-slate-600">Make the result understandable and actionable.</p></div>
+        <div class="surface-card sm:translate-y-6"><span class="text-2xl text-teal-700" aria-hidden="true">⌘</span><h3 class="mt-5 font-bold">Scoped access</h3><p class="mt-2 text-sm leading-7 text-slate-600">Protect private projects and bound expensive jobs.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-space">
+    <div class="site-container">
+      <div class="mb-9 flex flex-wrap items-end justify-between gap-4">
+        <div><p class="eyebrow">Learn the essentials</p><h2 class="section-title mt-3">A little clarity goes a long way.</h2></div>
+        <a class="inline-link font-semibold" href="/guides/">All guides <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="grid gap-5 md:grid-cols-2">
+        <a class="surface-card card-link block" href="/guides/robots-txt-basics/">
+          <span class="category-label">Technical SEO</span><h3 class="mt-4 text-xl font-bold">Robots.txt: what it can and can't do</h3><p class="mt-3 text-sm leading-7 text-slate-600">Learn how crawling directives differ from indexing controls.</p><span class="mt-6 inline-block text-sm font-semibold text-teal-800">Read guide ↗</span>
+        </a>
+        <a class="surface-card card-link block" href="/guides/title-tags/">
+          <span class="category-label">On-page SEO</span><h3 class="mt-4 text-xl font-bold">Writing useful page titles</h3><p class="mt-3 text-sm leading-7 text-slate-600">Understand unique titles, search snippets, and sensible length checks.</p><span class="mt-6 inline-block text-sm font-semibold text-teal-800">Read guide ↗</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-slate-950 py-14 text-white">
+    <div class="site-container flex flex-wrap items-center justify-between gap-8">
+      <div><p class="text-xs font-bold uppercase tracking-[.2em] text-teal-300">Open development</p><h2 class="mt-3 text-2xl font-bold tracking-tight">Built in the open, one feature at a time.</h2><p class="mt-3 max-w-xl text-sm leading-7 text-slate-300">Follow the source code, design choices, and issues on GitHub.</p></div>
+      <UiButton href="/open-source/" variant="secondary">About the project <span aria-hidden="true">↗</span></UiButton>
+    </div>
+  </section>
+</SiteLayout>

@@ -1,0 +1,26 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+---
+<SiteLayout title="Robots.txt basics — AISEOOnline" description="Understand how robots.txt controls crawling, what it doesn't do, and common mistakes to avoid." type="article">
+  <article class="section-space bg-white"><div class="site-container max-w-3xl">
+    <nav aria-label="Breadcrumb" class="text-sm text-slate-600"><a class="inline-link" href="/guides/">Guides</a><span class="mx-2" aria-hidden="true">/</span><span aria-current="page">Robots.txt basics</span></nav>
+    <p class="eyebrow mt-12">Technical SEO</p>
+    <h1 class="section-title mt-4">Robots.txt: what it can and can't do</h1>
+    <p class="page-intro">The robots.txt file helps crawlers understand which URL paths they may request. It isn't a guarantee that a page will disappear from search results.</p>
+    <div class="prose-article mt-12">
+      <h2>What is robots.txt?</h2>
+      <p>It's a plain-text file typically served at the root of a website, such as <code>https://example.com/robots.txt</code>. A crawler that supports the Robots Exclusion Protocol reads it to determine which paths it should avoid crawling.</p>
+      <h2>A simple example</h2>
+      <pre><code>User-agent: *
+Disallow: /private-preview/
+Allow: /</code></pre>
+      <p>This asks cooperating crawlers to avoid URLs under <code>/private-preview/</code>. It does not authenticate visitors or protect the content from direct access.</p>
+      <h2>Crawling is not indexing</h2>
+      <p>A disallowed URL can still appear in search results when other pages link to it. If the goal is to prevent indexing, use an appropriate indexing directive on a page the crawler is allowed to access, or restrict access to genuinely private information.</p>
+      <h2>Common checks</h2>
+      <ul><li>Confirm the file is reachable at the expected host and path.</li><li>Check rule groups and path patterns for unexpected conflicts.</li><li>Do not block pages that need to be fetched to see an indexing directive.</li><li>Use authentication for private resources; robots.txt is not access control.</li></ul>
+      <p>Different crawlers may interpret unsupported rules differently. Test with the documentation and tools for the crawler that matters to you.</p>
+    </div>
+    <a class="mt-10 inline-block font-semibold text-teal-800 underline underline-offset-4" href="/guides/">← Back to guides</a>
+  </div></article>
+</SiteLayout>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0b1730"/><stop offset="1" stop-color="#123c52"/></linearGradient></defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1000" cy="90" r="230" fill="#5eead4" opacity=".08"/>
+  <rect x="88" y="104" width="66" height="66" rx="18" fill="#5eead4"/>
+  <text x="110" y="153" font-family="Arial, sans-serif" font-weight="700" font-size="52" fill="#0b1730">a</text>
+  <text x="178" y="151" font-family="Arial, sans-serif" font-weight="700" font-size="42" fill="white">AISEOOnline</text>
+  <text x="88" y="312" font-family="Arial, sans-serif" font-weight="700" font-size="66" fill="white">Practical SEO tools.</text>
+  <text x="88" y="397" font-family="Arial, sans-serif" font-weight="700" font-size="66" fill="#5eead4">Clear evidence.</text>
+  <text x="88" y="486" font-family="Arial, sans-serif" font-size="28" fill="#cbd5e1">Open-source project · In development</text>
+</svg>
