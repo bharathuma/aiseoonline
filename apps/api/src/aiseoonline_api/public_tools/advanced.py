@@ -112,10 +112,10 @@ def check_canonical(url: str) -> ToolReport:
             kind = "invalid"
         elif resolved == source:
             kind = "self-referencing"
-        elif urlsplit(raw).scheme not in ("https", "http"):
-            kind = "relative"
         elif urlsplit(resolved).hostname != urlsplit(source).hostname:
             kind = "external"
+        elif urlsplit(raw).scheme not in ("https", "http"):
+            kind = "relative"
         else:
             kind = "absolute"
         canonical_values.append(
