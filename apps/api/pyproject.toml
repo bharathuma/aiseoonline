@@ -20,6 +20,8 @@ dev = [
     "httpx>=0.27,<1.0",
     "pytest>=8.3,<10.0",
     "ruff>=0.9,<1.0",
+    "mypy>=1.15,<2.0",
+    "pytest-cov>=6.0,<8.0",
 ]
 
 [build-system]
@@ -32,6 +34,7 @@ packages = ["src/aiseoonline_api"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = ["integration: requires PostgreSQL and/or Redis services"]
+addopts = "--strict-markers"
 
 [tool.ruff]
 line-length = 100
@@ -39,3 +42,11 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src/aiseoonline_api"]
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+ignore_missing_imports = true

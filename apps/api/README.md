@@ -1,17 +1,32 @@
 # API
 
-Install and run the FastAPI backend using uv from the repository root:
+FastAPI service for AISEOOnline. The versioned HTTP API currently exposes liveness and dependency readiness checks. SEO tool endpoints are not implemented yet.
+
+## Local commands
+
+From the repository root:
 
 ```bash
 uv sync --project apps/api --group dev
-uv run --project apps/api uvicorn aiseoonline_api.main:app --reload --host 127.0.0.1 --port 8000
+uv run --project apps/api uvicorn aiseoonline_api.main:app --reload
+uv run --project apps/api pytest apps/api/tests -q
+uv run --project apps/api ruff check apps/api
+uv run --project apps/api mypy apps/api/src
 ```
 
-Routes:
-- `GET /api/v1/health` — liveness, does not depend on external storage.
-- `GET /api/v1/ready` — readiness, tests PostgreSQL and Redis; returns 503 if unavailable.
-- `/api/docs` and `/api/v1/openapi.json` — API documentation.
+Documentation: `/api/docs` · OpenAPI: `/api/v1/openapi.json`.
 
-`AISEO_DATABASE_URL` is required for Alembic migrations. `AISEO_REDIS_URL` is required for Celery jobs; OpenAI credentials remain optional. Production settings require both storage URLs. Runtime settings use the `AISEO_` prefix and redact SecretStr fields from their representations.
+Errors use a consistent JSON format:
 
-From the root, apply migrations with `uv run --project apps/api alembic -c apps/api/alembic.ini upgrade head`. The initial revision creates six SQL tables and requires PostgreSQL with pgvector available. A bundled development stack is in `compose.yaml`; see [getting started](../../docs/getting-started.md).
+```json
+{
+  "error": {
+    "code": "validation_error",
+    "message": "One or more request fields are invalid.",
+    "details": [{"field": "body.size", "issue": "greater_than"}]
+  },
+  "request_id": "0123456789abcdef0123456789abcdef"
+}
+```
+
+The ID above is illustrative. Every response includes a random server-generated `X-Request-ID`, and arbitrary exception details are not returned to callers. Successful health responses remain backward compatible. See [API contracts](../../docs/api-contracts.md).
