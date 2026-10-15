@@ -1,9 +1,9 @@
 """Deterministic heading, internal link and social metadata checks."""
 
-from datetime import UTC, datetime
 from urllib.parse import urlsplit
 
 from aiseoonline_api.crawler import CrawlLimits, CrawlSession, UnsafeTarget, normalize_url
+from aiseoonline_api.crawler.html import MetaTag
 from aiseoonline_api.public_tools.checks import ToolReport, make_issue
 from aiseoonline_api.seo_core.rules import analyze_page
 
@@ -78,7 +78,8 @@ def check_links(url: str) -> ToolReport:
                 "status": page.http_status if normalized.value == source.value else None,
                 "state": "verified" if normalized.value == source.value else "not_checked",
             })
-        if internal and normalized.value != source.value and len(chosen) < _MAX_LINK_PROBES:
+        if (internal and normalized.value != source.value and len(chosen) < _MAX_LINK_PROBES
+                and len(observed) <= 45):
             chosen.append(normalized.value)
     probes = {item.url: item for item in session.probe_same_origin_links(tuple(chosen))}
     issues = []
@@ -126,10 +127,10 @@ def check_links(url: str) -> ToolReport:
     )
 
 
-def _metadata_values(page_meta: object) -> dict[str, list[str]]:
+def _metadata_values(page_meta: tuple[MetaTag, ...]) -> dict[str, list[str]]:
     # ParsedHtml.meta is already bounded by the secure HTML extractor.
     entries: dict[str, list[str]] = {}
-    for tag in page_meta:  # type: ignore[attr-defined]
+    for tag in page_meta:
         name = tag.name.casefold().strip()
         if name.startswith("og:") or name.startswith("twitter:"):
             entries.setdefault(name, []).append(tag.content)
