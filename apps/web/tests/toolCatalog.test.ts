@@ -49,7 +49,7 @@ test('all planned tools have unique ids, slugs and stable paths', () => {
   const slugs = plannedTools.map((tool) => tool.slug);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(new Set(slugs).size, slugs.length);
-  assert.equal(plannedTools.filter((tool) => tool.status === 'available').length, 9);
+  assert.equal(plannedTools.filter((tool) => tool.status === 'available').length, 10);
   assert.ok(plannedTools.every((tool) => tool.details.length > 0));
   assert.ok(plannedTools.every((tool) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(tool.slug)));
   assert.ok(plannedTools.every((tool) => toolPath(tool) === '/tools/' + tool.slug + '/'));
