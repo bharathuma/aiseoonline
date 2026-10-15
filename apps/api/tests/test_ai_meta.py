@@ -11,9 +11,9 @@ from aiseoonline_api.ai_core import (
     InvalidModelOutput,
     ProviderUnavailable,
     TokenUsage,
+    meta_routes,
 )
 from aiseoonline_api.ai_core.meta_generator import MetaDraft, review_draft
-from aiseoonline_api.ai_core import meta_routes
 from aiseoonline_api.config import Settings
 from aiseoonline_api.main import create_app
 
@@ -28,21 +28,21 @@ IDEAS = {
         {
             "title": "Handmade Ceramic Planters for Indoor Plants",
             "description": "Explore handmade ceramic planters crafted from natural clay "
-                           "for small indoor houseplants and discover gentle plant care tips.",
+            "for small indoor houseplants and discover gentle plant care tips.",
             "evidence_quote": "Handmade ceramic planters for indoor houseplants",
             "rationale": "Describes the core page topic clearly.",
         },
         {
             "title": "Natural Clay Planters and Indoor Plant Care",
             "description": "Discover natural clay planters made by a local studio, "
-                           "with useful ideas for growing and watering houseplants indoors.",
+            "with useful ideas for growing and watering houseplants indoors.",
             "evidence_quote": "Every planter is handmade by a local studio",
             "rationale": "Emphasizes the actual studio production.",
         },
         {
             "title": "Choose Small Ceramic Planters for Your Home",
             "description": "Browse shapes of ceramic planters for your indoor plants "
-                           "and read gentle plant care advice to choose a suitable style.",
+            "and read gentle plant care advice to choose a suitable style.",
             "evidence_quote": "different shapes for small houseplants",
             "rationale": "Focuses on the available planter shapes.",
         },
@@ -52,7 +52,9 @@ IDEAS = {
 
 def settings(**kwargs: Any) -> Settings:
     return Settings(
-        _env_file=None, environment="test", openai_api_key="local-placeholder",
+        _env_file=None,
+        environment="test",
+        openai_api_key="local-placeholder",
         redis_url="redis://localhost:6379/0",
         llm_input_usd_per_million=Decimal("0.5"),
         llm_output_usd_per_million=Decimal("2"),
@@ -68,6 +70,7 @@ class FakeProvider:
         assert request.template_id == "meta_draft"
         assert request.website_text
         import json
+
         fixture = FixtureProvider(
             text=json.dumps(IDEAS),
             usage=TokenUsage(input_tokens=250, output_tokens=170, total_tokens=420),
@@ -96,16 +99,24 @@ def test_pasted_content_returns_three_verified_suggestions(client: TestClient) -
     assert len(result["suggestions"]) == 3
     assert result["usage"]["total_tokens"] == 420
     assert result["estimated_cost_usd"] is not None
-    assert all("verify all factual claims" in " ".join(s["warnings"]) for s in result["suggestions"])
+    assert all(
+        "verify all factual claims" in " ".join(s["warnings"]) for s in result["suggestions"]
+    )
     assert FakeProvider.calls == 1
 
 
-@pytest.mark.parametrize("value", [
-    {}, {"url": "https://example.org/", "content": SOURCE},
-    {"content": "tiny"}, {"content": " " * 160},
-    {"url": "http://127.0.0.1/"}, {"url": "http://169.254.169.254/latest"},
-    {"url": "file:///etc/passwd"},
-])
+@pytest.mark.parametrize(
+    "value",
+    [
+        {},
+        {"url": "https://example.org/", "content": SOURCE},
+        {"content": "tiny"},
+        {"content": " " * 160},
+        {"url": "http://127.0.0.1/"},
+        {"url": "http://169.254.169.254/latest"},
+        {"url": "file:///etc/passwd"},
+    ],
+)
 def test_source_validation_rejects_bad_requests_before_provider(
     client: TestClient, value: dict[str, str]
 ) -> None:
@@ -115,18 +126,32 @@ def test_source_validation_rejects_bad_requests_before_provider(
 
 
 def test_missing_key_fails_clearly(monkeypatch: pytest.MonkeyPatch) -> None:
-    c = TestClient(create_app(Settings(_env_file=None, environment="test",
-                                       redis_url="redis://localhost:6379/0",
-                                       openai_api_key=None)))
+    c = TestClient(
+        create_app(
+            Settings(
+                _env_file=None,
+                environment="test",
+                redis_url="redis://localhost:6379/0",
+                openai_api_key=None,
+            )
+        )
+    )
     response = c.post("/api/v1/tools/ai-meta", json={"content": SOURCE})
     assert response.status_code == 503
     assert response.json()["error"]["code"] == "ai_not_configured"
 
 
 def test_missing_price_rates_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
-    c = TestClient(create_app(Settings(_env_file=None, environment="test",
-                                       openai_api_key="fixture-only",
-                                       redis_url="redis://localhost:6379/0")))
+    c = TestClient(
+        create_app(
+            Settings(
+                _env_file=None,
+                environment="test",
+                openai_api_key="fixture-only",
+                redis_url="redis://localhost:6379/0",
+            )
+        )
+    )
     response = c.post("/api/v1/tools/ai-meta", json={"content": SOURCE})
     assert response.status_code == 503
     assert response.json()["error"]["code"] == "ai_budget_not_configured"
@@ -167,11 +192,11 @@ def test_failed_budget_service_never_calls_ai(
 def test_url_mode_uses_bounded_extracted_evidence(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(meta_routes, "_source_from_url",
-                        lambda url: (SOURCE, "https://example.org/article"))
+    monkeypatch.setattr(
+        meta_routes, "_source_from_url", lambda url: (SOURCE, "https://example.org/article")
+    )
     monkeypatch.setattr(meta_routes, "_cache_key", lambda *args: None)
-    response = client.post("/api/v1/tools/ai-meta",
-                           json={"url": "https://example.org/article"})
+    response = client.post("/api/v1/tools/ai-meta", json={"url": "https://example.org/article"})
     assert response.status_code == 200, response.text
     assert response.json()["source_url"] == "https://example.org/article"
     assert response.json()["source_type"] == "url"
@@ -179,6 +204,7 @@ def test_url_mode_uses_bounded_extracted_evidence(
 
 def test_model_evidence_is_checked_against_actual_text() -> None:
     import copy
+
     bad = copy.deepcopy(IDEAS)
     bad["suggestions"][0]["evidence_quote"] = "A completely invented marketing claim"
     with pytest.raises(InvalidModelOutput):
@@ -187,6 +213,7 @@ def test_model_evidence_is_checked_against_actual_text() -> None:
 
 def test_potentially_unsupported_numbers_and_claims_are_warned() -> None:
     import copy
+
     value = copy.deepcopy(IDEAS)
     value["suggestions"][0]["title"] = "Number One Ceramic Planters — 500 Sold"
     review = review_draft(MetaDraft.model_validate(value), SOURCE)
@@ -195,15 +222,14 @@ def test_potentially_unsupported_numbers_and_claims_are_warned() -> None:
 
 def test_duplicate_suggestions_rejected() -> None:
     import copy
+
     bad = copy.deepcopy(IDEAS)
     bad["suggestions"][2]["title"] = bad["suggestions"][0]["title"]
     with pytest.raises(ValueError):
         MetaDraft.model_validate(bad)
 
 
-def test_provider_error_is_not_exposed(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_provider_error_is_not_exposed(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     class Broken(FakeProvider):
         async def complete(self, request: Any, *, schema: Any = None) -> Any:
             raise ProviderUnavailable("internal credentials are not to be shown")

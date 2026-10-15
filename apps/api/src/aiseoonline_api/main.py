@@ -7,12 +7,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from aiseoonline_api import __version__
+from aiseoonline_api.ai_core.meta_routes import router as ai_meta_router
 from aiseoonline_api.config import Settings, get_settings
 from aiseoonline_api.db.session import create_database_engine
 from aiseoonline_api.errors import ERROR_RESPONSES, register_error_handlers
 from aiseoonline_api.logging import configure_logging
 from aiseoonline_api.public_tools.routes import router as public_tools_router
-from aiseoonline_api.ai_core.meta_routes import router as ai_meta_router
 from aiseoonline_api.request_id import RequestIdMiddleware
 from aiseoonline_api.routes.health import router as health_router
 from aiseoonline_api.routes.readiness import ReadinessResponse

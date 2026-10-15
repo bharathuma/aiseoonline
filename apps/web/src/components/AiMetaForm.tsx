@@ -25,8 +25,11 @@ type Report = {
 type Editable = { title: string; description: string };
 
 function rangeHint(length: number, low: number, high: number) {
-  return length < low ? 'Shorter than the advisory range' :
-    length > high ? 'Longer than the advisory range' : 'Within the advisory range';
+  return length < low
+    ? 'Shorter than the advisory range'
+    : length > high
+      ? 'Longer than the advisory range'
+      : 'Within the advisory range';
 }
 
 export default function AiMetaForm() {
@@ -76,18 +79,28 @@ export default function AiMetaForm() {
         throw new Error(message || 'This AI check is unavailable. Please try again later.');
       }
       const value = data as Report;
-      if (!Array.isArray(value.suggestions) || value.suggestions.length !== 3 ||
-          !value.suggestions.every((item) =>
-            typeof item.title === 'string' && typeof item.description === 'string' &&
-            Array.isArray(item.warnings))) {
+      if (
+        !Array.isArray(value.suggestions) ||
+        value.suggestions.length !== 3 ||
+        !value.suggestions.every(
+          (item) =>
+            typeof item.title === 'string' &&
+            typeof item.description === 'string' &&
+            Array.isArray(item.warnings),
+        )
+      ) {
         throw new Error('Unexpected AI response. No suggestions were accepted.');
       }
       setReport(value);
       setDrafts(value.suggestions.map(({ title, description }) => ({ title, description })));
     } catch (exception) {
-      setError(exception instanceof Error && exception.name === 'AbortError'
-        ? 'Generation timed out. Try again later, or use the free Meta Tag Checker.'
-        : exception instanceof Error ? exception.message : 'Generation is unavailable.');
+      setError(
+        exception instanceof Error && exception.name === 'AbortError'
+          ? 'Generation timed out. Try again later, or use the free Meta Tag Checker.'
+          : exception instanceof Error
+            ? exception.message
+            : 'Generation is unavailable.',
+      );
     } finally {
       clearTimeout(abort);
       setLoading(false);
@@ -104,8 +117,9 @@ export default function AiMetaForm() {
   }
 
   function edit(index: number, field: keyof Editable, value: string) {
-    setDrafts((current) => current.map((item, i) =>
-      i === index ? { ...item, [field]: value } : item));
+    setDrafts((current) =>
+      current.map((item, i) => (i === index ? { ...item, [field]: value } : item)),
+    );
     setCopyState('');
   }
 
@@ -116,22 +130,44 @@ export default function AiMetaForm() {
           <legend className="form-label">Choose your source</legend>
           <div className="flex flex-wrap gap-6">
             <label className="flex items-center gap-2 text-sm">
-              <input type="radio" name="source" checked={mode === 'text'} disabled={loading}
-                onChange={() => setMode('text')}/> Paste page content
+              <input
+                type="radio"
+                name="source"
+                checked={mode === 'text'}
+                disabled={loading}
+                onChange={() => setMode('text')}
+              />{' '}
+              Paste page content
             </label>
             <label className="flex items-center gap-2 text-sm">
-              <input type="radio" name="source" checked={mode === 'url'} disabled={loading}
-                onChange={() => setMode('url')}/> Fetch public URL
+              <input
+                type="radio"
+                name="source"
+                checked={mode === 'url'}
+                disabled={loading}
+                onChange={() => setMode('url')}
+              />{' '}
+              Fetch public URL
             </label>
           </div>
         </fieldset>
         {mode === 'url' ? (
           <div>
-            <label className="form-label" htmlFor="ai-page-url">Public page URL</label>
-            <input id="ai-page-url" type="url" required autoComplete="url"
-              className="form-input" maxLength={2048} disabled={loading}
-              value={url} onChange={(event) => setUrl(event.target.value)}
-              placeholder="https://example.org/article/"/>
+            <label className="form-label" htmlFor="ai-page-url">
+              Public page URL
+            </label>
+            <input
+              id="ai-page-url"
+              type="url"
+              required
+              autoComplete="url"
+              className="form-input"
+              maxLength={2048}
+              disabled={loading}
+              value={url}
+              onChange={(event) => setUrl(event.target.value)}
+              placeholder="https://example.org/article/"
+            />
             <p className="mt-2 text-sm text-slate-600">
               Reads the public page title, descriptions and headings only. JavaScript-rendered text
               and private pages are not supported.
@@ -139,11 +175,21 @@ export default function AiMetaForm() {
           </div>
         ) : (
           <div>
-            <label className="form-label" htmlFor="ai-page-content">Your page content</label>
-            <textarea id="ai-page-content" required minLength={100} maxLength={3000}
-              rows={8} disabled={loading} className="form-input"
-              value={content} onChange={(event) => setContent(event.target.value)}
-              placeholder="Describe the actual page, its products or services and relevant facts..."/>
+            <label className="form-label" htmlFor="ai-page-content">
+              Your page content
+            </label>
+            <textarea
+              id="ai-page-content"
+              required
+              minLength={100}
+              maxLength={3000}
+              rows={8}
+              disabled={loading}
+              className="form-input"
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              placeholder="Describe the actual page, its products or services and relevant facts..."
+            />
             <p className="mt-2 text-sm text-slate-600">
               {content.length}/3000 characters · Minimum 100. Do not include secrets or personal
               information. Pasted content is not cached.
@@ -161,14 +207,19 @@ export default function AiMetaForm() {
       </form>
 
       <div aria-live="polite" aria-atomic="true">
-        {loading && <p role="status" className="rounded-xl bg-teal-50 p-4 text-teal-900">
-          Reviewing your source and generating three drafts. This may take up to a minute.
-        </p>}
-        {error && <div role="alert" className="status-notice status-error">
-          {error} <a className="inline-link" href="/tools/meta-tag-checker/">
-            Try the free Meta Tag Checker.
-          </a>
-        </div>}
+        {loading && (
+          <p role="status" className="rounded-xl bg-teal-50 p-4 text-teal-900">
+            Reviewing your source and generating three drafts. This may take up to a minute.
+          </p>
+        )}
+        {error && (
+          <div role="alert" className="status-notice status-error">
+            {error}{' '}
+            <a className="inline-link" href="/tools/meta-tag-checker/">
+              Try the free Meta Tag Checker.
+            </a>
+          </div>
+        )}
       </div>
 
       {report && (
@@ -177,10 +228,12 @@ export default function AiMetaForm() {
             <h2 className="text-xl font-bold">Three suggestions for your review</h2>
             <p className="mt-2 text-sm text-slate-700">{report.visitor_message}</p>
             <p className="mt-2 text-xs text-slate-600">
-              Source: {report.source_summary}. {report.cached ? 'Cached response' : 'New AI response'}.
+              Source: {report.source_summary}.{' '}
+              {report.cached ? 'Cached response' : 'New AI response'}.
               {report.usage ? ' Measured tokens: ' + report.usage.total_tokens + '.' : ''}
-              {report.estimated_cost_usd ? ' Estimated provider cost: $' +
-                report.estimated_cost_usd + '.' : ''}
+              {report.estimated_cost_usd
+                ? ' Estimated provider cost: $' + report.estimated_cost_usd + '.'
+                : ''}
             </p>
             <p className="mt-3 text-sm text-slate-600">
               Character ranges are editorial starting points, not pixel-width or search-engine
@@ -191,16 +244,25 @@ export default function AiMetaForm() {
             <article className="surface-card space-y-4" key={index}>
               <h3 className="text-lg font-bold">Suggestion {index + 1}</h3>
               <div>
-                <label className="form-label" htmlFor={'draft-title-' + index}>Editable SEO title</label>
-                <input id={'draft-title-' + index} className="form-input"
-                  maxLength={160} value={draft.title}
-                  onChange={(event) => edit(index, 'title', event.target.value)}/>
+                <label className="form-label" htmlFor={'draft-title-' + index}>
+                  Editable SEO title
+                </label>
+                <input
+                  id={'draft-title-' + index}
+                  className="form-input"
+                  maxLength={160}
+                  value={draft.title}
+                  onChange={(event) => edit(index, 'title', event.target.value)}
+                />
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs text-slate-600">
                     {draft.title.length} characters · {rangeHint(draft.title.length, 30, 60)}
                   </p>
-                  <button type="button" className="ui-button ui-button-outline ui-button-small"
-                    onClick={() => copy(index, 'title')}>
+                  <button
+                    type="button"
+                    className="ui-button ui-button-outline ui-button-small"
+                    onClick={() => copy(index, 'title')}
+                  >
                     {copyState === index + ':title' ? 'Copied' : 'Copy title'}
                   </button>
                 </div>
@@ -209,28 +271,36 @@ export default function AiMetaForm() {
                 <label className="form-label" htmlFor={'draft-description-' + index}>
                   Editable meta description
                 </label>
-                <textarea id={'draft-description-' + index} className="form-input" rows={4}
-                  maxLength={320} value={draft.description}
-                  onChange={(event) => edit(index, 'description', event.target.value)}/>
+                <textarea
+                  id={'draft-description-' + index}
+                  className="form-input"
+                  rows={4}
+                  maxLength={320}
+                  value={draft.description}
+                  onChange={(event) => edit(index, 'description', event.target.value)}
+                />
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs text-slate-600">
-                    {draft.description.length} characters · {
-                      rangeHint(draft.description.length, 70, 160)}
+                    {draft.description.length} characters ·{' '}
+                    {rangeHint(draft.description.length, 70, 160)}
                   </p>
-                  <button type="button" className="ui-button ui-button-outline ui-button-small"
-                    onClick={() => copy(index, 'description')}>
+                  <button
+                    type="button"
+                    className="ui-button ui-button-outline ui-button-small"
+                    onClick={() => copy(index, 'description')}
+                  >
                     {copyState === index + ':description' ? 'Copied' : 'Copy description'}
                   </button>
                 </div>
               </div>
               <div className="rounded-xl bg-slate-50 p-4">
-                <p className="text-xs font-semibold text-slate-700">Source evidence (original draft)</p>
+                <p className="text-xs font-semibold text-slate-700">
+                  Source evidence (original draft)
+                </p>
                 <blockquote className="mt-2 break-words text-sm text-slate-800">
                   {report.suggestions[index].evidence_quote}
                 </blockquote>
-                <p className="mt-2 text-xs text-slate-600">
-                  {report.suggestions[index].rationale}
-                </p>
+                <p className="mt-2 text-xs text-slate-600">{report.suggestions[index].rationale}</p>
                 <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-amber-900">
                   {report.suggestions[index].warnings.map((warning, j) => (
                     <li key={j}>{warning}</li>

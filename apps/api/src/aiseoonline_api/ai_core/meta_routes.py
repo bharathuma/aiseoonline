@@ -4,7 +4,7 @@ import asyncio
 import hashlib
 import json
 from datetime import UTC, datetime
-from decimal import Decimal, ROUND_CEILING
+from decimal import ROUND_CEILING
 from typing import Literal
 
 from fastapi import APIRouter, Request
@@ -92,9 +92,9 @@ def _price_micro(settings: Settings, output_tokens: int) -> int | None:
         settings.llm_input_usd_per_million * settings.llm_max_input_tokens
         + settings.llm_output_usd_per_million * output_tokens
     )
-    return int((estimate * (settings.llm_max_retries + 1)).to_integral_value(
-        rounding=ROUND_CEILING
-    ))
+    return int(
+        (estimate * (settings.llm_max_retries + 1)).to_integral_value(rounding=ROUND_CEILING)
+    )
 
 
 def _limits(settings: Settings) -> tuple[int, int] | None:
@@ -119,7 +119,15 @@ def _check_peer(redis_url: str, peer: str) -> int:
 
 def _reserve_spend(redis_url: str, allocation: int, limit: int) -> bool:
     with Redis.from_url(redis_url, socket_timeout=0.8, socket_connect_timeout=0.8) as client:
-        return bool(client.eval(_SPEND_SCRIPT, 1, "ai:daily:" + datetime.now(UTC).strftime("%Y%m%d"), allocation, limit))
+        return bool(
+            client.eval(
+                _SPEND_SCRIPT,
+                1,
+                "ai:daily:" + datetime.now(UTC).strftime("%Y%m%d"),
+                allocation,
+                limit,
+            )
+        )
 
 
 def _source_from_url(url: str) -> tuple[str, str]:
@@ -153,7 +161,8 @@ def _store_cache(redis_url: str, key: str, result: MetaGeneratorResponse) -> Non
 
 
 @router.post(
-    "/tools/ai-meta", response_model=MetaGeneratorResponse,
+    "/tools/ai-meta",
+    response_model=MetaGeneratorResponse,
     summary="Generate source-grounded SEO titles and descriptions",
 )
 async def ai_meta(
@@ -162,13 +171,17 @@ async def ai_meta(
     settings: Settings = request.app.state.settings
     if not settings.openai_api_key or not settings.openai_api_key.get_secret_value().strip():
         return error_response(
-            request, 503, "ai_not_configured",
+            request,
+            503,
+            "ai_not_configured",
             "AI suggestions are not currently available. Try a free metadata checker.",
         )
     limits = _limits(settings)
     if limits is None:
         return error_response(
-            request, 503, "ai_budget_not_configured",
+            request,
+            503,
+            "ai_budget_not_configured",
             "AI spending limits are not configured. Free SEO checks remain available.",
         )
     if settings.redis_url is None:
@@ -187,7 +200,9 @@ async def ai_meta(
         )
     if remaining == -2:
         reply = error_response(
-            request, 429, "ai_rate_limited",
+            request,
+            429,
+            "ai_rate_limited",
             "AI suggestions are limited to three requests per hour per visitor.",
         )
         reply.headers["Retry-After"] = "3600"
@@ -221,10 +236,14 @@ async def ai_meta(
                 raw = redis_client.get(cache_key)
             cache_hit = _cached_result(raw.decode()) if raw else None
             if cache_hit:
-                return cache_hit.model_copy(update={
-                    "cached": True, "usage": None, "estimated_cost_usd": None,
-                    "visitor_message": "Cached suggestions; no new AI call was made.",
-                })
+                return cache_hit.model_copy(
+                    update={
+                        "cached": True,
+                        "usage": None,
+                        "estimated_cost_usd": None,
+                        "visitor_message": "Cached suggestions; no new AI call was made.",
+                    }
+                )
         except (RedisError, OSError, TimeoutError):
             return error_response(
                 request, 503, "service_unavailable", "AI caching is temporarily unavailable."
@@ -238,7 +257,9 @@ async def ai_meta(
         )
     if not allowed:
         reply = error_response(
-            request, 429, "ai_daily_budget_reached",
+            request,
+            429,
+            "ai_daily_budget_reached",
             "The AI spending allocation has been exhausted. Try again later.",
         )
         reply.headers["Retry-After"] = "3600"
@@ -252,8 +273,10 @@ async def ai_meta(
             async with slots:
                 answer = await provider.complete(
                     GenerationRequest(
-                        template_id="meta_draft", template_version="v1",
-                        task=_PROMPT_TASK, website_text=evidence,
+                        template_id="meta_draft",
+                        template_version="v1",
+                        task=_PROMPT_TASK,
+                        website_text=evidence,
                         max_output_tokens=min(480, settings.llm_max_output_tokens),
                     ),
                     schema=MetaDraft,
@@ -262,11 +285,14 @@ async def ai_meta(
             raise InvalidModelOutput("Model did not return a typed SEO draft")
         reviewed = review_draft(answer.value, evidence)
         response = MetaGeneratorResponse(
-            suggestions=reviewed, source_type=source_type,
+            suggestions=reviewed,
+            source_type=source_type,
             source_url=source_url,
-            source_summary="Extracted title, description and headings" if body.url
-                else "Visitor-provided text",
-            model=answer.model, cached=False,
+            source_summary="Extracted title, description and headings"
+            if body.url
+            else "Visitor-provided text",
+            model=answer.model,
+            cached=False,
             usage=answer.usage.model_dump(),
             estimated_cost_usd=str(answer.cost_usd) if answer.cost_usd is not None else None,
             visitor_message="Three AI drafts generated. Review accuracy before publishing.",
@@ -281,10 +307,17 @@ async def ai_meta(
         return error_response(
             request, 502, "ai_invalid_output", "AI did not produce verified suggestions."
         )
-    except (ProviderRateLimited, ProviderUnavailable, CredentialsUnavailable, LLMTimeout,
-            TimeoutError):
+    except (
+        ProviderRateLimited,
+        ProviderUnavailable,
+        CredentialsUnavailable,
+        LLMTimeout,
+        TimeoutError,
+    ):
         return error_response(
-            request, 503, "ai_temporarily_unavailable",
+            request,
+            503,
+            "ai_temporarily_unavailable",
             "AI is temporarily unavailable. Please try the free metadata checker.",
         )
     finally:
