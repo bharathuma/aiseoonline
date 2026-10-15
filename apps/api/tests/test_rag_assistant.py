@@ -284,7 +284,7 @@ def test_live_creds_not_required_for_negative_access_paths() -> None:
     disabled = Settings(
         _env_file=None,
         environment="production",
-        database_url="sqlite+pysqlite:///:memory:",
+        database_url="sqlite:///:memory:",
         redis_url="redis://localhost:6379/0",
     )
     response = TestClient(create_app(disabled)).post(
