@@ -51,8 +51,10 @@ def _engine(request: Request):
 async def enqueue(
     request: Request,
     body: CreateAudit,
+    response: Response,
     idempotency_key: str = Header(..., alias="Idempotency-Key"),
 ) -> JobView | JSONResponse:
+    response.headers["Cache-Control"] = "no-store, private"
     if not _access(request):
         return error_response(request, 404, "not_found", "Resource unavailable.")
     settings: Settings = request.app.state.settings
@@ -120,7 +122,8 @@ async def enqueue(
 
 
 @router.get("/internal/audits/{job_id}", response_model=JobView)
-def status(request: Request, job_id: UUID) -> JobView | JSONResponse:
+def status(request: Request, job_id: UUID, response: Response) -> JobView | JSONResponse:
+    response.headers["Cache-Control"] = "no-store, private"
     if not _access(request):
         return error_response(request, 404, "not_found", "Resource unavailable.")
     owner = request.app.state.settings.audit_dev_owner_id
@@ -135,7 +138,8 @@ def status(request: Request, job_id: UUID) -> JobView | JSONResponse:
 
 
 @router.post("/internal/audits/{job_id}/cancel", response_model=JobView)
-def cancel(request: Request, job_id: UUID) -> JobView | JSONResponse:
+def cancel(request: Request, job_id: UUID, response: Response) -> JobView | JSONResponse:
+    response.headers["Cache-Control"] = "no-store, private"
     if not _access(request):
         return error_response(request, 404, "not_found", "Resource unavailable.")
     owner = request.app.state.settings.audit_dev_owner_id
@@ -172,7 +176,10 @@ def _report(request: Request, job_id: UUID) -> AuditReport | JSONResponse:
 
 
 @router.get("/internal/audits/{job_id}/report", response_model=AuditReport)
-def report_json(request: Request, job_id: UUID) -> AuditReport | JSONResponse:
+def report_json(
+    request: Request, job_id: UUID, response: Response
+) -> AuditReport | JSONResponse:
+    response.headers["Cache-Control"] = "no-store, private"
     return _report(request, job_id)
 
 
