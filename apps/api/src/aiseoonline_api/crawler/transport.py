@@ -104,7 +104,7 @@ def fetch_http(
             if len(body) > max_bytes:
                 raise CrawlLimitExceeded("Response exceeds the byte budget")
         return HttpDocument(response.status, mime, charset, location, bytes(body))
-    except (socket.timeout, TimeoutError) as exc:
+    except TimeoutError as exc:
         raise CrawlTimeout("Website request timed out") from exc
     except (ssl.SSLError, OSError, http.client.HTTPException) as exc:
         raise NetworkFailure("Website connection failed") from exc
