@@ -293,6 +293,9 @@ def test_live_creds_not_required_for_negative_access_paths() -> None:
         headers={"X-Dev-Rag-Token": TOKEN},
     )
     assert response.status_code == 404
+    assert "/api/v1/internal/rag/chat" not in TestClient(
+        create_app(disabled)
+    ).get("/api/v1/openapi.json").json()["paths"]
 
 
 def test_production_cannot_enable_chat_even_with_token() -> None:
@@ -303,6 +306,8 @@ def test_production_cannot_enable_chat_even_with_token() -> None:
 def test_feature_flag_and_strong_token_are_required() -> None:
     with pytest.raises(ValidationError):
         configured(rag_chat_dev_token="weak")
+    with pytest.raises(ValidationError):
+        configured(rag_chat_dev_token="é" * 40)
     assert not Settings(_env_file=None, environment="test").rag_chat_enabled
 
 
