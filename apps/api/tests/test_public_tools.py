@@ -196,7 +196,7 @@ def test_ssrf_fails_at_url_parser_before_any_transport() -> None:
 
 
 class LiveFixture(BaseHTTPRequestHandler):
-    robots = b"User-agent: *\\nAllow: /\\n"
+    robots = b"User-agent: *\nAllow: /\n"
     sitemap = SITEMAP
 
     def do_GET(self) -> None:
@@ -229,7 +229,7 @@ class LiveFixture(BaseHTTPRequestHandler):
 @pytest.fixture
 def live_site(monkeypatch: pytest.MonkeyPatch) -> Iterator[ThreadingHTTPServer]:
     server = ThreadingHTTPServer(("127.0.0.1", 0), LiveFixture)
-    server.RequestHandlerClass.robots = b"User-agent: *\\nAllow: /\\n"
+    server.RequestHandlerClass.robots = b"User-agent: *\nAllow: /\n"
     server.RequestHandlerClass.sitemap = SITEMAP
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -277,7 +277,7 @@ def test_three_public_tools_really_fetch_and_parse_local_fixture(
 def test_robot_disallow_rejects_page_without_fetching_it(
     client: TestClient, live_site: ThreadingHTTPServer,
 ) -> None:
-    live_site.RequestHandlerClass.robots = b"User-agent: *\\nDisallow: /page\\n"
+    live_site.RequestHandlerClass.robots = b"User-agent: *\nDisallow: /page\n"
     response = client.post("/api/v1/tools/meta", json={"url": "http://example.org/page"})
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "robots_denied"
