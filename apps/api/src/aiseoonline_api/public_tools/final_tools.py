@@ -78,7 +78,7 @@ def check_links(url: str) -> ToolReport:
             normalized = normalize_url(entry.href)
         except (UnsafeTarget, ValueError):
             continue
-        internal = normalized.origin == source.origin
+        internal = normalized.host == source.host
         if internal:
             internal_count += 1
         else:
@@ -134,7 +134,7 @@ def check_links(url: str) -> ToolReport:
                     "links.upstream_error",
                     "warning",
                     "An internal URL returned a server error.",
-                    "Investigate the server response; a temporary failure is not proof of brokenness.",
+                    "Check the server; a temporary error does not prove the link is broken.",
                     f"{row['evidence']}: HTTP {probe.status} {target[:140]}",
                 )
             )
