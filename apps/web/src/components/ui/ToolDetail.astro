@@ -6,7 +6,7 @@ import type { ToolPreview } from '../toolCatalog';
 interface Props { tool: ToolPreview; }
 const { tool } = Astro.props;
 ---
-<SiteLayout title={tool.name + ' — AISEOOnline'} description={tool.summary + ' Tool details and availability.'}>
+<SiteLayout title={tool.name + ' — AISEOOnline'} description={tool.summary + ' Tool details and availability.'} noindex={tool.status === 'planned'}>
   <section class="section-space bg-white">
     <div class="site-container max-w-4xl">
       <nav aria-label="Breadcrumb" class="text-sm text-slate-600">
