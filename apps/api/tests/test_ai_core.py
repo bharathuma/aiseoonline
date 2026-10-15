@@ -347,10 +347,14 @@ def test_streaming_enforces_total_wall_clock_deadline() -> None:
             httpx.MockTransport(lambda req: httpx.Response(200, stream=SlowChunks()))
         ) as client:
             instance = OpenAIChatProvider(
-                api_key="fixture-only", model="gpt-4o-mini",
-                budget=TokenBudget(max_input_tokens=8192, max_output_tokens=256,
-                                   max_total_tokens=8448),
-                http_client=client, timeout_seconds=1, max_retries=0,
+                api_key="fixture-only",
+                model="gpt-4o-mini",
+                budget=TokenBudget(
+                    max_input_tokens=8192, max_output_tokens=256, max_total_tokens=8448
+                ),
+                http_client=client,
+                timeout_seconds=1,
+                max_retries=0,
             )
             with pytest.raises(LLMTimeout):
                 _ = [event async for event in instance.stream(REQUEST)]
@@ -373,10 +377,13 @@ def test_provider_concurrency_is_bounded() -> None:
     async def scenario() -> None:
         async with client_for(httpx.MockTransport(handler)) as client:
             instance = OpenAIChatProvider(
-                api_key="fixture-only", model="gpt-4o-mini",
-                budget=TokenBudget(max_input_tokens=8192, max_output_tokens=256,
-                                   max_total_tokens=8448),
-                http_client=client, concurrency=2,
+                api_key="fixture-only",
+                model="gpt-4o-mini",
+                budget=TokenBudget(
+                    max_input_tokens=8192, max_output_tokens=256, max_total_tokens=8448
+                ),
+                http_client=client,
+                concurrency=2,
             )
             results = await asyncio.gather(*(instance.complete(REQUEST) for _ in range(7)))
             assert len(results) == 7
