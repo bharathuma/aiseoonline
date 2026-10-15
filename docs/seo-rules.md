@@ -9,7 +9,7 @@ from aiseoonline_api.crawler import CrawlSession
 from aiseoonline_api.seo_core import RuleConfig, analyze_page
 
 # Only crawl sites you own or are authorized to check.
-snapshot = CrawlSession("https://your-site.example/").fetch_page()
+snapshot = CrawlSession("https://your-authorized-domain.org/").fetch_page()
 report = analyze_page(snapshot, RuleConfig())
 for finding in report.findings:
     print(finding.rule_id, finding.url, finding.severity)
