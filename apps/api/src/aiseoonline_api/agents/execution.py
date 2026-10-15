@@ -115,7 +115,7 @@ def estimated_allocation(settings: Settings) -> int | None:
     dollars = (
         input_rate * settings.llm_max_input_tokens
         + output_rate * settings.llm_max_output_tokens
-    ) * 4 * (settings.llm_max_retries + 1) / Decimal(1000000)
+    ) * 4 * 3 * (settings.llm_max_retries + 1) / Decimal(1000000)
     micro = int((dollars * 1000000).to_integral_value(rounding=ROUND_CEILING))
     cap = int(settings.audit_request_usd_cap * 1000000)
     return micro if 0 < micro <= cap else None
@@ -230,7 +230,13 @@ def claim_job(session: Session, job_id: UUID) -> tuple[AuditRequest, int] | None
         return None
     request = AuditRequest.model_validate(job.request_data)
     # Re-verify even after stale lease recovery, before any network/model calls.
-    project_authorizer(session)(request)
+    try:
+        project_authorizer(session)(request)
+    except PermissionError:
+        job.status, job.progress_step = "failed", "failed"
+        job.error_message, job.finished_at = "project_unverified", now
+        session.flush()
+        return None
     job.status, job.progress_step = "running", "authorize"
     job.progress_percent = max(job.progress_percent, 5)
     job.attempts += 1
