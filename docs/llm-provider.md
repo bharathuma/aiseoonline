@@ -15,7 +15,7 @@ LangChain and LangGraph are deliberately **not** required by the low-level HTTP 
 
 Set `AISEO_OPENAI_API_KEY` only on the backend when deliberately enabling paid calls. Without credentials, the application still starts; calling `make_openai_provider()` raises `CredentialsUnavailable`. No API key is ever sent to the frontend. The environment variables are listed in [the example configuration](../.env.example).
 
-Defaults: `gpt-4o-mini`, 8,192 conservative input characters/byte ceiling, 512 maximum completion tokens, 8,704 total tokens, 15-second per-operation network timeouts, two retries and three concurrent provider requests. Settings are upper-bounded by Pydantic. The conservative admission guard counts JSON-encoded UTF-8 bytes to avoid relying on an absent tokenizer; it may reject prompts that would actually fit in the model context. **Actual** input/output token counts are taken from the provider response and enforced again.
+Defaults: `gpt-4o-mini`, 8,192 conservative input characters/byte ceiling, 512 maximum completion tokens, 8,704 total tokens, 15-second per-operation network timeouts plus a bounded total stream deadline, two retries and three concurrent provider requests. Settings are upper-bounded by Pydantic. The conservative admission guard counts JSON-encoded UTF-8 bytes to avoid relying on an absent tokenizer; it may reject prompts that would actually fit in the model context. **Actual** input/output token counts are taken from the provider response and enforced again.
 
 No built-in price is assumed. Configure **both** `AISEO_LLM_INPUT_USD_PER_MILLION` and `AISEO_LLM_OUTPUT_USD_PER_MILLION` to compute a decimal USD estimate from measured usage; otherwise `cost_usd` is `None`. The pricing configuration must be kept in sync with the actual model and contract.
 
@@ -88,7 +88,7 @@ The API client does not follow HTTP redirects, makes requests to the fixed OpenA
 - Retry up to two times on HTTP 429, 500, 502, 503, 504 and transient network failures, using short capped exponential delays and a capped `Retry-After`.
 - Do **not** retry authentication errors, schema errors or budget violations.
 - Timeouts, rate limits, unavailable credentials, unexpected provider responses, and budget failures are distinct typed exceptions.
-- Streaming retries apply only before a successful stream starts; partial streams never replay. Provider access is guarded by a semaphore.
+- Streaming retries apply only before a successful stream starts; partial streams never replay. An overall stream deadline also applies even when the server keeps delivering small chunks. Provider access is guarded by a semaphore.
 
 The provider is currently a Python service-level component, not a public HTTP endpoint, so credentials and user data have no browser exposure. Public authentication, site ownership controls and paid-call budgets are prerequisites for any future AI endpoint.
 
