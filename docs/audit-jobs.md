@@ -11,7 +11,7 @@ The internal SEO audit runner uses Celery/Redis to process bounded, owner-verifi
 - Install the supported `langgraph-checkpoint-postgres` dependency with the committed `uv.lock`. The worker initializes the PostgreSQL checkpointer with `await checkpointer.setup()`; a deterministic per-job thread ID is derived from the job UUID.
 - Set `AISEO_AUDIT_JOBS_ENABLED=true` only in local development or an isolated test environment. Set `AISEO_AUDIT_DEV_OWNER_ID` to an actual **verified project owner** UUID and `AISEO_AUDIT_DEV_TOKEN` to a 32+ character ASCII random value.
 - Configure `AISEO_DATABASE_URL`, `AISEO_REDIS_URL`, `AISEO_OPENAI_API_KEY`, **both** real model price rates `AISEO_LLM_INPUT_USD_PER_MILLION` and `AISEO_LLM_OUTPUT_USD_PER_MILLION`, and the audited model choice. Without any of these, jobs cannot be scheduled.
-- Set optional conservative limits `AISEO_AUDIT_DAILY_JOB_CAP=12`, `AISEO_AUDIT_REQUEST_USD_CAP=0.10`, `AISEO_AUDIT_DAILY_USD_CAP=1.00` (USD). These are preallocated retry envelopes, **not** measured provider invoices or actual financial limits on your OpenAI account.
+- Set optional conservative limits `AISEO_AUDIT_DAILY_JOB_CAP=12`, `AISEO_AUDIT_REQUEST_USD_CAP=0.30`, `AISEO_AUDIT_DAILY_USD_CAP=1.00` (USD). These are preallocated retry envelopes, **not** measured provider invoices or actual financial limits on your OpenAI account.
 
 Start worker and beat separately after migrations:
 
