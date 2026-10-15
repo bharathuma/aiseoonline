@@ -137,7 +137,7 @@ def test_schema_does_not_execute_untrusted_html(
         monkeypatch,
         b'<script type="application/ld+json">'
         b'{"@context":"https://schema.org","@type":"WebPage",'
-        b'"name":"<script>alert(1)</script>"}'
+        b'"name":"<img src=x onerror=alert(1)>"}'
         b"</script>",
     )
     # The untrusted string is data; no scripts are executed by the checker.
