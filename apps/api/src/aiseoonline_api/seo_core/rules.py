@@ -149,7 +149,8 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
                 "description.length",
                 "info",
                 "Review meta description length",
-                f"Advisory {conf.description_min_chars}–{conf.description_max_chars}; got {len(value)} chars.",
+                f"Advisory {conf.description_min_chars}–{conf.description_max_chars}; "
+                f"got {len(value)} chars.",
                 "Prefer a clear summary over a rigid character target.",
                 (_tag_ev(present[0]),),
             )
