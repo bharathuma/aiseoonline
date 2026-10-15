@@ -60,6 +60,15 @@ def _append(
     return (*state.get("trace", ()), AuditTrace(node=name, outcome=outcome, tool=tool))
 
 
+
+def _combine_usage(state: AuditState, measurement: dict[str, int]) -> dict[str, int]:
+    previous = state.get("token_usage") or {}
+    return {
+        name: previous.get(name, 0) + measurement.get(name, 0)
+        for name in ("input_tokens", "output_tokens", "total_tokens")
+    }
+
+
 def _priority(finding: SeoFinding) -> Literal["high", "medium", "low"]:
     if finding.severity == "error" or finding.rule_id in (
         "robots.noindex",
@@ -269,6 +278,7 @@ class AuditAgent:
             return {
                 "next_tool": None if picked == "stop" else picked,
                 "model_calls": model_calls + 1,
+                "token_usage": _combine_usage(state, answer.usage.model_dump()),
                 "trace": _append(
                     state,
                     "select",
@@ -358,7 +368,7 @@ class AuditAgent:
                 "recommendations": recommendations,
                 "model": response.model,
                 "model_calls": calls + 1,
-                "token_usage": response.usage.model_dump(),
+                "token_usage": _combine_usage(state, response.usage.model_dump()),
                 "trace": _append(state, "analyze", "grounded"),
             }
         except (LLMError, ValidationError, ValueError):
