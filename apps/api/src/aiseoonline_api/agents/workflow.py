@@ -326,7 +326,7 @@ class AuditAgent:
                 GenerationRequest(
                     template_id="audit_recommendations",
                     template_version="v1",
-                    task="Suggest up to six grounded corrections with exact finding IDs and quotes.",
+                    task="Suggest six or fewer corrections with verified IDs and exact quotes.",
                     website_text=input_text,
                     max_output_tokens=440,
                 ),
