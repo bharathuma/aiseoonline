@@ -4,6 +4,7 @@ Callers supply a SQLAlchemy Session and own commit/rollback. No public API route
 """
 
 from datetime import datetime
+from typing import cast
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -273,7 +274,8 @@ class RagStore:
             .limit(limit)
         )
         results = []
-        for chunk, doc, similarity_distance in self.session.execute(statement):
+        for row in self.session.execute(statement):
+            chunk, doc, similarity_distance = cast(tuple[RagChunk, RagDocument, float], row)
             results.append(
                 SearchHit(
                     document_id=doc.id,
