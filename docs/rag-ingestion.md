@@ -90,4 +90,6 @@ The real pgvector test (in CI, against the local PostgreSQL service) verifies th
 AISEO_TEST_DATABASE_URL=postgresql+psycopg://... uv run --project apps/api --locked pytest apps/api/tests/test_rag_integration.py -q
 ```
 
+See [hybrid retrieval, citations and evaluation](rag-retrieval.md) for the separate full-text and vector search service.
+
 This does not claim live OpenAI embedding API compatibility or actual production throughput. Live provider calls require explicit approval and billing settings; they are deliberately absent from CI.

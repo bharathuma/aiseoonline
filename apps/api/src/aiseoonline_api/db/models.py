@@ -150,6 +150,8 @@ class RagDocument(Base):
         Uuid(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
     )
     source_url: Mapped[str] = mapped_column(Text, nullable=False)
+    document_type: Mapped[str] = mapped_column(String(24), nullable=False, default="web_page")
+    access_scope: Mapped[str] = mapped_column(String(24), nullable=False, default="owner_only")
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     embedding_provider: Mapped[str] = mapped_column(String(32), nullable=False)
     embedding_model: Mapped[str] = mapped_column(String(120), nullable=False)
