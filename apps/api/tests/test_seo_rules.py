@@ -24,12 +24,12 @@ def snapshot(html: str | bytes, url: str = "https://example.org/page") -> PageSn
 
 
 GOOD = (
-    '<html><head><title>A thoughtfully written page title</title>'
+    "<html><head><title>A thoughtfully written page title</title>"
     '<meta name="description" content="A helpful summary of this example page '
     'that is detailed enough for a reader to understand its purpose.">'
     '<link rel="canonical" href="https://example.org/page"></head>'
     '<body><h1>Clear page heading</h1><a href="/related">See more</a>'
-    '</body></html>'
+    "</body></html>"
 )
 
 
