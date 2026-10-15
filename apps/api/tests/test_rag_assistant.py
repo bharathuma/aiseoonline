@@ -293,9 +293,10 @@ def test_live_creds_not_required_for_negative_access_paths() -> None:
         headers={"X-Dev-Rag-Token": TOKEN},
     )
     assert response.status_code == 404
-    assert "/api/v1/internal/rag/chat" not in TestClient(
-        create_app(disabled)
-    ).get("/api/v1/openapi.json").json()["paths"]
+    assert (
+        "/api/v1/internal/rag/chat"
+        not in TestClient(create_app(disabled)).get("/api/v1/openapi.json").json()["paths"]
+    )
 
 
 def test_production_cannot_enable_chat_even_with_token() -> None:
@@ -330,7 +331,13 @@ def test_missing_metadata_question_requires_recorded_findings(
 
     monkeypatch.setattr(assistant, "check_project", lambda *args: None)
     monkeypatch.setattr(assistant, "_findings", lambda *args: [])
-    assert assistant.collect_evidence(
-        None, NoRetrieval(), project_id=PROJECT, owner_id=OWNER,
-        question="Which pages are missing meta descriptions?",
-    ) == ()
+    assert (
+        assistant.collect_evidence(
+            None,
+            NoRetrieval(),
+            project_id=PROJECT,
+            owner_id=OWNER,
+            question="Which pages are missing meta descriptions?",
+        )
+        == ()
+    )
