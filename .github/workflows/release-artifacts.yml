@@ -1,0 +1,92 @@
+name: Publish reviewed container artifacts
+
+# Builds/publishes registry images only. No server credentials or automatic deployment.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Protected GitHub Environment (configure required reviewers)
+        type: choice
+        options: [staging, production]
+        required: true
+      confirm:
+        description: Type PUBLISH_IMAGES to permit registry publication
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    if: ${{ github.ref == 'refs/heads/main' && inputs.confirm == 'PUBLISH_IMAGES' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10.18.0'
+          run_install: false
+      - name: Verify locked application dependencies and quality
+        run: |
+          uv sync --project apps/api --locked --group dev
+          uv run --project apps/api --locked ruff check apps/api
+          uv run --project apps/api --locked mypy --config-file apps/api/pyproject.toml apps/api/src
+          uv run --project apps/api --locked pytest apps/api/tests -q
+          pnpm install --frozen-lockfile
+          pnpm lint:web
+          pnpm check:web
+          pnpm build:web
+      - name: Validate release scripts and private origin configuration
+        env:
+          AISEO_DB_PASSWORD: ci-only-hex-pass123
+          AISEO_REDIS_PASSWORD: ci-only-redis-pass123
+        run: |
+          bash -n infra/scripts/*.sh
+          docker compose -f compose.yaml -f infra/compose.deploy.yaml config --quiet
+
+  publish:
+    needs: preflight
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish API and worker base image
+        id: api
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/Dockerfile.api
+          push: true
+          tags: ghcr.io/${{ github.repository }}-api:${{ github.sha }}
+      - name: Publish static web origin image
+        id: web
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/Dockerfile.web
+          push: true
+          tags: ghcr.io/${{ github.repository }}-web:${{ github.sha }}
+      - name: Print pinned artifact references for manual rollout
+        run: |
+          {
+            echo "## Reviewed release artifacts"
+            echo 'No infrastructure changes or server deployment occurred.'
+            echo "`AISEO_API_IMAGE=ghcr.io/${{ github.repository }}-api@${{ steps.api.outputs.digest }}`"
+            echo "`AISEO_WEB_IMAGE=ghcr.io/${{ github.repository }}-web@${{ steps.web.outputs.digest }}`"
+          } >> "$GITHUB_STEP_SUMMARY"

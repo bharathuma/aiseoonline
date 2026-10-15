@@ -1,0 +1,121 @@
+# Compose override for a private production-mode origin.
+# Always pass with -f compose.yaml -f infra/compose.deploy.yaml.
+# Staging runs with AISEO_ENVIRONMENT=production too: production safeguards apply.
+services:
+  migrate:
+    logging: &rotated_logs
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    image: ${AISEO_API_IMAGE:-aiseoonline-api:local}
+    environment:
+      AISEO_ENVIRONMENT: production
+      AISEO_AUTH_WEB_ORIGIN: ${AISEO_PUBLIC_ORIGIN:-https://aiseoonline.com}
+      AISEO_AUTH_REGISTRATION_ENABLED: "false"
+      AISEO_AUDIT_JOBS_ENABLED: "false"
+      AISEO_RAG_CHAT_ENABLED: "false"
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp]
+
+  api:
+    logging: *rotated_logs
+    image: ${AISEO_API_IMAGE:-aiseoonline-api:local}
+    environment:
+      AISEO_ENVIRONMENT: production
+      AISEO_AUTH_WEB_ORIGIN: ${AISEO_PUBLIC_ORIGIN:-https://aiseoonline.com}
+      AISEO_AUTH_REGISTRATION_ENABLED: "false"
+      AISEO_AUDIT_JOBS_ENABLED: "false"
+      AISEO_RAG_CHAT_ENABLED: "false"
+    init: true
+    stop_grace_period: 40s
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp]
+    mem_limit: 768m
+    cpus: 1.5
+    networks: !override [backend, frontend, outbound]
+
+  worker:
+    networks: !override [backend, outbound]
+    logging: *rotated_logs
+    image: ${AISEO_API_IMAGE:-aiseoonline-api:local}
+    environment:
+      AISEO_ENVIRONMENT: production
+      AISEO_AUTH_WEB_ORIGIN: ${AISEO_PUBLIC_ORIGIN:-https://aiseoonline.com}
+      AISEO_AUTH_REGISTRATION_ENABLED: "false"
+      AISEO_AUDIT_JOBS_ENABLED: "false"
+      AISEO_RAG_CHAT_ENABLED: "false"
+    init: true
+    stop_grace_period: 60s
+    command: ["celery", "-A", "run:celery_app", "worker", "--loglevel=INFO", "--concurrency=2", "--max-tasks-per-child=100"]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp]
+    mem_limit: 768m
+    cpus: 1.5
+
+  web:
+    logging: *rotated_logs
+    image: ${AISEO_WEB_IMAGE:-aiseoonline-web:local}
+    init: true
+    stop_grace_period: 30s
+    mem_limit: 256m
+    cpus: 0.75
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    networks: !override [frontend, edge]
+
+  db:
+    logging: *rotated_logs
+    stop_grace_period: 90s
+    mem_limit: 1g
+    cpus: 1.5
+
+  redis:
+    logging: *rotated_logs
+    stop_grace_period: 45s
+    mem_limit: 384m
+    cpus: 0.5
+
+  # Opt-in tunnel only. Configure its public hostname to http://web:8080
+  # and pin AISEO_CLOUDFLARED_IMAGE to a reviewed immutable image digest.
+  tunnel:
+    logging: *rotated_logs
+    profiles: [tunnel]
+    image: ${AISEO_CLOUDFLARED_IMAGE:-cloudflare/cloudflared:latest}
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${AISEO_CLOUDFLARED_TOKEN:-}
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    mem_limit: 192m
+    cpus: 0.5
+    networks: [edge]
+    depends_on:
+      web:
+        condition: service_healthy
+
+networks:
+  # PostgreSQL/Redis are not attached to any externally routed network.
+  backend:
+    internal: true
+  frontend:
+    internal: true
+  # Only API and worker can initiate outbound HTTPS/crawls.
+  outbound:
+    driver: bridge
+  edge:
+    driver: bridge

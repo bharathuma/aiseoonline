@@ -1,0 +1,62 @@
+name: Private origin deployment smoke
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  release-config:
+    runs-on: ubuntu-latest
+    env:
+      AISEO_DB_PASSWORD: ci-only-db-password
+      AISEO_REDIS_PASSWORD: ci-only-redis-password
+      AISEO_PUBLIC_ORIGIN: https://staging.aiseoonline.com
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse deployment and shell scripts
+        run: |
+          bash -n infra/scripts/*.sh
+          docker compose -f compose.yaml -f infra/compose.deploy.yaml config --quiet
+          docker compose -f compose.yaml -f infra/compose.deploy.yaml config --format json > /tmp/aiseo-deploy-compose.json
+          python3 infra/scripts/verify_compose.py /tmp/aiseo-deploy-compose.json
+
+  private-origin-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      AISEO_PUBLIC_ORIGIN: https://staging.aiseoonline.com
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate isolated CI-only passwords
+        run: |
+          DB_PASSWORD="$(openssl rand -hex 24)"
+          REDIS_PASSWORD="$(openssl rand -hex 24)"
+          echo "::add-mask::$DB_PASSWORD"
+          echo "::add-mask::$REDIS_PASSWORD"
+          echo "AISEO_DB_PASSWORD=$DB_PASSWORD" >> "$GITHUB_ENV"
+          echo "AISEO_REDIS_PASSWORD=$REDIS_PASSWORD" >> "$GITHUB_ENV"
+      - name: Start production-mode Compose without public tunnel
+        run: docker compose -f compose.yaml -f infra/compose.deploy.yaml up --build -d
+      - name: Verify migrations, readiness, isolation, headers and worker
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -fsS --max-time 3 http://127.0.0.1:4321/api/v1/ready >/dev/null &&
+               curl -fsS --max-time 3 http://127.0.0.1:4321/ >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 60 ]; then exit 1; fi
+            sleep 3
+          done
+          python3 infra/scripts/verify_origin.py http://127.0.0.1:4321
+          docker compose -f compose.yaml -f infra/compose.deploy.yaml exec -T api alembic -c alembic.ini current
+          docker compose -f compose.yaml -f infra/compose.deploy.yaml exec -T api python -c 'from aiseoonline_api.config import get_settings; from aiseoonline_api.jobs import create_celery_app; settings=get_settings(); assert settings.environment=="production"; assert not settings.audit_jobs_enabled and not settings.rag_chat_enabled; result=create_celery_app(settings).send_task("aiseoonline.ping",args=["staging"]); assert result.get(timeout=30)=={"status":"ok","message":"staging"}'
+      - name: Show diagnostic logs on failure
+        if: failure()
+        run: docker compose -f compose.yaml -f infra/compose.deploy.yaml ps && docker compose -f compose.yaml -f infra/compose.deploy.yaml logs --no-color --tail 100
+      - name: Dispose of isolated CI data
+        if: always()
+        run: docker compose -f compose.yaml -f infra/compose.deploy.yaml down -v --remove-orphans
