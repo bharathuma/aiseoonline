@@ -135,10 +135,10 @@ export const plannedTools: readonly ToolPreview[] = [
   {
     id: 'ai-meta',
     slug: 'ai-meta-suggestions',
-    name: 'AI meta suggestions',
-    summary: 'Generate page-relevant title and description alternatives.',
+    name: 'AI title & meta description generator',
+    summary: 'Draft three editable, source-grounded SEO titles and descriptions using AI.',
     category: 'Content',
-    status: 'planned',
+    status: 'available',
     details: [
       'Use supplied page content as source material.',
       'Generate multiple editable suggestions.',
