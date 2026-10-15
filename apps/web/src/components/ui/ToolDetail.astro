@@ -1,12 +1,14 @@
 ---
 import SiteLayout from '../../layouts/SiteLayout.astro';
 import StatusNotice from './StatusNotice.astro';
+import PublicToolForm from '../PublicToolForm.tsx';
 import type { ToolPreview } from '../toolCatalog';
 
 interface Props {
   tool: ToolPreview;
 }
 const { tool } = Astro.props;
+const kind = tool.id === 'robots' ? 'robots' : tool.id === 'sitemap' ? 'sitemap' : 'meta';
 ---
 
 <SiteLayout
@@ -25,16 +27,26 @@ const { tool } = Astro.props;
       <h1 class="section-title mt-3">{tool.name}</h1>
       <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600">{tool.summary}</p>
       <div class="mt-9 max-w-2xl">
-        <StatusNotice variant="warning" title="Coming soon">
-          This tool is being developed and cannot run checks yet. There is no signup or scan form
-          until it is available.
-        </StatusNotice>
+        {tool.status === 'available' ? (
+          <div>
+            <p class="mb-5 text-sm leading-7 text-slate-600">
+              Enter a public website URL below to run a bounded, one-resource check. Findings
+              describe observable evidence, not guaranteed search rankings.
+            </p>
+            <PublicToolForm kind={kind} client:load />
+          </div>
+        ) : (
+          <StatusNotice variant="warning" title="Coming soon">
+            This tool is being developed and cannot run checks yet. There is no signup or scan form
+            until it is available.
+          </StatusNotice>
+        )}
       </div>
     </div>
   </section>
   <section class="section-space">
     <div class="site-container max-w-4xl">
-      <h2 class="text-2xl font-bold tracking-tight text-slate-950">What this tool will check</h2>
+      <h2 class="text-2xl font-bold tracking-tight text-slate-950">{tool.status === 'available' ? 'What this tool checks' : 'What this tool will check'}</h2>
       <ul class="mt-7 grid gap-4 sm:grid-cols-2">
         {
           tool.details.map((detail) => (
@@ -48,7 +60,7 @@ const { tool } = Astro.props;
         }
       </ul>
       <div class="mt-10">
-        <a href="/tools/" class="inline-link font-semibold">← Browse all planned tools</a>
+        <a href="/tools/" class="inline-link font-semibold">← Browse all SEO tools</a>
       </div>
     </div>
   </section>
