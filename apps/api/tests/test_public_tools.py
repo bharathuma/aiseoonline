@@ -173,14 +173,15 @@ def test_api_rejects_unsafe_urls_before_network(client: TestClient, bad: str) ->
 def test_api_exposes_real_typed_routes(
     client: TestClient, monkeypatch: pytest.MonkeyPatch, path: str
 ) -> None:
-    fake = lambda url: checks.ToolReport(
-        tool=path,
-        requested_url=url,
-        final_url=url,
-        checked_at=datetime.now(UTC),
-        facts={"observed": 1},
-        issues=[],
-    )
+    def fake(url: str) -> checks.ToolReport:
+        return checks.ToolReport(
+            tool=path,
+            requested_url=url,
+            final_url=url,
+            checked_at=datetime.now(UTC),
+            facts={"observed": 1},
+            issues=[],
+        )
     monkeypatch.setattr(
         routes,
         {"robots": "check_robots", "sitemap": "check_sitemap", "meta": "check_meta"}[path],
