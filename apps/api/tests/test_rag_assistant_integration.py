@@ -118,7 +118,7 @@ def test_private_rag_answers_genuine_findings_and_blocks_other_projects() -> Non
                                         "supporting_quote": "Missing meta description",
                                     }
                                 ],
-                                "uncertainty": "Other pages without completed audits remain unknown.",
+                                "uncertainty": "Other pages without audits remain unknown.",
                             }
                         ),
                         usage=TokenUsage(input_tokens=120, output_tokens=50, total_tokens=170),
