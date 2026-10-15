@@ -27,6 +27,7 @@ from aiseoonline_api.public_tools.advanced import (
     check_redirects,
     check_schema,
 )
+from aiseoonline_api.public_tools.final_tools import check_headings, check_links, check_social
 from aiseoonline_api.public_tools.checks import (
     ToolReport,
     check_meta,
@@ -35,7 +36,7 @@ from aiseoonline_api.public_tools.checks import (
 )
 
 router = APIRouter(tags=["public SEO tools"])
-Tool = Literal["robots", "sitemap", "meta", "redirects", "canonical", "schema"]
+Tool = Literal["robots", "sitemap", "meta", "redirects", "canonical", "schema", "headings", "links", "social"]
 _LIMIT_SCRIPT = """
 local a=redis.call('INCR', KEYS[1])
 if a==1 then redis.call('EXPIRE', KEYS[1], 3600) end
@@ -103,6 +104,9 @@ async def execute(request: Request, body: UrlInput, tool: Tool) -> ToolReport | 
         "redirects": check_redirects,
         "canonical": check_canonical,
         "schema": check_schema,
+        "headings": check_headings,
+        "links": check_links,
+        "social": check_social,
     }[tool]
     slots: asyncio.Semaphore = request.app.state.public_tool_slots
     try:
