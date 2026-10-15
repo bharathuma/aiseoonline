@@ -121,7 +121,9 @@ def test_openai_structured_output_and_usage_cost_accounting() -> None:
         assert result.prompt_version == "v1"
 
     asyncio.run(scenario())
-    assert seen[0]["response_format"] == {"type": "json_object"}
+    assert seen[0]["response_format"]["type"] == "json_schema"
+    assert seen[0]["response_format"]["json_schema"]["schema"]["type"] == "object"
+    assert seen[0]["store"] is False
     assert seen[0]["stream"] is False
     assert seen[0]["max_completion_tokens"] == 128
     assert json.loads(seen[0]["messages"][1]["content"])["question"] == REQUEST.task
