@@ -141,7 +141,8 @@ def test_pgvector_private_lifecycle_and_similarity_queries() -> None:
 
                     with pytest.raises(ProviderUnavailable):
                         RagStore(session, FailingEmbedding()).ingest_snapshot(
-                            project_id=pa.id, owner_id=a.id,
+                            project_id=pa.id,
+                            owner_id=a.id,
                             snapshot=sample_snapshot(
                                 "Unexpected update should never replace the old index. " * 8
                             ),
@@ -150,9 +151,7 @@ def test_pgvector_private_lifecycle_and_similarity_queries() -> None:
                     preserved = session.get(RagDocument, created.document_id)
                     assert preserved is not None
                     assert preserved.content_hash == updated.content_hash
-                    assert store.search(
-                        project_id=pa.id, owner_id=a.id, query="stoneware bowls"
-                    )
+                    assert store.search(project_id=pa.id, owner_id=a.id, query="stoneware bowls")
 
                     reindexed = RagStore(session, FixtureEmbeddingProvider("fixture-v2"))
                     rebuilt = reindexed.ingest_snapshot(
