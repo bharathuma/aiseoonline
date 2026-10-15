@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added verified-project RAG ingestion with cleaned article text, section-aware chunks, explicit embedding revisions, pgvector HNSW similarity index and project-scoped retrieval and deletion.
+- Added offline embedding fixtures and real PostgreSQL vector integration tests. No public RAG endpoints.
+
 - Added a tenth public SEO tool for grounded, editable AI title and description suggestions, with quota and budget gates, evidence validation and local browser tests.
 
 - Added an optional backend-only OpenAI provider adapter, typed generation contracts, streaming, prompt versioning, conservative budgets, token-usage tracking, explicit offline fixtures and privacy controls.
