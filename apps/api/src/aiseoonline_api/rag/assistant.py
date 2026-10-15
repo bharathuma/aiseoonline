@@ -313,14 +313,28 @@ async def answer_question(
             project_id,
             uncertainty="No relevant indexed content or completed audit findings were found.",
         )
-    request = _build_request(question, sources)
+    # Select a bounded, exactly known subset. The model can cite only excerpts it
+    # actually received; an oversized project must not fail every question.
+    visible: list[EvidenceSource] = []
+    request = None
+    for item in sources:
+        try:
+            candidate = _build_request(question, (*visible, item))
+        except ValueError:
+            continue
+        visible.append(item)
+        request = candidate
+    if request is None:
+        return _safe_no_evidence(
+            project_id, uncertainty="Indexed evidence could not fit the question budget."
+        )
     completed = await provider.complete(request, schema=AnswerDraft)
     if not isinstance(completed.value, AnswerDraft):
         raise InvalidModelOutput("Answer did not match the grounding contract")
     return verify_draft(
         project_id,
         completed.value,
-        sources,
+        visible,
         model=completed.model,
         usage=completed.usage.model_dump(),
     )
