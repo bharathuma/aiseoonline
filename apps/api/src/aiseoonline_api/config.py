@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     ai_meta_request_usd_cap: Decimal = Field(default=Decimal("0.05"), gt=0, le=5)
     rag_embedding_model: str = Field(default="text-embedding-3-small", min_length=2, max_length=120)
     rag_embedding_version: str = Field(default="v1", min_length=1, max_length=48)
+    auth_registration_enabled: bool = False
+    auth_web_origin: str = "https://aiseoonline.com"
     rag_chat_enabled: bool = False
     rag_chat_dev_token: SecretStr | None = None
     rag_chat_dev_owner_id: UUID | None = None
@@ -81,6 +83,30 @@ class Settings(BaseSettings):
         )
         if any(configured_langfuse) and not all(configured_langfuse):
             raise ValueError("Langfuse requires host, public key and secret key together")
+        if self.auth_registration_enabled and self.environment == "production":
+            raise ValueError("Production self-registration requires verified email delivery")
+        origin = self.auth_web_origin
+        if not (
+            origin.startswith("https://")
+            or (
+                self.environment != "production"
+                and origin.startswith(("http://localhost:", "http://127.0.0.1:"))
+            )
+        ):
+            raise ValueError("Auth web origin must use HTTPS outside local development")
+        from urllib.parse import urlsplit
+
+        parsed = urlsplit(origin)
+        if (
+            not parsed.hostname
+            or parsed.username
+            or parsed.password
+            or parsed.path not in ("", "/")
+            or parsed.query
+            or parsed.fragment
+            or origin.endswith("/")
+        ):
+            raise ValueError("Auth web origin must be an origin without path or credentials")
         if self.audit_jobs_enabled:
             if self.environment == "production":
                 raise ValueError("Private audit job routes cannot be enabled in production")
