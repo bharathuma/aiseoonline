@@ -23,7 +23,10 @@ class ToolIssue(BaseModel):
 
 
 class ToolReport(BaseModel):
-    tool: Literal["robots", "sitemap", "meta", "redirects", "canonical", "schema", "headings", "links", "social"]
+    tool: Literal[
+        "robots", "sitemap", "meta", "redirects", "canonical", "schema",
+        "headings", "links", "social"
+    ]
     requested_url: str
     final_url: str
     checked_at: datetime
