@@ -34,6 +34,7 @@ def fetch_http(
     deadline: float,
     connect_timeout: float,
     dns_timeout: float,
+    allowed_mime: tuple[str, ...] = ("text/html", "application/xhtml+xml", "text/plain"),
 ) -> HttpDocument:
     """Use the validated numerical IP for the socket and the hostname for TLS."""
     remaining = deadline - time.monotonic()
@@ -90,7 +91,7 @@ def fetch_http(
         location = response.getheader("Location")
         if 300 <= response.status < 400 or response.status >= 400:
             return HttpDocument(response.status, mime, charset, location, b"")
-        if mime not in ("text/html", "application/xhtml+xml", "text/plain"):
+        if mime not in allowed_mime:
             raise InvalidPage("Unsupported document content type")
         body = bytearray()
         while True:
