@@ -2,7 +2,7 @@
 
 Open-source SEO tools for checking, understanding, and improving websites.
 
-**Status: Website and API foundation, internal secure crawler, and deterministic SEO rules implemented. Nine deterministic SEO tool endpoints are implemented; AI features remain in development.** The code has not been deployed to the public website.
+**Status: Website and API foundation, internal secure crawler, and deterministic SEO rules implemented. Nine deterministic SEO tool endpoints and an optional internal LLM provider layer are implemented; user-facing AI features remain planned.** The code has not been deployed to the public website.
 
 AISEOOnline is being built for site owners, developers, and teams who need practical SEO checks. The repository contains an Astro/React website, nine free SEO checkers, a FastAPI backend, database migrations, and a background worker. The public interface includes robots.txt, XML sitemap, metadata, redirects, canonical URLs, JSON-LD, headings, internal links and social metadata checkers alongside planned tools and introductory guides. No multi-page or AI audit is publicly available. The internal [SEO rule engine](docs/seo-rules.md) produces source-backed findings from parsed page snapshots.
 
@@ -19,9 +19,10 @@ Technical findings will come from deterministic checks. Model-generated suggesti
 - Web: Astro, React, TypeScript, Tailwind CSS, pnpm
 - API: Python, FastAPI, Pydantic, uv
 - Infrastructure: PostgreSQL/pgvector, Alembic, Redis/Celery, Docker Compose
-- Planned AI integrations: LangChain/LangGraph, model APIs, retrieval, and observability
+- AI infrastructure: optional OpenAI provider adapter with typed response validation, budgets, streaming and versioned prompts
+- Planned AI integrations: LangChain/LangGraph agents, retrieval, and observability
 
-See [architecture](docs/architecture.md) and [design decisions](docs/adr/README.md).
+See [architecture](docs/architecture.md), [LLM provider configuration](docs/llm-provider.md), and [design decisions](docs/adr/README.md).
 
 ## Local development
 
