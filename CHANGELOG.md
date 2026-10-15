@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added an optional backend-only OpenAI provider adapter, typed generation contracts, streaming, prompt versioning, conservative budgets, token-usage tracking, explicit offline fixtures and privacy controls.
+- Documented the LLM layer and kept all public deterministic SEO tools independent of paid AI calls.
+
 - Added heading-outline analysis, bounded same-origin internal link status checks, and Open Graph/X social metadata inspection with an approximate preview.
 - Reused secure fetching, Redis quotas, typed reports and shared responsive tool forms.
 
