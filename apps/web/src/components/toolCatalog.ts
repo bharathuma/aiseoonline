@@ -60,7 +60,7 @@ export const plannedTools: readonly ToolPreview[] = [
     name: 'Redirect chain checker',
     summary: 'Trace redirect hops, loops and final destinations.',
     category: 'Technical SEO',
-    status: 'planned',
+    status: 'available',
     details: [
       'List HTTP redirects in their original order.',
       'Identify loops and long chains.',
@@ -73,7 +73,7 @@ export const plannedTools: readonly ToolPreview[] = [
     name: 'Canonical URL checker',
     summary: 'Inspect canonical hints and conflicting declarations.',
     category: 'Technical SEO',
-    status: 'planned',
+    status: 'available',
     details: [
       'Read canonical links from page HTML.',
       'Highlight ambiguous or conflicting hints.',
@@ -86,7 +86,7 @@ export const plannedTools: readonly ToolPreview[] = [
     name: 'Structured data checker',
     summary: 'Validate JSON-LD syntax and basic document structure.',
     category: 'Content',
-    status: 'planned',
+    status: 'available',
     details: [
       'Extract JSON-LD blocks from HTML.',
       'Parse JSON safely and report syntax errors.',
