@@ -392,6 +392,12 @@ def test_private_audit_api_authorization_polling_cancellation_and_exports(
             )
             assert response.status_code == 202, response.text
             job_id = response.json()["id"]
+            with Session(engine) as check_session:
+                persisted = check_session.get(AuditJob, UUID(job_id))
+                assert persisted is not None
+                assert persisted.request_id == response.headers["x-request-id"]
+                assert persisted.trace_parent is not None
+                assert persisted.trace_parent.startswith("00-")
             assert delivered == [job_id]
             repeated = client.post(
                 "/api/v1/internal/audits",

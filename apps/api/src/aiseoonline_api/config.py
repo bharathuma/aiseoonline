@@ -40,6 +40,13 @@ class Settings(BaseSettings):
     rag_chat_enabled: bool = False
     rag_chat_dev_token: SecretStr | None = None
     rag_chat_dev_owner_id: UUID | None = None
+    # Explicit opt-in; no raw content or credentials are ever exported as span data.
+    otel_traces_endpoint: str | None = None
+    langfuse_host: str | None = None
+    langfuse_public_key: SecretStr | None = None
+    langfuse_secret_key: SecretStr | None = None
+    audit_owner_daily_usd_cap: Decimal = Field(default=Decimal("0.50"), gt=0, le=100)
+    ai_global_daily_usd_cap: Decimal = Field(default=Decimal("3.00"), gt=0, le=1000)
     audit_jobs_enabled: bool = False
     audit_dev_token: SecretStr | None = None
     audit_dev_owner_id: UUID | None = None
@@ -60,6 +67,20 @@ class Settings(BaseSettings):
             raise ValueError("Total LLM token budget must cover output tokens")
         if (self.llm_input_usd_per_million is None) != (self.llm_output_usd_per_million is None):
             raise ValueError("Configure both LLM price rates or neither")
+        if self.otel_traces_endpoint and not self.otel_traces_endpoint.startswith("https://"):
+            raise ValueError("OTLP traces endpoint must use HTTPS")
+        if self.langfuse_host and (
+            not self.langfuse_host.startswith("https://")
+            or self.langfuse_host.endswith("/api/public/otel/v1/traces")
+        ):
+            raise ValueError("Langfuse host must use an HTTPS base URL")
+        configured_langfuse = (
+            self.langfuse_host is not None,
+            self.langfuse_public_key is not None,
+            self.langfuse_secret_key is not None,
+        )
+        if any(configured_langfuse) and not all(configured_langfuse):
+            raise ValueError("Langfuse requires host, public key and secret key together")
         if self.audit_jobs_enabled:
             if self.environment == "production":
                 raise ValueError("Private audit job routes cannot be enabled in production")

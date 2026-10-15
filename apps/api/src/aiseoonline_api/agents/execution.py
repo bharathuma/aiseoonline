@@ -16,6 +16,8 @@ from aiseoonline_api.agents.adapters import project_authorizer
 from aiseoonline_api.agents.models import AuditReport, AuditRequest
 from aiseoonline_api.config import Settings
 from aiseoonline_api.db.models import AuditJob, SeoFinding
+from aiseoonline_api.logging import current_request_id
+from aiseoonline_api.observability import current_traceparent
 
 _TERMINAL = frozenset(
     {
@@ -42,12 +44,19 @@ _STEPS = {
 _BUDGET_LUA = """
 local count=tonumber(redis.call('GET', KEYS[1]) or '0')
 local spent=tonumber(redis.call('GET', KEYS[2]) or '0')
+local owner=tonumber(redis.call('GET', KEYS[3]) or '0')
+local global=tonumber(redis.call('GET', KEYS[4]) or '0')
 if count>=tonumber(ARGV[1]) then return -1 end
 if spent+tonumber(ARGV[2])>tonumber(ARGV[3]) then return -2 end
+if owner+tonumber(ARGV[2])>tonumber(ARGV[4]) then return -3 end
+if global+tonumber(ARGV[2])>tonumber(ARGV[5]) then return -4 end
 redis.call('INCR', KEYS[1])
 if count==0 then redis.call('EXPIRE', KEYS[1], 90000) end
-redis.call('INCRBY', KEYS[2], ARGV[2])
-if spent==0 then redis.call('EXPIRE', KEYS[2], 90000) end
+for i=2,4 do
+    local previous=tonumber(redis.call('GET', KEYS[i]) or '0')
+    redis.call('INCRBY', KEYS[i], ARGV[2])
+    if previous==0 then redis.call('EXPIRE', KEYS[i], 90000) end
+end
 return 1
 """
 
@@ -144,19 +153,23 @@ def estimated_allocation(settings: Settings) -> int | None:
     return micro if 0 < micro <= cap else None
 
 
-def reserve_daily_budget(settings: Settings, allocation: int) -> int:
+def reserve_daily_budget(settings: Settings, allocation: int, owner_id: UUID) -> int:
     day = datetime.now(UTC).strftime("%Y%m%d")
     with Redis.from_url(
         settings.require_redis_url(), socket_timeout=1, socket_connect_timeout=1
     ) as redis:
         result = redis.eval(
             _BUDGET_LUA,
-            2,
+            4,
             f"audit:count:{day}",
             f"audit:budget:{day}",
+            f"audit:owner:{owner_id}:{day}",
+            f"ai:global:{day}",
             settings.audit_daily_job_cap,
             allocation,
             int(settings.audit_daily_usd_cap * 1000000),
+            int(settings.audit_owner_daily_usd_cap * 1000000),
+            int(settings.ai_global_daily_usd_cap * 1000000),
         )
     return int(result)
 
@@ -192,6 +205,8 @@ def create_job(
         "project_id": request.project_id,
         "owner_id": request.owner_id,
         "requested_url": url,
+        "trace_parent": current_traceparent(),
+        "request_id": (current_request_id.get() if current_request_id.get() != "-" else None),
         "idempotency_key": key,
         "request_data": request.model_dump(mode="json"),
         "status": "queued",

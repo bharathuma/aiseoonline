@@ -41,11 +41,15 @@ _GUARD_SCRIPT = """
 local count=tonumber(redis.call('GET', KEYS[1]) or '0')
 if count>=tonumber(ARGV[1]) then return -2 end
 local allocated=tonumber(redis.call('GET', KEYS[2]) or '0')
+local global=tonumber(redis.call('GET', KEYS[3]) or '0')
 if allocated+tonumber(ARGV[2])>tonumber(ARGV[3]) then return -1 end
+if global+tonumber(ARGV[2])>tonumber(ARGV[4]) then return -1 end
 redis.call('INCR', KEYS[1])
 if count==0 then redis.call('EXPIRE', KEYS[1], 3600) end
 redis.call('INCRBY', KEYS[2], ARGV[2])
 if allocated==0 then redis.call('EXPIRE', KEYS[2], 90000) end
+redis.call('INCRBY', KEYS[3], ARGV[2])
+if global==0 then redis.call('EXPIRE', KEYS[3], 90000) end
 return 1
 """
 
@@ -80,18 +84,20 @@ def price_allocation(settings: Settings) -> int | None:
     return allocation if 0 < allocation <= request_limit else None
 
 
-def reserve(redis_url: str, visitor: str, allocation: int, cap: int) -> int:
+def reserve(redis_url: str, visitor: str, allocation: int, cap: int, global_cap: int) -> int:
     peer = hashlib.sha256(visitor.encode("utf-8")).hexdigest()
     date = datetime.now(UTC).strftime("%Y%m%d")
     with Redis.from_url(redis_url, socket_timeout=0.8, socket_connect_timeout=0.8) as client:
         result = client.eval(
             _GUARD_SCRIPT,
-            2,
+            3,
             f"ai:rag:peer:{peer}",
             f"ai:rag:daily:{date}",
+            f"ai:global:{date}",
             6,
             allocation,
             cap,
+            global_cap,
         )
     return int(result)
 
@@ -168,6 +174,7 @@ async def chat(request: Request, question: QuestionInput) -> GroundedAnswer | JS
             peer,
             allocation,
             cap,
+            int(settings.ai_global_daily_usd_cap * Decimal(1000000)),
         )
     except (RedisError, ValueError, OSError, TimeoutError):
         return error_response(

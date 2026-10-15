@@ -5,6 +5,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from aiseoonline_api.logging import current_request_id
+from aiseoonline_api.observability import request_trace, span
 
 Message = dict[str, Any]
 Receive = Callable[[], Awaitable[Message]]
@@ -32,6 +33,7 @@ class RequestIdMiddleware:
             await send(message)
 
         try:
-            await self.app(scope, receive, send_with_request_id)
+            with request_trace(request_id), span("http.request", operation="api"):
+                await self.app(scope, receive, send_with_request_id)
         finally:
             current_request_id.reset(token)

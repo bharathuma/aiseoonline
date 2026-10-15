@@ -161,17 +161,22 @@ def test_private_chat_budget_is_atomic_with_real_redis() -> None:
 
     peer = f"rag-fixture-{uuid4().hex}"
     peer_key = "ai:rag:peer:" + sha256(peer.encode()).hexdigest()
-    day_key = "ai:rag:daily:" + datetime.now(UTC).strftime("%Y%m%d")
+    today = datetime.now(UTC).strftime("%Y%m%d")
+    day_key = "ai:rag:daily:" + today
+    global_key = "ai:global:" + today
     with Redis.from_url(url) as redis_client:
-        old = redis_client.get(day_key)
-        old_ttl = redis_client.ttl(day_key)
+        previous = [
+            (key, redis_client.get(key), redis_client.ttl(key)) for key in (day_key, global_key)
+        ]
         try:
-            redis_client.delete(day_key)
-            assert reserve(url, peer, 25, 50) == 1
-            assert reserve(url, peer, 25, 50) == 1
-            assert reserve(url, peer, 25, 50) == -1
+            redis_client.delete(day_key, global_key)
+            assert reserve(url, peer, 25, 50, 60) == 1
+            assert reserve(url, peer, 25, 50, 60) == 1
+            assert reserve(url, peer, 25, 50, 60) == -1
             assert int(redis_client.get(day_key) or 0) == 50
+            assert int(redis_client.get(global_key) or 0) == 50
         finally:
-            redis_client.delete(peer_key, day_key)
-            if old is not None:
-                redis_client.set(day_key, old, ex=max(old_ttl, 1))
+            redis_client.delete(peer_key, day_key, global_key)
+            for key, value, ttl in previous:
+                if value is not None:
+                    redis_client.set(key, value, ex=max(ttl, 1))

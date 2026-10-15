@@ -70,6 +70,8 @@ class AuditJob(Base):
         Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE")
     )
     requested_url: Mapped[str | None] = mapped_column(Text)
+    trace_parent: Mapped[str | None] = mapped_column(String(55))
+    request_id: Mapped[str | None] = mapped_column(String(32))
     idempotency_key: Mapped[str | None] = mapped_column(String(96))
     request_data: Mapped[dict | None] = mapped_column(JSON)
     report_data: Mapped[dict | None] = mapped_column(JSON)

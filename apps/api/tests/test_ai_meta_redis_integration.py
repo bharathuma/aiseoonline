@@ -36,17 +36,18 @@ def test_ai_daily_spending_allocation_is_atomic_and_bounded() -> None:
         pytest.skip("Redis integration URL is not configured")
     from redis import Redis
 
-    key = "ai:daily:" + datetime.now(UTC).strftime("%Y%m%d")
+    day = datetime.now(UTC).strftime("%Y%m%d")
+    keys = ("ai:daily:" + day, "ai:global:" + day)
     with Redis.from_url(url) as redis_client:
-        prior = redis_client.get(key)
-        prior_ttl = redis_client.ttl(key)
+        prior = [(key, redis_client.get(key), redis_client.ttl(key)) for key in keys]
         try:
-            redis_client.delete(key)
-            assert _reserve_spend(url, 7, 10)
-            assert not _reserve_spend(url, 7, 10)
-            assert int(redis_client.get(key) or 0) == 7
-            assert 0 < redis_client.ttl(key) <= 90000
+            redis_client.delete(*keys)
+            assert _reserve_spend(url, 7, 10, 10)
+            assert not _reserve_spend(url, 7, 10, 10)
+            assert all(int(redis_client.get(key) or 0) == 7 for key in keys)
+            assert all(0 < redis_client.ttl(key) <= 90000 for key in keys)
         finally:
-            redis_client.delete(key)
-            if prior is not None:
-                redis_client.set(key, prior, ex=max(prior_ttl, 1))
+            redis_client.delete(*keys)
+            for key, value, ttl in prior:
+                if value is not None:
+                    redis_client.set(key, value, ex=max(ttl, 1))

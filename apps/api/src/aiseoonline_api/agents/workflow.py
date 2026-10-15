@@ -31,6 +31,7 @@ from aiseoonline_api.ai_core.contracts import (
     LLMProvider,
 )
 from aiseoonline_api.crawler import CrawlError, CrawlSession, PageSnapshot, normalize_url
+from aiseoonline_api.observability import span
 from aiseoonline_api.rag.store import RagAccessDenied
 from aiseoonline_api.seo_core.models import SeoFinding
 from aiseoonline_api.seo_core.rules import analyze_page
@@ -171,9 +172,10 @@ class AuditAgent:
 
             def wrap(node: Any, step: str) -> Any:
                 async def guarded(state: AuditState) -> dict[str, object]:
-                    if self.on_step:
-                        self.on_step(step)
-                    return await node(state)
+                    with span("audit.node", operation=step):
+                        if self.on_step:
+                            self.on_step(step)
+                        return await node(state)
 
                 return guarded
 
@@ -310,7 +312,8 @@ class AuditAgent:
         if picked not in tools:
             raise InvalidModelOutput("Missing approved tool implementation")
         try:
-            response = await asyncio.to_thread(tools[picked].invoke, {})
+            with span("audit.tool", operation=picked):
+                response = await asyncio.to_thread(tools[picked].invoke, {})
             safe = json.dumps(response, ensure_ascii=True)[:1200]
             return {
                 "used_tools": (*state.get("used_tools", ()), picked),
