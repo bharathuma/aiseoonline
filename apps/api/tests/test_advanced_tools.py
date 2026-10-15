@@ -43,6 +43,7 @@ def page_fixture(monkeypatch: pytest.MonkeyPatch, html: bytes) -> None:
         (b'<link rel="canonical" href="/page">', "self-referencing"),
         (b'<link rel="canonical" href="/different">', "relative"),
         (b'<link rel="canonical" href="https://another.org/page">', "external"),
+        (b'<link rel="canonical" href="//another.org/page">', "external"),
         (b'<link rel="canonical" href="https://example.org/primary">', "absolute"),
         (b'<link rel="canonical" href="javascript:alert(1)">', "invalid"),
     ],
