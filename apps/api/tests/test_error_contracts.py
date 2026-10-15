@@ -87,7 +87,8 @@ def test_validation_never_echoes_rejected_values(client: TestClient) -> None:
 def test_validation_paths_never_echo_untrusted_json_key_names(client: TestClient) -> None:
     result = client.post("/api/v1/__test/strict", json={"size": 1, "sk-secretprivatevalue": 2})
     assert result.status_code == 422
-    assert result.json()["error"]["details"] == [{"field": "body.field", "issue": "extra_forbidden"}]
+    details = result.json()["error"]["details"]
+    assert details == [{"field": "body.field", "issue": "extra_forbidden"}]
     assert "sk-secretprivatevalue" not in result.text
 
 
