@@ -185,6 +185,17 @@ def collect_evidence(
 ) -> tuple[EvidenceSource, ...]:
     check_project(session, project_id, owner_id)
     findings = _findings(session, project_id, question)
+    lower_question = _clean(question)
+    # Sitewide diagnostics require actual completed deterministic findings.
+    # Indexed prose alone cannot establish missing tags or broken links.
+    audit_question = (
+        ("missing" in lower_question and
+         any(term in lower_question for term in ("title", "description", "meta", "heading")))
+        or ("problem" in lower_question and "link" in lower_question)
+        or ("priorit" in lower_question and "seo" in lower_question)
+    )
+    if audit_question and not findings:
+        return ()
     # Each source remains separately referenced; no synthesized citations.
     result = retriever.retrieve(
         project_id=project_id,
