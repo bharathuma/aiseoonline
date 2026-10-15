@@ -134,7 +134,7 @@ def check_links(url: str) -> ToolReport:
                     "links.upstream_error",
                     "warning",
                     "An internal URL returned a server error.",
-                    "Investigate the server response; temporary failure is not proof of a broken link.",
+                    "Investigate the server response; a temporary failure is not proof of brokenness.",
                     f"{row['evidence']}: HTTP {probe.status} {target[:140]}",
                 )
             )
