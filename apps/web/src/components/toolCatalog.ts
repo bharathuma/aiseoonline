@@ -1,4 +1,4 @@
-/** Planned tools. No entry should be represented as publicly available. */
+/** Public tool catalog; only deployed implementations are marked available. */
 export type ToolCategory = 'Technical SEO' | 'Content' | 'Links';
 export type CategoryFilter = ToolCategory | 'All';
 
@@ -9,7 +9,7 @@ export interface ToolPreview {
   readonly summary: string;
   readonly category: ToolCategory;
   readonly details: readonly string[];
-  readonly status: 'planned';
+  readonly status: 'planned' | 'available';
 }
 
 export const toolCategories: readonly ToolCategory[] = ['Technical SEO', 'Content', 'Links'];
@@ -21,7 +21,7 @@ export const plannedTools: readonly ToolPreview[] = [
     name: 'Robots.txt validator',
     summary: 'Review crawler instructions and common configuration issues.',
     category: 'Technical SEO',
-    status: 'planned',
+    status: 'available',
     details: [
       'Review robots.txt syntax and group structure.',
       'Explain common directive conflicts and limitations.',
@@ -34,7 +34,7 @@ export const plannedTools: readonly ToolPreview[] = [
     name: 'XML sitemap validator',
     summary: 'Inspect sitemap XML, URL entries and common formatting issues.',
     category: 'Technical SEO',
-    status: 'planned',
+    status: 'available',
     details: [
       'Validate XML structure and namespace usage.',
       'Identify malformed or unexpected URL entries.',
@@ -47,7 +47,7 @@ export const plannedTools: readonly ToolPreview[] = [
     name: 'Meta tag checker',
     summary: 'Review page titles, descriptions and robots metadata.',
     category: 'Content',
-    status: 'planned',
+    status: 'available',
     details: [
       'Extract metadata from a real page response.',
       'Highlight missing or conflicting elements.',
