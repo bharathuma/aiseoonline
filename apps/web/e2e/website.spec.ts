@@ -630,7 +630,9 @@ test('private audit report distinguishes technical evidence from AI interpretati
   await expect(page.getByRole('button', { name: 'Download CSV' })).toBeVisible();
 });
 
-test('private audit retries reuse a key while separate audits receive new keys', async ({ page }) => {
+test('private audit retries reuse a key while separate audits receive new keys', async ({
+  page,
+}) => {
   const submittedKeys: string[] = [];
   const completedIds = [
     '7b7f1234-5678-4678-9876-111122223335',
