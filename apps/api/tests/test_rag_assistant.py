@@ -136,7 +136,7 @@ def configured(**changes) -> Settings:
         "environment": "test", "rag_chat_enabled": True,
         "rag_chat_dev_token": TOKEN, "rag_chat_dev_owner_id": OWNER,
         "openai_api_key": "fixture-credentials",
-        "database_url": "sqlite+pysqlite:///:memory:",
+        "database_url": "sqlite:///:memory:",
         "redis_url": "redis://127.0.0.1:6379/0",
         "llm_input_usd_per_million": Decimal("0.1"),
         "llm_output_usd_per_million": Decimal("0.2"),
