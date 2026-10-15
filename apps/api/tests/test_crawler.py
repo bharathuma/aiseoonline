@@ -90,13 +90,13 @@ def test_dns_timeout_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_passive_html_extraction_includes_evidence_and_never_executes_scripts() -> None:
-    body = b'''<!doctype html><html><head><title>Example &amp; More</title>
+    body = b"""<!doctype html><html><head><title>Example &amp; More</title>
     <meta name="description" content="Summary"/>
     <meta name="robots" content="noindex, nofollow"/>
     <link rel="canonical" href="https://example.org/primary"/>
     <script type="application/ld+json">{"@type":"WebPage"}</script>
     </head><body><h1>Hello</h1><h2>Details</h2><a href="/about">About</a>
-    <a href="javascript:alert(1)">Bad</a><script>window.alert(1)</script></body></html>'''
+    <a href="javascript:alert(1)">Bad</a><script>window.alert(1)</script></body></html>"""
     page = parse_html(body, "https://example.org/")
     assert page.title == "Example & More"
     assert page.title_evidence is not None
@@ -228,9 +228,7 @@ def test_valid_redirect_is_recorded(site: ThreadingHTTPServer) -> None:
 
 
 @pytest.mark.parametrize("path", ["/unsafe", "/offsite"])
-def test_unsafe_redirects_never_dial_destination(
-    site: ThreadingHTTPServer, path: str
-) -> None:
+def test_unsafe_redirects_never_dial_destination(site: ThreadingHTTPServer, path: str) -> None:
     with pytest.raises(UnsafeTarget):
         CrawlSession("http://example.org" + path, limits=limits()).fetch_page()
     assert len(site.dialed) == 2  # type: ignore[attr-defined]
@@ -275,18 +273,14 @@ def test_excessive_robots_delay_denies_crawl(site: ThreadingHTTPServer) -> None:
 
 
 @pytest.mark.parametrize("path", ["/giant", "/huge-length"])
-def test_both_streamed_and_declared_size_limits(
-    site: ThreadingHTTPServer, path: str
-) -> None:
+def test_both_streamed_and_declared_size_limits(site: ThreadingHTTPServer, path: str) -> None:
     with pytest.raises(CrawlLimitExceeded):
         CrawlSession("http://example.org" + path, limits=limits(max_bytes=2048)).fetch_page()
 
 
 def test_timeout_error_is_bounded(site: ThreadingHTTPServer) -> None:
     with pytest.raises(CrawlTimeout):
-        CrawlSession(
-            "http://example.org/slow", limits=limits(connect_timeout=0.05)
-        ).fetch_page()
+        CrawlSession("http://example.org/slow", limits=limits(connect_timeout=0.05)).fetch_page()
 
 
 def test_non_html_content_is_rejected(site: ThreadingHTTPServer) -> None:

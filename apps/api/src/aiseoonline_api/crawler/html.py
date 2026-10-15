@@ -137,9 +137,7 @@ class _Extractor(HTMLParser):
             self.title = text or None
             self.title_evidence = evidence
         elif tag == "script":
-            self.structured_data.append(
-                StructuredData("".join(self._buffer)[:8192], evidence)
-            )
+            self.structured_data.append(StructuredData("".join(self._buffer)[:8192], evidence))
         elif tag == "a" and self._active_link:
             self.links.append(Link(self._active_link, text[:500], evidence))
         elif tag.startswith("h"):

@@ -62,7 +62,13 @@ class SafeURL:
 
 _HOST_LABEL = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
 _RESERVED_SUFFIX = (
-    ".localhost", ".local", ".internal", ".test", ".invalid", ".example", ".home.arpa"
+    ".localhost",
+    ".local",
+    ".internal",
+    ".test",
+    ".invalid",
+    ".example",
+    ".home.arpa",
 )
 _MAX_URL_CHARS = 4096
 

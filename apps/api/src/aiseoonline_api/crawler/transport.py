@@ -65,9 +65,10 @@ def fetch_http(
         sock.sendall(request)
         response = http.client.HTTPResponse(sock)
         response.begin()
-        if len(response.getheaders()) > 100 or sum(
-            len(k) + len(v) for k, v in response.getheaders()
-        ) > 32768:
+        if (
+            len(response.getheaders()) > 100
+            or sum(len(k) + len(v) for k, v in response.getheaders()) > 32768
+        ):
             raise CrawlLimitExceeded("HTTP headers are too large")
         raw_length = response.getheader("Content-Length")
         if raw_length:
