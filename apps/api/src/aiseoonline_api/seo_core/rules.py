@@ -1,8 +1,8 @@
 """Deterministic, evidence-first checks. No model or network calls."""
 
 from collections import defaultdict
-from dataclasses import dataclass
 from collections.abc import Iterable
+from dataclasses import dataclass
 from urllib.parse import urljoin, urlsplit
 
 from aiseoonline_api.crawler.html import Evidence, MetaTag
@@ -66,79 +66,260 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
         else _ev(url, "document", "No title was extracted")
     )
     if not title.strip():
-        _add(found, url, "title.missing", "error", "Missing page title", "No nonempty HTML title was extracted.", "Add a concise title describing the page.", (title_ref,))
+        _add(
+            found,
+            url,
+            "title.missing",
+            "error",
+            "Missing page title",
+            "No nonempty HTML title was extracted.",
+            "Add a concise title describing the page.",
+            (title_ref,),
+        )
     elif len(title) < conf.title_min_chars or len(title) > conf.title_max_chars:
-        _add(found, url, "title.length", "info", "Review page title length", f"The extracted title has {len(title)} characters, outside the configured advisory range {conf.title_min_chars}–{conf.title_max_chars}. Search engines may rewrite snippets.", "Prefer a distinctive, descriptive title; do not optimize solely for character count.", (title_ref,))
+        _add(
+            found,
+            url,
+            "title.length",
+            "info",
+            "Review page title length",
+            f"The extracted title has {len(title)} characters, outside the configured advisory range {conf.title_min_chars}–{conf.title_max_chars}. Search engines may rewrite snippets.",
+            "Prefer a distinctive, descriptive title; do not optimize solely for character count.",
+            (title_ref,),
+        )
 
     # Parser retains all captured title elements while preserving the original first-title API.
     titles = html.titles
     if len(titles) > 1:
-        _add(found, url, "title.multiple", "warning", "Multiple title elements", "Multiple <title> elements were captured; which one is used may be ambiguous.", "Use one well-formed title element in the document head.", tuple(FindingEvidence(t.evidence, t.text[:180]) for t in titles))
+        _add(
+            found,
+            url,
+            "title.multiple",
+            "warning",
+            "Multiple title elements",
+            "Multiple <title> elements were captured; which one is used may be ambiguous.",
+            "Use one well-formed title element in the document head.",
+            tuple(FindingEvidence(t.evidence, t.text[:180]) for t in titles),
+        )
 
     descriptions = [meta for meta in html.meta if meta.name.lower() == "description"]
     present = [meta for meta in descriptions if meta.content.strip()]
     if not descriptions:
-        _add(found, url, "description.missing", "warning", "Missing meta description", "No meta description was extracted. Search engines can still generate their own snippets.", "Consider a helpful summary when it improves search presentation.", (_ev(url, "document", "No meta[name=description] captured"),))
+        _add(
+            found,
+            url,
+            "description.missing",
+            "warning",
+            "Missing meta description",
+            "No meta description was extracted. Search engines can still generate their own snippets.",
+            "Consider a helpful summary when it improves search presentation.",
+            (_ev(url, "document", "No meta[name=description] captured"),),
+        )
     elif not present:
-        _add(found, url, "description.empty", "warning", "Empty meta description", "All extracted meta descriptions have empty content.", "Write a useful description or remove unnecessary empty metadata.", tuple(_tag_ev(t) for t in descriptions))
+        _add(
+            found,
+            url,
+            "description.empty",
+            "warning",
+            "Empty meta description",
+            "All extracted meta descriptions have empty content.",
+            "Write a useful description or remove unnecessary empty metadata.",
+            tuple(_tag_ev(t) for t in descriptions),
+        )
     if len(descriptions) > 1:
         distinct = {t.content.strip().casefold() for t in descriptions}
-        _add(found, url, "description.conflicting" if len(distinct) > 1 else "description.duplicate", "warning", "Conflicting meta descriptions" if len(distinct) > 1 else "Repeated meta description tags", "Multiple description tags were extracted from the same document.", "Keep one unambiguous description tag.", tuple(_tag_ev(t) for t in descriptions))
+        _add(
+            found,
+            url,
+            "description.conflicting" if len(distinct) > 1 else "description.duplicate",
+            "warning",
+            "Conflicting meta descriptions"
+            if len(distinct) > 1
+            else "Repeated meta description tags",
+            "Multiple description tags were extracted from the same document.",
+            "Keep one unambiguous description tag.",
+            tuple(_tag_ev(t) for t in descriptions),
+        )
     if len(present) == 1:
         value = present[0].content
         if len(value) < conf.description_min_chars or len(value) > conf.description_max_chars:
-            _add(found, url, "description.length", "info", "Review meta description length", f"Description has {len(value)} characters, outside the configured {conf.description_min_chars}–{conf.description_max_chars} advisory range.", "Prefer a clear summary over a rigid character target.", (_tag_ev(present[0]),))
+            _add(
+                found,
+                url,
+                "description.length",
+                "info",
+                "Review meta description length",
+                f"Description has {len(value)} characters, outside the configured {conf.description_min_chars}–{conf.description_max_chars} advisory range.",
+                "Prefer a clear summary over a rigid character target.",
+                (_tag_ev(present[0]),),
+            )
 
     h1s = [h for h in html.headings if h.level == 1]
     if not h1s:
-        _add(found, url, "heading.h1_missing", "warning", "No H1 heading detected", "No H1 was extracted from the supplied HTML.", "Consider a descriptive main heading for readability and structure.", (_ev(url, "document", "No H1 captured"),))
+        _add(
+            found,
+            url,
+            "heading.h1_missing",
+            "warning",
+            "No H1 heading detected",
+            "No H1 was extracted from the supplied HTML.",
+            "Consider a descriptive main heading for readability and structure.",
+            (_ev(url, "document", "No H1 captured"),),
+        )
     elif len(h1s) > 1:
-        _add(found, url, "heading.multiple_h1", "info", "Multiple H1 headings", "Multiple H1 headings can be valid in HTML; review whether the page outline is clear.", "Make the main subject easy to identify; multiple H1s are not automatically an SEO error.", tuple(FindingEvidence(h.evidence, h.text[:180]) for h in h1s))
+        _add(
+            found,
+            url,
+            "heading.multiple_h1",
+            "info",
+            "Multiple H1 headings",
+            "Multiple H1 headings can be valid in HTML; review whether the page outline is clear.",
+            "Make the main subject easy to identify; multiple H1s are not automatically an SEO error.",
+            tuple(FindingEvidence(h.evidence, h.text[:180]) for h in h1s),
+        )
     previous_level = 0
     for h in html.headings:
         if previous_level and h.level > previous_level + 1:
-            _add(found, url, "heading.skipped_level", "info", "Heading level jump", f"A heading jumps from H{previous_level} to H{h.level}. Heading hierarchy is primarily an accessibility and readability concern.", "Review whether the heading structure represents the document sections clearly.", (FindingEvidence(h.evidence, h.text[:180]),))
+            _add(
+                found,
+                url,
+                "heading.skipped_level",
+                "info",
+                "Heading level jump",
+                f"A heading jumps from H{previous_level} to H{h.level}. Heading hierarchy is primarily an accessibility and readability concern.",
+                "Review whether the heading structure represents the document sections clearly.",
+                (FindingEvidence(h.evidence, h.text[:180]),),
+            )
         previous_level = h.level
         if not h.text.strip():
-            _add(found, url, "heading.empty", "warning", "Empty heading", f"An H{h.level} was captured with no text content.", "Give visible headings meaningful text or remove unnecessary heading markup.", (FindingEvidence(h.evidence, "Empty extracted text"),))
+            _add(
+                found,
+                url,
+                "heading.empty",
+                "warning",
+                "Empty heading",
+                f"An H{h.level} was captured with no text content.",
+                "Give visible headings meaningful text or remove unnecessary heading markup.",
+                (FindingEvidence(h.evidence, "Empty extracted text"),),
+            )
 
     # Use canonical_tags for evidence, including empty declarations.
     canonicals = html.canonical_tags
     if not canonicals:
-        _add(found, url, "canonical.missing", "info", "No canonical declaration", "No HTML canonical link element was extracted. A canonical tag is not mandatory on every page.", "Add one only if it helps express the preferred URL.", (_ev(url, "document", "No rel=canonical link captured"),))
+        _add(
+            found,
+            url,
+            "canonical.missing",
+            "info",
+            "No canonical declaration",
+            "No HTML canonical link element was extracted. A canonical tag is not mandatory on every page.",
+            "Add one only if it helps express the preferred URL.",
+            (_ev(url, "document", "No rel=canonical link captured"),),
+        )
     else:
         normalized: set[str] = set()
         for tag in canonicals:
             target = _norm(tag.href, url) if tag.href.strip() else None
             if target is None:
-                _add(found, url, "canonical.invalid", "warning", "Invalid canonical URL", "A canonical declaration is empty, malformed, or outside the supported URL format.", "Use one absolute or valid relative HTTP(S) canonical URL.", (FindingEvidence(tag.evidence, tag.href[:180] or "Empty href"),))
+                _add(
+                    found,
+                    url,
+                    "canonical.invalid",
+                    "warning",
+                    "Invalid canonical URL",
+                    "A canonical declaration is empty, malformed, or outside the supported URL format.",
+                    "Use one absolute or valid relative HTTP(S) canonical URL.",
+                    (FindingEvidence(tag.evidence, tag.href[:180] or "Empty href"),),
+                )
             else:
                 normalized.add(target)
                 if urlsplit(target).hostname != urlsplit(url).hostname:
-                    _add(found, url, "canonical.external", "info", "Cross-domain canonical", "This canonical points to a different host. This may be intentional for syndication.", "Confirm the external preferred URL is intended.", (FindingEvidence(tag.evidence, target[:180]),))
+                    _add(
+                        found,
+                        url,
+                        "canonical.external",
+                        "info",
+                        "Cross-domain canonical",
+                        "This canonical points to a different host. This may be intentional for syndication.",
+                        "Confirm the external preferred URL is intended.",
+                        (FindingEvidence(tag.evidence, target[:180]),),
+                    )
         if len(canonicals) > 1:
-            _add(found, url, "canonical.conflicting" if len(normalized) > 1 else "canonical.duplicate", "warning", "Conflicting canonical declarations" if len(normalized) > 1 else "Repeated canonical declarations", "Multiple canonical elements were extracted. Contradictory hints can be ignored.", "Use a single preferred canonical URL.", tuple(FindingEvidence(t.evidence, t.href[:180]) for t in canonicals))
+            _add(
+                found,
+                url,
+                "canonical.conflicting" if len(normalized) > 1 else "canonical.duplicate",
+                "warning",
+                "Conflicting canonical declarations"
+                if len(normalized) > 1
+                else "Repeated canonical declarations",
+                "Multiple canonical elements were extracted. Contradictory hints can be ignored.",
+                "Use a single preferred canonical URL.",
+                tuple(FindingEvidence(t.evidence, t.href[:180]) for t in canonicals),
+            )
 
     robots_meta = [m for m in html.meta if m.name.lower() in ("robots", "googlebot", "bingbot")]
     directives: dict[str, set[str]] = defaultdict(set)
     for meta in robots_meta:
-        directives[meta.name.lower()].update(part.strip().lower() for part in meta.content.split(",") if part.strip())
+        directives[meta.name.lower()].update(
+            part.strip().lower() for part in meta.content.split(",") if part.strip()
+        )
     for agent, commands in sorted(directives.items()):
         noindex = "noindex" in commands or "none" in commands
         nofollow = "nofollow" in commands or "none" in commands
         if noindex:
             metas = tuple(_tag_ev(t) for t in robots_meta if t.name.lower() == agent)
-            _add(found, url, "robots.noindex", "info", f"Noindex directive for {agent}", "HTML metadata asks this crawler not to index the page. HTTP X-Robots-Tag headers are not included in this snapshot.", "Confirm this page is intended to remain out of search results.", metas)
+            _add(
+                found,
+                url,
+                "robots.noindex",
+                "info",
+                f"Noindex directive for {agent}",
+                "HTML metadata asks this crawler not to index the page. HTTP X-Robots-Tag headers are not included in this snapshot.",
+                "Confirm this page is intended to remain out of search results.",
+                metas,
+            )
         if nofollow:
             metas = tuple(_tag_ev(t) for t in robots_meta if t.name.lower() == agent)
-            _add(found, url, "robots.nofollow", "info", f"Nofollow directive for {agent}", "HTML metadata requests that this crawler not follow links on the page.", "Confirm the link-following directive is intentional.", metas)
-        conflict = (noindex and ("index" in commands or "all" in commands)) or (nofollow and ("follow" in commands or "all" in commands))
+            _add(
+                found,
+                url,
+                "robots.nofollow",
+                "info",
+                f"Nofollow directive for {agent}",
+                "HTML metadata requests that this crawler not follow links on the page.",
+                "Confirm the link-following directive is intentional.",
+                metas,
+            )
+        conflict = (noindex and ("index" in commands or "all" in commands)) or (
+            nofollow and ("follow" in commands or "all" in commands)
+        )
         if conflict:
-            _add(found, url, "robots.conflicting", "warning", f"Contradictory robots directives for {agent}", "Conflicting index/follow instructions appear in the same crawler directive group.", "Remove conflicting instructions and keep the intended restrictions.", tuple(_tag_ev(t) for t in robots_meta if t.name.lower() == agent))
+            _add(
+                found,
+                url,
+                "robots.conflicting",
+                "warning",
+                f"Contradictory robots directives for {agent}",
+                "Conflicting index/follow instructions appear in the same crawler directive group.",
+                "Remove conflicting instructions and keep the intended restrictions.",
+                tuple(_tag_ev(t) for t in robots_meta if t.name.lower() == agent),
+            )
     if directives.get("robots") and directives.get("googlebot"):
         generic, google = directives["robots"], directives["googlebot"]
-        if ("noindex" in generic) != ("noindex" in google) and ("index" in google or "noindex" in google):
-            _add(found, url, "robots.agent_difference", "info", "Crawler-specific indexing instructions differ", "The generic and Googlebot indexing directives differ; crawler-specific rules may intentionally override generic instructions.", "Confirm the different crawler directives are intended.", tuple(_tag_ev(t) for t in robots_meta if t.name.lower() in ("robots", "googlebot")))
+        if ("noindex" in generic) != ("noindex" in google) and (
+            "index" in google or "noindex" in google
+        ):
+            _add(
+                found,
+                url,
+                "robots.agent_difference",
+                "info",
+                "Crawler-specific indexing instructions differ",
+                "The generic and Googlebot indexing directives differ; crawler-specific rules may intentionally override generic instructions.",
+                "Confirm the different crawler directives are intended.",
+                tuple(_tag_ev(t) for t in robots_meta if t.name.lower() in ("robots", "googlebot")),
+            )
 
     internal_links: list[tuple[str, object]] = []
     src_host = urlsplit(url).hostname
@@ -151,11 +332,29 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
         except ValueError:
             continue
     if not internal_links:
-        _add(found, url, "links.no_internal", "info", "No internal links detected", "No matching-host HTTP(S) anchor links were extracted. A standalone page may not need them.", "Review navigation and context where internal links would help users.", (_ev(url, "document", "No matching-host anchor links captured"),))
+        _add(
+            found,
+            url,
+            "links.no_internal",
+            "info",
+            "No internal links detected",
+            "No matching-host HTTP(S) anchor links were extracted. A standalone page may not need them.",
+            "Review navigation and context where internal links would help users.",
+            (_ev(url, "document", "No matching-host anchor links captured"),),
+        )
     elif urlsplit(url).scheme == "https":
         insecure = [link for href, link in internal_links if urlsplit(href).scheme == "http"]
         if insecure:
-            _add(found, url, "links.insecure", "warning", "Internal HTTP links from HTTPS page", "Some same-host links use unencrypted HTTP URLs.", "Update these links to the appropriate HTTPS destination.", tuple(FindingEvidence(t.evidence, t.href[:180]) for t in insecure[:25]))
+            _add(
+                found,
+                url,
+                "links.insecure",
+                "warning",
+                "Internal HTTP links from HTTPS page",
+                "Some same-host links use unencrypted HTTP URLs.",
+                "Update these links to the appropriate HTTPS destination.",
+                tuple(FindingEvidence(t.evidence, t.href[:180]) for t in insecure[:25]),
+            )
     return found
 
 
@@ -191,11 +390,31 @@ def analyze_pages(
         title = page.html.title
         if title and title.strip():
             reference = page.html.title_evidence or Evidence(page.final_url, "document", 1)
-            title_index[" ".join(title.split()).casefold()].append((page.final_url, FindingEvidence(reference, title[:180])))
+            title_index[" ".join(title.split()).casefold()].append(
+                (page.final_url, FindingEvidence(reference, title[:180]))
+            )
     for titles in title_index.values():
         if len(titles) > 1:
             evidences = tuple(item[1] for item in sorted(titles))
             for url, _ in titles:
-                _add(results, url, "title.duplicate_pages", "warning", "Title reused across pages", "The same normalized title appears on multiple analyzed pages; this may be intentional, but can make pages harder to distinguish.", "Consider distinctive titles for pages with different purposes.", evidences)
-    results.sort(key=lambda f: (f.url, f.rule_id, tuple((x.reference.source_url, x.reference.element, x.reference.ordinal) for x in f.evidence)))
+                _add(
+                    results,
+                    url,
+                    "title.duplicate_pages",
+                    "warning",
+                    "Title reused across pages",
+                    "The same normalized title appears on multiple analyzed pages; this may be intentional, but can make pages harder to distinguish.",
+                    "Consider distinctive titles for pages with different purposes.",
+                    evidences,
+                )
+    results.sort(
+        key=lambda f: (
+            f.url,
+            f.rule_id,
+            tuple(
+                (x.reference.source_url, x.reference.element, x.reference.ordinal)
+                for x in f.evidence
+            ),
+        )
+    )
     return AnalysisReport(len(pages), duplicates, tuple(results))

@@ -62,31 +62,45 @@ def test_multiple_titles_preserved_with_separate_evidence() -> None:
 def test_missing_empty_conflicting_duplicate_descriptions() -> None:
     assert "description.missing" in rules(GOOD.replace('name="description"', 'name="keywords"'))
     assert "description.empty" in rules('<meta name="description" content="">')
-    assert "description.duplicate" in rules('<meta name="description" content="same"><meta name="description" content="same">')
-    issue = rules('<meta name="description" content="one"><meta name="description" content="two">')["description.conflicting"]
+    assert "description.duplicate" in rules(
+        '<meta name="description" content="same"><meta name="description" content="same">'
+    )
+    issue = rules('<meta name="description" content="one"><meta name="description" content="two">')[
+        "description.conflicting"
+    ]
     assert len(issue.evidence) == 2
 
 
 def test_description_lengths_are_configurable_and_advisory() -> None:
-    found = analyze_page(snapshot('<title>A clearly useful page title</title><meta name="description" content="brief">'), RuleConfig(description_min_chars=2, description_max_chars=10))
+    found = analyze_page(
+        snapshot(
+            '<title>A clearly useful page title</title><meta name="description" content="brief">'
+        ),
+        RuleConfig(description_min_chars=2, description_max_chars=10),
+    )
     assert not any(x.rule_id == "description.length" for x in found.findings)
-    assert rules('<meta name="description" content="brief">')["description.length"].severity == "info"
+    assert (
+        rules('<meta name="description" content="brief">')["description.length"].severity == "info"
+    )
 
 
 def test_missing_and_multiple_h1_are_not_rank_guarantees() -> None:
-    assert rules('<h2>Not a main heading</h2>')["heading.h1_missing"].severity == "warning"
-    assert rules('<h1>One</h1><h1>Two</h1>')["heading.multiple_h1"].severity == "info"
-    assert "not automatically" in rules('<h1>One</h1><h1>Two</h1>')["heading.multiple_h1"].recommendation
+    assert rules("<h2>Not a main heading</h2>")["heading.h1_missing"].severity == "warning"
+    assert rules("<h1>One</h1><h1>Two</h1>")["heading.multiple_h1"].severity == "info"
+    assert (
+        "not automatically"
+        in rules("<h1>One</h1><h1>Two</h1>")["heading.multiple_h1"].recommendation
+    )
 
 
 def test_heading_level_jumps_are_advisory_not_errors() -> None:
-    issue = rules('<h1>Intro</h1><h3>Subsection</h3>')["heading.skipped_level"]
+    issue = rules("<h1>Intro</h1><h3>Subsection</h3>")["heading.skipped_level"]
     assert issue.severity == "info"
     assert issue.evidence[0].reference.element == "h3"
 
 
 def test_empty_heading_has_its_own_evidence() -> None:
-    f = rules('<h1></h1>')["heading.empty"]
+    f = rules("<h1></h1>")["heading.empty"]
     assert f.evidence[0].reference.element == "h1"
 
 
@@ -94,7 +108,9 @@ def test_canonical_normalization_and_conflicts() -> None:
     html = '<link rel="canonical" href="/page#section"><link rel="canonical" href="https://example.org:443/page">'
     assert "canonical.duplicate" in rules(html)
     assert "canonical.conflicting" not in rules(html)
-    issue = rules('<link rel="canonical" href="/one"><link rel="canonical" href="/two">')["canonical.conflicting"]
+    issue = rules('<link rel="canonical" href="/one"><link rel="canonical" href="/two">')[
+        "canonical.conflicting"
+    ]
     assert len(issue.evidence) == 2
 
 
@@ -102,7 +118,12 @@ def test_canonical_invalid_external_and_missing() -> None:
     assert "canonical.missing" in rules("")
     assert "canonical.invalid" in rules('<link rel="canonical" href="">')
     assert "canonical.invalid" in rules('<link rel="canonical" href="javascript:alert(1)">')
-    assert rules('<link rel="canonical" href="https://another.example.org/page">')["canonical.external"].severity == "info"
+    assert (
+        rules('<link rel="canonical" href="https://another.example.org/page">')[
+            "canonical.external"
+        ].severity
+        == "info"
+    )
 
 
 def test_robots_directives_show_exact_evidence() -> None:
@@ -136,7 +157,10 @@ def test_https_pages_flag_insecure_internal_http_links() -> None:
 
 def test_duplicate_titles_across_distinct_pages() -> None:
     first = snapshot(GOOD)
-    second = snapshot(GOOD.replace('href="https://example.org/page"', 'href="https://example.org/next"'), 'https://example.org/next')
+    second = snapshot(
+        GOOD.replace('href="https://example.org/page"', 'href="https://example.org/next"'),
+        "https://example.org/next",
+    )
     report = analyze_pages((first, second))
     issues = [x for x in report.findings if x.rule_id == "title.duplicate_pages"]
     assert len(issues) == 2
@@ -146,7 +170,7 @@ def test_duplicate_titles_across_distinct_pages() -> None:
 
 def test_same_url_variants_are_deduplicated_without_cross_page_title_finding() -> None:
     p1 = snapshot(GOOD)
-    p2 = snapshot(GOOD, 'https://EXAMPLE.org:443/page#frag')
+    p2 = snapshot(GOOD, "https://EXAMPLE.org:443/page#frag")
     report = analyze_pages([p2, p1])
     assert report.pages_analyzed == 1
     assert report.duplicate_snapshots == 1
@@ -154,15 +178,16 @@ def test_same_url_variants_are_deduplicated_without_cross_page_title_finding() -
 
 
 def test_order_independent_and_repeatable_output() -> None:
-    pages = [snapshot(GOOD), snapshot(GOOD, 'https://example.org/elsewhere')]
+    pages = [snapshot(GOOD), snapshot(GOOD, "https://example.org/elsewhere")]
     assert analyze_pages(pages).to_dict() == analyze_pages(list(reversed(pages))).to_dict()
     assert analyze_pages(pages).findings == analyze_pages(pages).findings
 
 
 def test_json_and_sqlalchemy_storage_shapes_are_serializable() -> None:
     import json
-    issue = next(iter(analyze_page(snapshot('<title>Short</title>')).findings))
-    assert json.loads(json.dumps(issue.to_dict()))['rule_id'] == issue.rule_id
+
+    issue = next(iter(analyze_page(snapshot("<title>Short</title>")).findings))
+    assert json.loads(json.dumps(issue.to_dict()))["rule_id"] == issue.rule_id
     store = issue.to_storage()
     assert set(store) == {"rule_id", "severity", "summary", "evidence"}
     assert json.loads(json.dumps(store))["evidence"]["references"]
@@ -174,22 +199,28 @@ def test_metadata_and_sources_are_safe_to_render_as_data() -> None:
     report = analyze_page(snapshot(malicious))
     assert report.findings
     assert not hasattr(report, "execute")
-    assert all(f.evidence[0].reference.source_url == 'https://example.org/page' for f in report.findings)
+    assert all(
+        f.evidence[0].reference.source_url == "https://example.org/page" for f in report.findings
+    )
 
 
 def test_invalid_config_ranges_fail_early() -> None:
-    for args in ({"title_min_chars": 0}, {"title_min_chars": 70, "title_max_chars": 65}, {"description_min_chars": 400, "description_max_chars": 100}):
+    for args in (
+        {"title_min_chars": 0},
+        {"title_min_chars": 70, "title_max_chars": 65},
+        {"description_min_chars": 400, "description_max_chars": 100},
+    ):
         with pytest.raises(ValueError):
             RuleConfig(**args)
 
 
 def test_unsupported_page_url_is_rejected_before_analysis() -> None:
     with pytest.raises(ValueError, match="invalid final URL"):
-        analyze_page(snapshot('<title>Bad</title>', 'file:///etc/passwd'))
+        analyze_page(snapshot("<title>Bad</title>", "file:///etc/passwd"))
 
 
 def test_malformed_html_and_invalid_bytes_do_not_crash_rules() -> None:
-    result = analyze_page(snapshot(b'<title>broken\xff<h1>unfinished'))
+    result = analyze_page(snapshot(b"<title>broken\xff<h1>unfinished"))
     assert result.pages_analyzed == 1
     assert result.findings
 
