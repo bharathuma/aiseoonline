@@ -327,7 +327,7 @@ export default function PublicToolForm({ kind }: { kind: ToolKind }) {
                   const preview = result.facts.approximate_preview as Record<string, unknown>;
                   return (
                     <div className="mt-3 space-y-2">
-                      {preview.image_url && (
+                      {typeof preview.image_url === 'string' && preview.image_url.length > 0 && (
                         <p className="break-all text-xs text-slate-500">
                           Image reference (not fetched): {String(preview.image_url)}
                         </p>
