@@ -21,6 +21,7 @@ test('tool discovery searches and filters without pretending tools are live', as
   await expect(page.getByRole('heading', { name: 'Internal link checker' })).toBeVisible();
   await page.getByRole('heading', { name: 'Internal link checker' }).getByRole('link').click();
   await expect(page.getByRole('heading', { name: 'Internal link checker', level: 1 })).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,follow');
   await expect(page.getByText('This tool is being developed and cannot run checks yet.')).toBeVisible();
 });
 
