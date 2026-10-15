@@ -406,6 +406,7 @@ def test_private_audit_api_authorization_polling_cancellation_and_exports(
             progress = client.get("/api/v1/internal/audits/" + job_id, headers=headers)
             assert progress.status_code == 200
             assert progress.json()["status"] == "queued"
+            assert progress.headers["cache-control"] == "no-store, private"
             not_ready = client.get(
                 f"/api/v1/internal/audits/{job_id}/report",
                 headers=headers,
@@ -456,6 +457,12 @@ def test_private_audit_api_authorization_polling_cancellation_and_exports(
                     uncertainty="One failed step",
                 ).model_dump(mode="json")
                 row.status = "partial"
+            report_response = client.get(
+                f"/api/v1/internal/audits/{job_id}/report", headers=headers
+            )
+            assert report_response.status_code == 200
+            assert report_response.headers["cache-control"] == "no-store, private"
+            assert report_response.json()["findings"][0]["severity"] == "error"
             html = client.get(
                 f"/api/v1/internal/audits/{job_id}/report.html",
                 headers=headers,
