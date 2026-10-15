@@ -104,7 +104,7 @@ def check_links(url: str) -> ToolReport:
         elif probe.state == "verified" and probe.status is not None and probe.status >= 500:
             issues.append(make_issue(
                 "links.upstream_error", "warning", "An internal URL returned a server error.",
-                "Investigate the server response; a temporary failure is not proof of a broken link.",
+                "Investigate the server response; temporary failure is not proof of a broken link.",
                 f"{row['evidence']}: HTTP {probe.status} {target[:140]}",
             ))
     if internal_count == 0:
