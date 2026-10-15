@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     llm_concurrency: int = Field(default=3, ge=1, le=16)
     llm_input_usd_per_million: Decimal | None = Field(default=None, ge=0)
     llm_output_usd_per_million: Decimal | None = Field(default=None, ge=0)
+    ai_meta_daily_usd_cap: Decimal = Field(default=Decimal("2.00"), gt=0, le=100)
+    ai_meta_request_usd_cap: Decimal = Field(default=Decimal("0.05"), gt=0, le=5)
 
     @model_validator(mode="after")
     def validate_production_storage(self) -> "Settings":

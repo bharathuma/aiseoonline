@@ -2,6 +2,7 @@
 import SiteLayout from '../../layouts/SiteLayout.astro';
 import StatusNotice from './StatusNotice.astro';
 import PublicToolForm from '../PublicToolForm.tsx';
+import AiMetaForm from '../AiMetaForm.tsx';
 import type { ToolPreview } from '../toolCatalog';
 
 interface Props {
@@ -45,10 +46,15 @@ const kind =
           tool.status === 'available' ? (
             <div>
               <p class="mb-5 text-sm leading-7 text-slate-600">
-                Enter a public website URL below to run a bounded, one-resource check. Findings
-                describe observable evidence, not guaranteed search rankings.
+                {tool.id === 'ai-meta'
+                  ? 'Paste your own content or enter a public URL to generate editable drafts based on real input. AI output requires human review.'
+                  : 'Enter a public website URL below to run a bounded, one-resource check. Findings describe observable evidence, not guaranteed search rankings.'}
               </p>
-              <PublicToolForm kind={kind} client:load />
+              {tool.id === 'ai-meta' ? (
+                <AiMetaForm client:load />
+              ) : (
+                <PublicToolForm kind={kind} client:load />
+              )}
             </div>
           ) : (
             <StatusNotice variant="warning" title="Coming soon">
@@ -83,7 +89,7 @@ const kind =
     </div>
   </section>
   {
-    tool.status === 'available' && ['headings', 'links', 'social'].includes(tool.id) && (
+    tool.status === 'available' && ['headings', 'links', 'social', 'ai-meta'].includes(tool.id) && (
       <section class="section-space bg-white" aria-labelledby="tool-faq">
         <div class="site-container max-w-4xl">
           <h2 id="tool-faq" class="text-2xl font-bold">
@@ -114,6 +120,27 @@ const kind =
               <p class="text-slate-700">
                 It means the link has not been verified; it does not mean the URL works or is
                 broken.
+              </p>
+            </div>
+          )}
+          {tool.id === 'ai-meta' && (
+            <div class="mt-6 space-y-5">
+              <h3 class="font-semibold">
+                Are 30–60 title characters and 70–160 description characters mandatory?
+              </h3>
+              <p class="text-slate-700">
+                No. They are approximate editorial guidelines, not display limits or ranking
+                factors. Actual snippets depend on pixels, query context, and each search engine.
+              </p>
+              <h3 class="font-semibold">What does the generator read from a URL?</h3>
+              <p class="text-slate-700">
+                Only the public page's fetched title, descriptions, and headings. It cannot inspect
+                private pages or JavaScript-rendered text and never performs a deep scan.
+              </p>
+              <h3 class="font-semibold">Can I publish AI suggestions without checking them?</h3>
+              <p class="text-slate-700">
+                No. Evidence is checked against the submitted text, but AI can still make
+                unsupported claims. Review, edit, and confirm every factual statement.
               </p>
             </div>
           )}

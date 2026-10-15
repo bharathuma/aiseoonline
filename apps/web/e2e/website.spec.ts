@@ -35,10 +35,8 @@ test('tool discovery distinguishes implemented checkers and planned AI tools', a
   await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Run free check' })).toBeVisible();
   await page.goto('/tools/ai-meta-suggestions/');
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,follow');
-  await expect(
-    page.getByText('This tool is being developed and cannot run checks yet.'),
-  ).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Generate three suggestions' })).toBeVisible();
 });
 
 test('dialog opens, closes with Escape and restores keyboard focus', async ({ page }) => {
@@ -421,4 +419,92 @@ test('all nine deterministic tools have indexable pages and working controls', a
     await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Run free check' })).toBeVisible();
   }
+});
+
+test('AI meta tool accepts pasted input and displays three editable suggestions', async ({
+  page,
+}) => {
+  await page.route('**/api/v1/tools/ai-meta', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        source_type: 'text',
+        source_url: null,
+        source_summary: 'Visitor-provided text',
+        model: 'fixture',
+        checked_at: '2026-10-15T12:00:00Z',
+        cached: false,
+        usage: { input_tokens: 120, output_tokens: 160, total_tokens: 280 },
+        estimated_cost_usd: '0.00018',
+        visitor_message: 'Three AI drafts generated.',
+        suggestions: Array.from({ length: 3 }, (_, i) => ({
+          title: 'Handmade planters from natural clay ' + i,
+          description:
+            'Explore handmade planters for houseplants with simple indoor care advice ' + i,
+          evidence_quote: 'Handmade planters',
+          rationale: 'Observed source content',
+          warnings: ['Verify facts before use'],
+          title_characters: 40,
+          description_characters: 80,
+        })),
+      }),
+    });
+  });
+  await page.goto('/tools/ai-meta-suggestions/');
+  await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+  await expect(
+    page.getByRole('heading', { name: /AI title & meta description generator/ }),
+  ).toBeVisible();
+  await page
+    .getByLabel('Your page content')
+    .fill(
+      'Our independent pottery studio makes handmade planters from natural clay. ' +
+        'We make small plant pots and publish simple indoor plant care tips for beginners. ' +
+        'Our studio focuses on indoor houseplants and practical planter selection.',
+    );
+  await page.getByRole('button', { name: 'Generate three suggestions' }).click();
+  await expect(page.getByRole('heading', { name: 'Suggestion 3' })).toBeVisible();
+  await expect(page.getByText('Measured tokens: 280.')).toBeVisible();
+  const title = page.getByLabel('Editable SEO title').first();
+  await title.fill('An editable title for my page');
+  await expect(title).toHaveValue('An editable title for my page');
+  await expect(page.getByText('Warnings apply to the original AI draft').first()).toBeVisible();
+});
+
+test('AI generator shows an actionable unavailable-credentials error', async ({ page }) => {
+  await page.route('**/api/v1/tools/ai-meta', async (route) => {
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        error: {
+          code: 'ai_not_configured',
+          message: 'AI suggestions are not currently available.',
+        },
+      }),
+    });
+  });
+  await page.goto('/tools/ai-meta-suggestions/');
+  await page.getByLabel('Fetch public URL').check();
+  await page.getByLabel('Public page URL').fill('https://example.org/');
+  await page.getByRole('button', { name: 'Generate three suggestions' }).click();
+  await expect(page.getByRole('alert')).toContainText(
+    'AI suggestions are not currently available.',
+  );
+  await expect(page.getByRole('link', { name: /Try the free Meta Tag Checker/ })).toBeVisible();
+});
+
+test('AI generator rejects short pasted content without contacting backend', async ({ page }) => {
+  let calls = 0;
+  await page.route('**/api/v1/tools/ai-meta', async (route) => {
+    calls++;
+    await route.abort();
+  });
+  await page.goto('/tools/ai-meta-suggestions/');
+  await page.getByLabel('Your page content').fill('too short');
+  await page.getByRole('button', { name: 'Generate three suggestions' }).click();
+  await expect(page.getByLabel('Your page content')).toHaveAttribute('minlength', '100');
+  await expect(page.getByRole('heading', { name: 'Suggestion 1' })).toHaveCount(0);
+  expect(calls).toBe(0);
 });

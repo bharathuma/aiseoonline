@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added a tenth public SEO tool for grounded, editable AI title and description suggestions, with quota and budget gates, evidence validation and local browser tests.
+
 - Added an optional backend-only OpenAI provider adapter, typed generation contracts, streaming, prompt versioning, conservative budgets, token-usage tracking, explicit offline fixtures and privacy controls.
 - Documented the LLM layer and kept all public deterministic SEO tools independent of paid AI calls.
 

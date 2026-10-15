@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from aiseoonline_api import __version__
+from aiseoonline_api.ai_core.meta_routes import router as ai_meta_router
 from aiseoonline_api.config import Settings, get_settings
 from aiseoonline_api.db.session import create_database_engine
 from aiseoonline_api.errors import ERROR_RESPONSES, register_error_handlers
@@ -42,6 +43,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     application.state.settings = resolved
     application.state.public_tool_slots = asyncio.Semaphore(4)
+    application.state.ai_meta_slots = asyncio.Semaphore(2)
     application.state.database_engine = (
         create_database_engine(resolved) if resolved.database_url is not None else None
     )
@@ -49,6 +51,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.add_middleware(RequestIdMiddleware)
     application.include_router(health_router, prefix="/api/v1", responses=ERROR_RESPONSES)
     application.include_router(public_tools_router, prefix="/api/v1", responses=ERROR_RESPONSES)
+    application.include_router(ai_meta_router, prefix="/api/v1", responses=ERROR_RESPONSES)
     application.include_router(
         readiness_router,
         prefix="/api/v1",
