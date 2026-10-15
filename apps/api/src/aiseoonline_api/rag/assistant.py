@@ -118,17 +118,19 @@ def _findings(
     if audit_id is None:
         return []
     project_domain = session.scalar(select(Project.domain).where(Project.id == project_id))
-    records = list(session.execute(
-        select(SeoFinding, Page)
-        .join(Page, SeoFinding.page_id == Page.id)
-        .where(
-            SeoFinding.audit_job_id == audit_id,
-            Page.audit_job_id == audit_id,
-            Page.project_id == project_id,
-        )
-        .order_by(SeoFinding.id)
-        .limit(120)
-    ).all())
+    records = list(
+        session.execute(
+            select(SeoFinding, Page)
+            .join(Page, SeoFinding.page_id == Page.id)
+            .where(
+                SeoFinding.audit_job_id == audit_id,
+                Page.audit_job_id == audit_id,
+                Page.project_id == project_id,
+            )
+            .order_by(SeoFinding.id)
+            .limit(120)
+        ).all()
+    )
     question_text = _clean(question)
     if "description" in question_text:
         records = [r for r in records if "description" in r[0].rule_id]
