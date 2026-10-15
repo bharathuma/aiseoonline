@@ -1,0 +1,45 @@
+name: Format and lock Part 11 (temporary)
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  normalize:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feat/llm-provider-foundation'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Lock and install dependencies
+        run: |
+          uv lock --project apps/api
+          uv sync --project apps/api --locked --group dev
+      - name: Format Python and apply safe import fixes
+        run: |
+          uv run --project apps/api --locked ruff check --fix --exit-zero apps/api
+          uv run --project apps/api --locked ruff format apps/api
+      - name: Commit updated lockfile and formatting
+        env:
+          GH_PUSH_TOKEN: ${{ github.token }}
+        run: |
+          git add apps/api
+          if git diff --cached --quiet; then
+            echo "No dependency or formatting changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "build(ai): lock HTTPX runtime dependency and format provider layer"
+          AUTH="$(printf 'x-access-token:%s' "$GH_PUSH_TOKEN" | base64 -w0)"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $AUTH" push origin HEAD:refs/heads/feat/llm-provider-foundation
