@@ -182,6 +182,7 @@ def test_api_exposes_real_typed_routes(
             facts={"observed": 1},
             issues=[],
         )
+
     monkeypatch.setattr(
         routes,
         {"robots": "check_robots", "sitemap": "check_sitemap", "meta": "check_meta"}[path],
