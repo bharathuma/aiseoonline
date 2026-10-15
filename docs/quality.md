@@ -46,3 +46,6 @@ In GitHub **Settings → Rules → Rulesets**, require a pull request before upd
 Test coverage is reported as a measurement, not an accuracy guarantee. Avoid imposing artificial coverage targets that encourage trivial assertions.
 
 See [API contract](api-contracts.md) for request/response schemas.
+
+See [Quality and performance review](quality-review.md) for controlled CI measurements,
+new regression coverage, caching policy, threat boundaries and remaining release gates.
