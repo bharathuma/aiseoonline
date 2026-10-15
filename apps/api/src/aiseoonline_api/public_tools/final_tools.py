@@ -100,6 +100,7 @@ def check_links(url: str) -> ToolReport:
             )
         if (
             internal
+            and normalized.origin == source.origin
             and normalized.value != source.value
             and len(chosen) < _MAX_LINK_PROBES
             and in_sample
