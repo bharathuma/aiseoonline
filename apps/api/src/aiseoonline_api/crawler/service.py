@@ -67,6 +67,17 @@ class PageSnapshot:
     html: ParsedHtml
 
 
+@dataclass(frozen=True)
+class TextResource:
+    requested_url: str
+    final_url: str
+    status: int
+    content_type: str
+    charset: str
+    body: bytes
+    redirects: tuple[str, ...]
+
+
 class CrawlSession:
     """At most one page attempt for a fixed origin. Deep mode is disabled."""
 
@@ -93,6 +104,7 @@ class CrawlSession:
         byte_budget: int,
         allowed_by_robots: urllib.robotparser.RobotFileParser | None = None,
         crawl_delay: float = 0,
+        allowed_mime: tuple[str, ...] | None = None,
     ) -> tuple[SafeURL, HttpDocument, tuple[str, ...]]:
         current = start
         redirects: list[str] = []
@@ -118,6 +130,7 @@ class CrawlSession:
                     deadline=deadline,
                     connect_timeout=self.limits.connect_timeout,
                     dns_timeout=self.limits.dns_timeout,
+                    **({"allowed_mime": allowed_mime} if allowed_mime is not None else {}),
                 )
             finally:
                 self._previous_request = time.monotonic()
@@ -183,4 +196,61 @@ class CrawlSession:
                 redirects=redirects,
                 content_bytes=len(page.body),
                 html=html,
+            )
+
+    def fetch_resource(self, kind: str) -> TextResource:
+        """Read one robots.txt or XML sitemap through the restricted transport.
+
+        This does not enable deep crawling. For sitemaps, check robots.txt before
+        fetching the requested document. Sitemap references are never followed.
+        """
+        if kind not in ("robots", "sitemap"):
+            raise ValueError("Unsupported resource kind")
+        with self._lock:
+            if self._pages_used:
+                raise CrawlLimitExceeded("A session permits only one requested resource")
+            self._pages_used += 1
+            deadline = time.monotonic() + self.limits.total_timeout
+            host = f"[{self.seed.host}]" if ":" in self.seed.host else self.seed.host
+            robots_url = normalize_url(f"{self.seed.scheme}://{host}/robots.txt")
+            if kind == "robots":
+                final, document, redirects = self._request(
+                    robots_url, deadline=deadline,
+                    byte_budget=self.limits.max_robots_bytes,
+                    allowed_mime=("text/plain", "text/html"),
+                )
+                if document.status not in (200, 404, 410):
+                    raise HttpStatusError(document.status)
+                return TextResource(
+                    robots_url.value, final.value, document.status,
+                    document.content_type, document.charset, document.body, redirects
+                )
+
+            _, robots, _ = self._request(
+                robots_url, deadline=deadline, byte_budget=self.limits.max_robots_bytes,
+                allowed_mime=("text/plain",),
+            )
+            if robots.status in (404, 410):
+                rules = None
+                crawl_delay = 0.0
+            elif robots.status == 200 and robots.content_type in ("text/plain", ""):
+                rules = urllib.robotparser.RobotFileParser()
+                rules.parse(robots.body.decode("utf-8", errors="replace").splitlines())
+                crawl_delay = float(rules.crawl_delay(USER_AGENT) or 0)
+                if crawl_delay > self.limits.total_timeout:
+                    raise RobotsDenied("Crawl-delay exceeds public scan budget")
+            else:
+                raise RobotsDenied("robots.txt cannot be checked")
+            final, document, redirects = self._request(
+                self.seed, deadline=deadline, byte_budget=min(self.limits.max_bytes, 524288),
+                allowed_by_robots=rules, crawl_delay=crawl_delay,
+                allowed_mime=("application/xml", "text/xml", "application/rss+xml", "text/plain"),
+            )
+            if document.status >= 400:
+                raise HttpStatusError(document.status)
+            if document.status != 200:
+                raise InvalidPage("Sitemap did not return HTTP 200")
+            return TextResource(
+                self.seed.value, final.value, document.status,
+                document.content_type, document.charset, document.body, redirects
             )
