@@ -54,7 +54,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(health_router, prefix="/api/v1", responses=ERROR_RESPONSES)
     application.include_router(public_tools_router, prefix="/api/v1", responses=ERROR_RESPONSES)
     application.include_router(ai_meta_router, prefix="/api/v1", responses=ERROR_RESPONSES)
-    application.include_router(rag_chat_router, prefix="/api/v1", responses=ERROR_RESPONSES)
+    if resolved.environment != "production":
+        application.include_router(rag_chat_router, prefix="/api/v1", responses=ERROR_RESPONSES)
     application.include_router(
         readiness_router,
         prefix="/api/v1",
