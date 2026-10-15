@@ -8,7 +8,7 @@ interface Props {
   tool: ToolPreview;
 }
 const { tool } = Astro.props;
-const kind = tool.id === 'robots' ? 'robots' : tool.id === 'sitemap' ? 'sitemap' : 'meta';
+const kind = tool.id as 'robots' | 'sitemap' | 'meta' | 'redirects' | 'canonical' | 'schema';
 ---
 
 <SiteLayout
