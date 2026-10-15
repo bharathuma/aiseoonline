@@ -122,7 +122,7 @@ test('meta checker submits input and displays evidence from API', async ({ page 
   await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
   await page.getByLabel('Webpage URL').fill('https://example.org/');
   await page.getByRole('button', { name: 'Run free check' }).click();
-  await expect(page.getByText('Fixture title')).toBeVisible();
+  await expect(page.getByText('Fixture title', { exact: true })).toBeVisible();
   await expect(page.getByText('Review page title length')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Download JSON' })).toBeVisible();
 });
