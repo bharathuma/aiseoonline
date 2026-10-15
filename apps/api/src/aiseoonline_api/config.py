@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     llm_output_usd_per_million: Decimal | None = Field(default=None, ge=0)
     ai_meta_daily_usd_cap: Decimal = Field(default=Decimal("2.00"), gt=0, le=100)
     ai_meta_request_usd_cap: Decimal = Field(default=Decimal("0.05"), gt=0, le=5)
+    rag_embedding_model: str = Field(default="text-embedding-3-small", min_length=2, max_length=120)
+    rag_embedding_version: str = Field(default="v1", min_length=1, max_length=48)
 
     @model_validator(mode="after")
     def validate_production_storage(self) -> "Settings":
