@@ -1,5 +1,6 @@
 """Configuration is supplied through the AISEO_ environment namespace."""
 
+from decimal import Decimal
 from functools import lru_cache
 from typing import Literal
 
@@ -22,6 +23,15 @@ class Settings(BaseSettings):
     database_url: SecretStr | None = None
     redis_url: SecretStr | None = None
     openai_api_key: SecretStr | None = None
+    llm_model: str = Field(default="gpt-4o-mini", min_length=1, max_length=80)
+    llm_max_input_tokens: int = Field(default=8192, ge=128, le=100000)
+    llm_max_output_tokens: int = Field(default=512, ge=32, le=8192)
+    llm_max_total_tokens: int = Field(default=8704, ge=160, le=108192)
+    llm_timeout_seconds: float = Field(default=15.0, ge=1, le=60)
+    llm_max_retries: int = Field(default=2, ge=0, le=3)
+    llm_concurrency: int = Field(default=3, ge=1, le=16)
+    llm_input_usd_per_million: Decimal | None = Field(default=None, ge=0)
+    llm_output_usd_per_million: Decimal | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
     def validate_production_storage(self) -> "Settings":
@@ -29,6 +39,12 @@ class Settings(BaseSettings):
             self.database_url is None or self.redis_url is None
         ):
             raise ValueError("Production requires AISEO_DATABASE_URL and AISEO_REDIS_URL")
+        if self.llm_max_total_tokens < self.llm_max_output_tokens:
+            raise ValueError("Total LLM token budget must cover output tokens")
+        if (self.llm_input_usd_per_million is None) != (
+            self.llm_output_usd_per_million is None
+        ):
+            raise ValueError("Configure both LLM price rates or neither")
         return self
 
     def require_database_url(self) -> str:
