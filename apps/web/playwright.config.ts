@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
+  testIgnore: '**/private-rag.dev.spec.ts',
   timeout: 30_000,
   expect: { timeout: 10_000 },
   retries: process.env.CI ? 1 : 0,
