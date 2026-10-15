@@ -48,7 +48,9 @@ def page_fixture(monkeypatch: pytest.MonkeyPatch, html: bytes) -> None:
     ],
 )
 def test_canonical_classifies_from_actual_html(
-    monkeypatch: pytest.MonkeyPatch, markup: bytes, expected: str,
+    monkeypatch: pytest.MonkeyPatch,
+    markup: bytes,
+    expected: str,
 ) -> None:
     page_fixture(monkeypatch, b"<html><head>" + markup + b"</head></html>")
     result = advanced.check_canonical("https://example.org/page")
@@ -64,7 +66,9 @@ def test_canonical_missing_conflicting_and_repeated(
     assert "canonical.missing" in {
         issue.code for issue in advanced.check_canonical("https://example.org/page").issues
     }
-    page_fixture(monkeypatch, b'<link rel="canonical" href="/one"><link rel="canonical" href="/two">')
+    page_fixture(
+        monkeypatch, b'<link rel="canonical" href="/one"><link rel="canonical" href="/two">'
+    )
     report = advanced.check_canonical("https://example.org/page")
     assert "canonical.conflicting" in {issue.code for issue in report.issues}
     assert len(report.facts["declarations"]) == 2
@@ -101,19 +105,26 @@ def test_schema_parses_graph_and_labels_supported_types(
     ("markup", "code"),
     [
         (b'<script type="application/ld+json">{broken}</script>', "schema.invalid_json"),
-        (b'<script type="application/ld+json">{"@type":"Product"}</script>',
-         "schema.context_missing"),
-        (b'<script type="application/ld+json">{"@context":"https://schema.org"}</script>',
-         "schema.type_missing"),
-        (b'<script type="application/ld+json">{"@graph":"invalid"}</script>',
-         "schema.invalid_graph"),
+        (
+            b'<script type="application/ld+json">{"@type":"Product"}</script>',
+            "schema.context_missing",
+        ),
+        (
+            b'<script type="application/ld+json">{"@context":"https://schema.org"}</script>',
+            "schema.type_missing",
+        ),
+        (
+            b'<script type="application/ld+json">{"@graph":"invalid"}</script>',
+            "schema.invalid_graph",
+        ),
         (b'<script type="application/ld+json">"text"</script>', "schema.invalid_root"),
-        (b'<script type="application/ld+json">{"@type":NaN}</script>',
-         "schema.invalid_json"),
+        (b'<script type="application/ld+json">{"@type":NaN}</script>', "schema.invalid_json"),
     ],
 )
 def test_schema_structural_errors_are_grounded_and_safe(
-    monkeypatch: pytest.MonkeyPatch, markup: bytes, code: str,
+    monkeypatch: pytest.MonkeyPatch,
+    markup: bytes,
+    code: str,
 ) -> None:
     page_fixture(monkeypatch, markup)
     result = advanced.check_schema("https://example.org/page")
@@ -157,12 +168,18 @@ def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
 
 @pytest.mark.parametrize("kind", ["redirects", "canonical", "schema"])
 def test_new_routes_are_documented_and_typed(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch, kind: str,
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    kind: str,
 ) -> None:
     def fake(url: str) -> advanced.ToolReport:
         return advanced.ToolReport(
-            tool=kind, requested_url=url, final_url=url,
-            checked_at=datetime.now(UTC), facts={"verified": True}, issues=[],
+            tool=kind,
+            requested_url=url,
+            final_url=url,
+            checked_at=datetime.now(UTC),
+            facts={"verified": True},
+            issues=[],
         )
 
     monkeypatch.setattr(routes, f"check_{kind}", fake)
@@ -176,9 +193,7 @@ def test_new_routes_are_documented_and_typed(
 
 @pytest.mark.parametrize("kind", ["redirects", "canonical", "schema"])
 def test_new_routes_reject_private_hosts(client: TestClient, kind: str) -> None:
-    response = client.post(
-        f"/api/v1/tools/{kind}", json={"url": "http://169.254.169.254/latest"}
-    )
+    response = client.post(f"/api/v1/tools/{kind}", json={"url": "http://169.254.169.254/latest"})
     assert response.status_code == 422
 
 

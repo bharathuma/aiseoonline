@@ -97,8 +97,12 @@ async def execute(request: Request, body: UrlInput, tool: Tool) -> ToolReport | 
         response.headers["Retry-After"] = "3600"
         return response
     fn = {
-        "robots": check_robots, "sitemap": check_sitemap, "meta": check_meta,
-        "redirects": check_redirects, "canonical": check_canonical, "schema": check_schema,
+        "robots": check_robots,
+        "sitemap": check_sitemap,
+        "meta": check_meta,
+        "redirects": check_redirects,
+        "canonical": check_canonical,
+        "schema": check_schema,
     }[tool]
     slots: asyncio.Semaphore = request.app.state.public_tool_slots
     try:
@@ -146,16 +150,22 @@ async def metadata(request: Request, body: UrlInput) -> ToolReport | JSONRespons
     return await execute(request, body, "meta")
 
 
-@router.post("/tools/redirects", response_model=ToolReport, summary="Inspect a bounded redirect chain")
+@router.post(
+    "/tools/redirects", response_model=ToolReport, summary="Inspect a bounded redirect chain"
+)
 async def redirects(request: Request, body: UrlInput) -> ToolReport | JSONResponse:
     return await execute(request, body, "redirects")
 
 
-@router.post("/tools/canonical", response_model=ToolReport, summary="Inspect HTML canonical declarations")
+@router.post(
+    "/tools/canonical", response_model=ToolReport, summary="Inspect HTML canonical declarations"
+)
 async def canonical(request: Request, body: UrlInput) -> ToolReport | JSONResponse:
     return await execute(request, body, "canonical")
 
 
-@router.post("/tools/schema", response_model=ToolReport, summary="Check JSON-LD syntax and structure")
+@router.post(
+    "/tools/schema", response_model=ToolReport, summary="Check JSON-LD syntax and structure"
+)
 async def schema(request: Request, body: UrlInput) -> ToolReport | JSONResponse:
     return await execute(request, body, "schema")

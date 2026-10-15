@@ -125,16 +125,24 @@ class SiteFixtureHandler(BaseHTTPRequestHandler):
             body = self.server.robots_body  # type: ignore[attr-defined]
             self.reply(code, body, "text/plain")
         elif self.path in (
-            "/redirect", "/unsafe", "/offsite", "/loop",
-            "/one", "/two", "/three", "/four"
+            "/redirect",
+            "/unsafe",
+            "/offsite",
+            "/loop",
+            "/one",
+            "/two",
+            "/three",
+            "/four",
         ):
             location = {
                 "/redirect": "/page",
                 "/unsafe": "http://169.254.169.254/latest/meta-data/",
                 "/offsite": "http://other.example.org/",
                 "/loop": "/loop",
-                "/one": "/two", "/two": "/three",
-                "/three": "/four", "/four": "/page",
+                "/one": "/two",
+                "/two": "/three",
+                "/three": "/four",
+                "/four": "/page",
             }[self.path]
             self.send_response(302)
             self.send_header("Location", location)
@@ -331,7 +339,8 @@ def test_redirect_inspection_keeps_each_status_and_final_destination(
 
 @pytest.mark.parametrize("path", ["/unsafe", "/offsite"])
 def test_inspection_does_not_follow_blocked_redirect(
-    site: ThreadingHTTPServer, path: str,
+    site: ThreadingHTTPServer,
+    path: str,
 ) -> None:
     trace = CrawlSession("http://example.org" + path, limits=limits()).inspect_redirects()
     assert trace.termination == "blocked_destination"

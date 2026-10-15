@@ -1,9 +1,9 @@
 """Robots-aware, one-page-only public crawl sessions with strict budgets."""
 
 import threading
-from collections.abc import Callable
 import time
 import urllib.robotparser
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from urllib.parse import urljoin
@@ -336,9 +336,13 @@ class CrawlSession:
             termination = "completed"
             try:
                 self._request(
-                    self.seed, deadline=deadline, byte_budget=1024,
-                    allowed_by_robots=rules, crawl_delay=delay,
-                    on_hop=collect, headers_only=True,
+                    self.seed,
+                    deadline=deadline,
+                    byte_budget=1024,
+                    allowed_by_robots=rules,
+                    crawl_delay=delay,
+                    on_hop=collect,
+                    headers_only=True,
                 )
             except CrawlLimitExceeded as exc:
                 if str(exc) == "Redirect loop detected":

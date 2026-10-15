@@ -153,16 +153,20 @@ test('all three live tool pages are indexable and have forms', async ({ page }) 
   }
 });
 
-
 test('redirect checker renders HTTP hops from a real API-shaped result', async ({ page }) => {
   await page.route('**/api/v1/tools/redirects', async (route) => {
     await route.fulfill({
-      status: 200, contentType: 'application/json',
+      status: 200,
+      contentType: 'application/json',
       body: JSON.stringify({
-        tool: 'redirects', requested_url: 'https://example.org/old',
-        final_url: 'https://example.org/new', checked_at: '2026-10-15T12:00:00Z',
+        tool: 'redirects',
+        requested_url: 'https://example.org/old',
+        final_url: 'https://example.org/new',
+        checked_at: '2026-10-15T12:00:00Z',
         facts: {
-          redirect_count: 1, final_status: 200, termination: 'completed',
+          redirect_count: 1,
+          final_status: 200,
+          termination: 'completed',
           hops: [
             { url: 'https://example.org/old', status: 301, location: 'https://example.org/new' },
             { url: 'https://example.org/new', status: 200, location: null },
@@ -183,20 +187,39 @@ test('redirect checker renders HTTP hops from a real API-shaped result', async (
 test('canonical checker displays source evidence for conflicting links', async ({ page }) => {
   await page.route('**/api/v1/tools/canonical', async (route) => {
     await route.fulfill({
-      status: 200, contentType: 'application/json',
+      status: 200,
+      contentType: 'application/json',
       body: JSON.stringify({
-        tool: 'canonical', requested_url: 'https://example.org/page',
-        final_url: 'https://example.org/page', checked_at: '2026-10-15T12:00:00Z',
-        facts: { canonical_count: 2, declarations: [
-          { raw: '/a', resolved: 'https://example.org/a', classification: 'relative', ordinal: 1 },
-          { raw: '/b', resolved: 'https://example.org/b', classification: 'relative', ordinal: 2 },
-        ] },
-        issues: [{
-          code: 'canonical.conflicting', severity: 'warning',
-          message: 'Conflicting canonical declarations',
-          recommendation: 'Use a single preferred canonical URL.',
-          evidence: 'link[rel=canonical]#1: /a; link[rel=canonical]#2: /b',
-        }],
+        tool: 'canonical',
+        requested_url: 'https://example.org/page',
+        final_url: 'https://example.org/page',
+        checked_at: '2026-10-15T12:00:00Z',
+        facts: {
+          canonical_count: 2,
+          declarations: [
+            {
+              raw: '/a',
+              resolved: 'https://example.org/a',
+              classification: 'relative',
+              ordinal: 1,
+            },
+            {
+              raw: '/b',
+              resolved: 'https://example.org/b',
+              classification: 'relative',
+              ordinal: 2,
+            },
+          ],
+        },
+        issues: [
+          {
+            code: 'canonical.conflicting',
+            severity: 'warning',
+            message: 'Conflicting canonical declarations',
+            recommendation: 'Use a single preferred canonical URL.',
+            evidence: 'link[rel=canonical]#1: /a; link[rel=canonical]#2: /b',
+          },
+        ],
       }),
     });
   });
@@ -207,20 +230,33 @@ test('canonical checker displays source evidence for conflicting links', async (
   await expect(page.getByText('"classification": "relative"').first()).toBeVisible();
 });
 
-test('schema checker displays types and safely renders malicious-looking evidence', async ({ page }) => {
+test('schema checker displays types and safely renders malicious-looking evidence', async ({
+  page,
+}) => {
   await page.route('**/api/v1/tools/schema', async (route) => {
     await route.fulfill({
-      status: 200, contentType: 'application/json',
+      status: 200,
+      contentType: 'application/json',
       body: JSON.stringify({
-        tool: 'schema', requested_url: 'https://example.org/page',
-        final_url: 'https://example.org/page', checked_at: '2026-10-15T12:00:00Z',
-        facts: { jsonld_blocks: 1, parsed_blocks: 1, types: ['Article'],
-          nodes: [{ evidence: 'script#1', types: ['Article'] }] },
-        issues: [{
-          code: 'schema.context_other', severity: 'info',
-          message: 'A non-schema.org context was declared.',
-          recommendation: 'Check the chosen vocabulary.', evidence: '<img src=x onerror=alert(1)>',
-        }],
+        tool: 'schema',
+        requested_url: 'https://example.org/page',
+        final_url: 'https://example.org/page',
+        checked_at: '2026-10-15T12:00:00Z',
+        facts: {
+          jsonld_blocks: 1,
+          parsed_blocks: 1,
+          types: ['Article'],
+          nodes: [{ evidence: 'script#1', types: ['Article'] }],
+        },
+        issues: [
+          {
+            code: 'schema.context_other',
+            severity: 'info',
+            message: 'A non-schema.org context was declared.',
+            recommendation: 'Check the chosen vocabulary.',
+            evidence: '<img src=x onerror=alert(1)>',
+          },
+        ],
       }),
     });
   });
@@ -234,7 +270,9 @@ test('schema checker displays types and safely renders malicious-looking evidenc
 
 test('new tool pages are indexable and expose controls', async ({ page }) => {
   for (const slug of [
-    'redirect-chain-checker', 'canonical-url-checker', 'structured-data-checker',
+    'redirect-chain-checker',
+    'canonical-url-checker',
+    'structured-data-checker',
   ]) {
     await page.goto('/tools/' + slug + '/');
     await expect(page.locator('meta[name="robots"]')).toHaveCount(0);

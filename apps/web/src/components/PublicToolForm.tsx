@@ -207,21 +207,25 @@ export default function PublicToolForm({ kind }: { kind: ToolKind }) {
             <h3 className="text-lg font-bold">Observed information</h3>
             {kind === 'redirects' && Array.isArray(result.facts.hops) && (
               <ol aria-label="Redirect hops" className="mt-4 space-y-3">
-                {(result.facts.hops as Array<{ url: string; status: number; location: string | null }>).map(
-                  (hop, index) => (
-                    <li key={index} className="rounded-xl border border-slate-200 p-4">
-                      <p className="font-semibold text-slate-900">
-                        Hop {index + 1} · HTTP {hop.status}
+                {(
+                  result.facts.hops as Array<{
+                    url: string;
+                    status: number;
+                    location: string | null;
+                  }>
+                ).map((hop, index) => (
+                  <li key={index} className="rounded-xl border border-slate-200 p-4">
+                    <p className="font-semibold text-slate-900">
+                      Hop {index + 1} · HTTP {hop.status}
+                    </p>
+                    <p className="mt-2 break-all text-sm text-slate-700">{hop.url}</p>
+                    {hop.location && (
+                      <p className="mt-2 break-all text-xs text-slate-600">
+                        Redirect target: {hop.location}
                       </p>
-                      <p className="mt-2 break-all text-sm text-slate-700">{hop.url}</p>
-                      {hop.location && (
-                        <p className="mt-2 break-all text-xs text-slate-600">
-                          Redirect target: {hop.location}
-                        </p>
-                      )}
-                    </li>
-                  ),
-                )}
+                    )}
+                  </li>
+                ))}
               </ol>
             )}
             <dl className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -231,13 +235,17 @@ export default function PublicToolForm({ kind }: { kind: ToolKind }) {
                     {key.replaceAll('_', ' ')}
                   </dt>
                   <dd className="mt-2 break-words text-sm text-slate-900">
-                    {Array.isArray(value) && value.length === 0
-                      ? 'None found'
-                      : value === null || value === ''
-                        ? 'Not found'
-                        : typeof value === 'object'
-                          ? <pre className="whitespace-pre-wrap break-all font-mono text-xs">{JSON.stringify(value, null, 2)}</pre>
-                          : String(value)}
+                    {Array.isArray(value) && value.length === 0 ? (
+                      'None found'
+                    ) : value === null || value === '' ? (
+                      'Not found'
+                    ) : typeof value === 'object' ? (
+                      <pre className="whitespace-pre-wrap break-all font-mono text-xs">
+                        {JSON.stringify(value, null, 2)}
+                      </pre>
+                    ) : (
+                      String(value)
+                    )}
                   </dd>
                 </div>
               ))}
