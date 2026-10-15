@@ -160,12 +160,15 @@ class AuditAgent:
             ("analyze", self._analyze),
             ("finish", self._finish),
         ):
-            async def guarded(state: AuditState, step: str = name, node: Any = func) -> dict:
-                if self.on_step:
-                    self.on_step(step)
-                return await node(state)
+            def wrap(node: Any, step: str) -> Any:
+                async def guarded(state: AuditState) -> dict[str, object]:
+                    if self.on_step:
+                        self.on_step(step)
+                    return await node(state)
 
-            graph.add_node(name, guarded)
+                return guarded
+
+            graph.add_node(name, wrap(func, name))
         graph.add_edge(START, "authorize")
         graph.add_edge("authorize", "collect")
         graph.add_conditional_edges(
@@ -418,7 +421,7 @@ class AuditAgent:
             checkpoint = await graph.aget_state(config)
             if checkpoint.values:
                 previous = checkpoint.values.get("request")
-                if previous != request:
+                if AuditRequest.model_validate(previous) != request:
                     raise ValueError("Checkpoint request does not match authorized job")
                 if checkpoint.values.get("report") is not None:
                     return AuditReport.model_validate(checkpoint.values["report"])
