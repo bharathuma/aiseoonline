@@ -317,3 +317,20 @@ def test_cost_allocation_requires_all_rates_and_safe_limits() -> None:
     assert allocation is not None
     assert 0 < allocation <= int(cfg.rag_chat_request_usd_cap * Decimal(1000000))
     assert chat_routes.price_allocation(configured(rag_chat_embedding_usd_per_million=None)) is None
+
+
+def test_missing_metadata_question_requires_recorded_findings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from aiseoonline_api.rag import assistant
+
+    class NoRetrieval:
+        def retrieve(self, **kwargs):
+            raise AssertionError("No paid embedding should run without audit evidence")
+
+    monkeypatch.setattr(assistant, "check_project", lambda *args: None)
+    monkeypatch.setattr(assistant, "_findings", lambda *args: [])
+    assert assistant.collect_evidence(
+        None, NoRetrieval(), project_id=PROJECT, owner_id=OWNER,
+        question="Which pages are missing meta descriptions?",
+    ) == ()
