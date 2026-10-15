@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added verified-owner hybrid retrieval with PostgreSQL GIN full-text search, pgvector cosine similarity, reciprocal rank fusion, document-type and freshness filters, bounded citation-ready evidence, and an opt-in reranker interface.
+- Added a versioned local retrieval evaluation dataset and real PostgreSQL isolation and accuracy tests.
+
 - Added verified-project RAG ingestion with cleaned article text, section-aware chunks, explicit embedding revisions, pgvector HNSW similarity index and project-scoped retrieval and deletion.
 - Added offline embedding fixtures and real PostgreSQL vector integration tests. No public RAG endpoints.
 
