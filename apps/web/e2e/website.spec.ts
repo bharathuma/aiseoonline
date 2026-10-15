@@ -58,7 +58,7 @@ for (const width of [375, 768, 1440]) {
 test('mobile navigation works with the keyboard', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 });
   await page.goto('/');
-  const menu = page.getByText('Menu', { exact: true });
+  const menu = page.locator('summary.mobile-menu-summary');
   await menu.focus();
   await page.keyboard.press('Enter');
   const mobileNav = page.getByRole('navigation', { name: 'Mobile navigation' });
