@@ -1,0 +1,30 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import PrivateAuditDashboard from '../../components/PrivateAuditDashboard.tsx';
+---
+
+<SiteLayout
+  title="Private development audit — AISEOOnline"
+  description="Local-only audit execution for authorized, verified development projects."
+  noindex
+>
+  <section class="page-banner">
+    <div class="site-container max-w-4xl">
+      <p class="eyebrow">Internal development workspace</p>
+      <h1 class="section-title mt-4">Evidence-first private SEO audit</h1>
+      <p class="page-intro">
+        Inspect one verified page with bounded background processing. Review technical
+        findings separately from AI interpretations, and export a source-backed report.
+      </p>
+      <p class="mt-4 text-sm text-slate-600">
+        This private interface is intentionally unavailable on production APIs. The public
+        AI audit remains under development.
+      </p>
+    </div>
+  </section>
+  <section class="section-space">
+    <div class="site-container max-w-4xl">
+      <PrivateAuditDashboard client:load />
+    </div>
+  </section>
+</SiteLayout>
