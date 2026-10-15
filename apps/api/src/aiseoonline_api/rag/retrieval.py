@@ -3,7 +3,6 @@
 No HTTP route and no LLM calls. SQLAlchemy owns parameters and caller owns commit.
 """
 
-import math
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Literal, Protocol, cast
@@ -190,7 +189,9 @@ class HybridRetriever:
             # Both arguments use a fixed regconfig; plain query escapes TS query operators.
             tsvector = func.to_tsvector(
                 _ENGLISH,
-                func.coalesce(RagChunk.heading, "") + " " + RagChunk.text,
+                func.coalesce(RagChunk.heading, literal_column("''"))
+                + literal_column("' '")
+                + RagChunk.text,
             )
             tsquery = func.plainto_tsquery(_ENGLISH, cleaned)
             rank = func.ts_rank_cd(tsvector, tsquery)
