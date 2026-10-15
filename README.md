@@ -19,10 +19,11 @@ Technical findings will come from deterministic checks. Model-generated suggesti
 - Web: Astro, React, TypeScript, Tailwind CSS, pnpm
 - API: Python, FastAPI, Pydantic, uv
 - Infrastructure: PostgreSQL/pgvector, Alembic, Redis/Celery, Docker Compose
-- AI infrastructure: optional OpenAI provider adapter with typed response validation, budgets, streaming and versioned prompts
-- Planned AI integrations: LangChain/LangGraph agents, retrieval, and observability
+- AI infrastructure: optional OpenAI provider adapter, typed responses, budgets and versioned prompts
+- Private RAG foundation: permitted page-section extraction, section-aware chunks, embedding providers, verified-project pgvector search
+- Planned AI integrations: LangChain/LangGraph agents, evidence-grounded orchestration, and observability
 
-See [AI meta generator requirements](docs/ai-meta-generator.md), [architecture](docs/architecture.md), [LLM provider configuration](docs/llm-provider.md), and [design decisions](docs/adr/README.md).
+See [private RAG ingestion](docs/rag-ingestion.md), [AI meta generator requirements](docs/ai-meta-generator.md), [architecture](docs/architecture.md), [LLM provider configuration](docs/llm-provider.md), and [design decisions](docs/adr/README.md).
 
 ## Local development
 
