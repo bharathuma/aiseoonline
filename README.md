@@ -2,9 +2,9 @@
 
 Open-source SEO tools for checking, understanding, and improving websites.
 
-**Status: Development foundation available; SEO tools and AI features are still planned.** This repository has not been deployed to the public website.
+**Status: Website and API foundation, internal secure crawler, and deterministic SEO rules implemented. Public SEO tools and AI features remain in development.** This repository has not been deployed to the public website.
 
-AISEOOnline is being built for site owners, developers, and teams who need practical SEO checks. The repository contains an Astro/React website, a FastAPI backend, database migrations, and a background worker. The public interface lists planned tools and provides introductory guides; it does not offer live SEO analysis yet.
+AISEOOnline is being built for site owners, developers, and teams who need practical SEO checks. The repository contains an Astro/React website, a FastAPI backend, database migrations, and a background worker. The public interface lists planned tools and provides introductory guides; it does not offer live SEO analysis yet. The internal [SEO rule engine](docs/seo-rules.md) produces source-backed findings from parsed page snapshots.
 
 ## Planned features
 

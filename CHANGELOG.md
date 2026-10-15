@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added deterministic SEO rules, typed evidence-backed findings, normalized URL handling, and fixture tests.
+- Extended HTML extraction to retain evidence for repeated titles and canonical declarations.
+
 - Standardized API error responses, server-issued request IDs, and privacy-aware application logging.
 - Added Python type and coverage checks, frontend lint/format gates, and automated dependency vulnerability audits.
 - Added reproducible dependency-locking and quality documentation.
