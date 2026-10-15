@@ -20,7 +20,7 @@ test('homepage renders useful content, metadata and working navigation', async (
   await expect(page.getByRole('heading', { level: 1 })).toContainText('SEO concepts');
 });
 
-test('tool discovery searches and filters without pretending tools are live', async ({ page }) => {
+test('tool discovery distinguishes implemented checkers and planned AI tools', async ({ page }) => {
   await page.goto('/tools/');
   await page.getByRole('searchbox', { name: 'Search tools' }).fill('sitemap');
   await expect(page.getByRole('status').filter({ hasText: '1 tool found' })).toBeVisible();
@@ -32,6 +32,9 @@ test('tool discovery searches and filters without pretending tools are live', as
   await expect(
     page.getByRole('heading', { name: 'Internal link checker', level: 1 }),
   ).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Run free check' })).toBeVisible();
+  await page.goto('/tools/ai-meta-suggestions/');
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,follow');
   await expect(
     page.getByText('This tool is being developed and cannot run checks yet.'),
