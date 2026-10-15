@@ -2,6 +2,7 @@
 import SiteLayout from '../../layouts/SiteLayout.astro';
 import StatusNotice from './StatusNotice.astro';
 import PublicToolForm from '../PublicToolForm.tsx';
+import AiMetaForm from '../AiMetaForm.tsx';
 import type { ToolPreview } from '../toolCatalog';
 
 interface Props {
@@ -45,10 +46,15 @@ const kind =
           tool.status === 'available' ? (
             <div>
               <p class="mb-5 text-sm leading-7 text-slate-600">
-                Enter a public website URL below to run a bounded, one-resource check. Findings
-                describe observable evidence, not guaranteed search rankings.
+                {tool.id === 'ai-meta'
+                  ? 'Paste your own content or enter a public URL to generate editable drafts based on real input. AI output requires human review.'
+                  : 'Enter a public website URL below to run a bounded, one-resource check. Findings describe observable evidence, not guaranteed search rankings.'}
               </p>
-              <PublicToolForm kind={kind} client:load />
+              {tool.id === 'ai-meta' ? (
+                  <AiMetaForm client:load />
+                ) : (
+                  <PublicToolForm kind={kind} client:load />
+                )}
             </div>
           ) : (
             <StatusNotice variant="warning" title="Coming soon">
