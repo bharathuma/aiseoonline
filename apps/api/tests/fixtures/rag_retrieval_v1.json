@@ -1,0 +1,72 @@
+{
+  "version": "rag-retrieval-v1",
+  "language": "en",
+  "description": "Controlled fictional pages for local PostgreSQL retrieval evaluation; no live crawling or paid embeddings.",
+  "documents": [
+    {
+      "id": "clay",
+      "url": "https://example.org/guides/ceramic-planters",
+      "document_type": "guide",
+      "heading": "Ceramic planter maintenance",
+      "body": "Handmade ceramic planters require gentle watering. Use a drainage tray to prevent pooling water under indoor clay pots. Let soil dry slightly before watering houseplants. Ceramic pot cleaning uses mild soap and a soft cloth."
+    },
+    {
+      "id": "robots",
+      "url": "https://example.org/guides/robots-rules",
+      "document_type": "guide",
+      "heading": "Robots.txt directives",
+      "body": "A robots.txt file communicates crawling preferences to compatible web crawlers. The Disallow directive restricts crawler access to matching paths. Robots.txt is not an authentication mechanism or a reliable method to hide private information."
+    },
+    {
+      "id": "canonical",
+      "url": "https://example.org/guides/canonical-urls",
+      "document_type": "guide",
+      "heading": "Canonical URL selection",
+      "body": "The rel canonical link element identifies a preferred URL among duplicate or similar pages. Canonical signals are hints and search engines can choose a different canonical. Avoid contradictory canonical declarations on the same page."
+    },
+    {
+      "id": "postgres",
+      "url": "https://example.org/reference/vector-index",
+      "document_type": "reference",
+      "heading": "PostgreSQL vector indexing",
+      "body": "PostgreSQL pgvector provides vector similarity search with cosine distance and HNSW indexing. A full-text GIN index can accelerate lexical keyword matching using tsvector and plainto_tsquery functions."
+    },
+    {
+      "id": "unrelated",
+      "url": "https://example.org/guides/cooking",
+      "document_type": "guide",
+      "heading": "Kitchen cooking guide",
+      "body": "Cooking a simple lentil soup uses onions carrots herbs broth and a simmering pot. Wash produce carefully before chopping vegetables. Serve the soup warm with bread."
+    }
+  ],
+  "queries": [
+    {
+      "id": "q-clay",
+      "query": "How should ceramic planter drainage and watering work?",
+      "relevant_ids": [
+        "clay"
+      ]
+    },
+    {
+      "id": "q-robots",
+      "query": "robots disallow crawler access paths",
+      "relevant_ids": [
+        "robots"
+      ]
+    },
+    {
+      "id": "q-canonical",
+      "query": "preferred canonical URL duplicate pages",
+      "relevant_ids": [
+        "canonical"
+      ]
+    },
+    {
+      "id": "q-vector",
+      "query": "PostgreSQL pgvector HNSW cosine index",
+      "relevant_ids": [
+        "postgres"
+      ]
+    }
+  ]
+}
