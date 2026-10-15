@@ -143,7 +143,8 @@ def test_pgvector_keyword_hybrid_retrieval_and_versioned_evaluation() -> None:
                     # These numbers are observed using the labeled fixture and
                     # explicitly asserted, not claimed as live search benchmarks.
                     print(
-                        f"RAG synthetic fixture {evaluation['version']}: Recall@3={recall_3:.3f}, MRR@3={mrr_3:.3f}"
+                        f"RAG synthetic fixture {evaluation['version']}: "
+                        f"Recall@3={recall_3:.3f}, MRR@3={mrr_3:.3f}"
                     )
                     assert recall_3 >= 0.75, f"Hybrid Recall@3={recall_3:.3f}"
                     assert mrr_3 >= 0.50, f"Hybrid MRR@3={mrr_3:.3f}"
