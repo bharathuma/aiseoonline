@@ -3,7 +3,6 @@
 import asyncio
 import hashlib
 import json
-import math
 from datetime import UTC, datetime
 from decimal import Decimal, ROUND_CEILING
 from typing import Literal
@@ -49,18 +48,19 @@ _PROMPT_TASK = (
     "Do not invent numbers, discounts, rankings, prices, credentials or promises. "
     "Titles and descriptions must be genuinely different, relevant and readable."
 )
-_RESERVE_SCRIPT = """
+_PEER_SCRIPT = """
 local count=tonumber(redis.call('GET', KEYS[1]) or '0')
-if count>=tonumber(ARGV[1]) then return 0 end
-local spent=tonumber(redis.call('GET', KEYS[2]) or '0')
-if spent+tonumber(ARGV[2])>tonumber(ARGV[3]) then return -1 end
+if count>=3 then return -2 end
 redis.call('INCR', KEYS[1])
 redis.call('EXPIRE', KEYS[1], 3600)
-if tonumber(ARGV[2])>0 then
-  redis.call('INCRBY', KEYS[2], ARGV[2])
-  redis.call('EXPIRE', KEYS[2], 86400)
-end
-return tonumber(ARGV[1])-count-1
+return 3-count-1
+"""
+_SPEND_SCRIPT = """
+local spent=tonumber(redis.call('GET', KEYS[1]) or '0')
+if spent+tonumber(ARGV[1])>tonumber(ARGV[2]) then return -1 end
+redis.call('INCRBY', KEYS[1], ARGV[1])
+redis.call('EXPIRE', KEYS[1], 86400)
+return 1
 """
 
 
@@ -89,7 +89,7 @@ def _price_micro(settings: Settings, output_tokens: int) -> int | None:
     if settings.llm_input_usd_per_million is None or settings.llm_output_usd_per_million is None:
         return None
     estimate = (
-        settings.llm_input_usd_per_million * min(4000, settings.llm_max_input_tokens)
+        settings.llm_input_usd_per_million * settings.llm_max_input_tokens
         + settings.llm_output_usd_per_million * output_tokens
     )
     return int((estimate * (settings.llm_max_retries + 1)).to_integral_value(
@@ -99,7 +99,7 @@ def _price_micro(settings: Settings, output_tokens: int) -> int | None:
 
 def _limits(settings: Settings) -> tuple[int, int] | None:
     max_output = min(480, settings.llm_max_output_tokens)
-    if settings.llm_max_total_tokens < max_output + 4000:
+    if settings.llm_max_total_tokens < max_output + settings.llm_max_input_tokens:
         return None
     allocation = _price_micro(settings, max_output)
     if allocation is None or allocation < 1:
@@ -111,18 +111,15 @@ def _limits(settings: Settings) -> tuple[int, int] | None:
     return allocation, daily
 
 
-def _redis_control(
-    redis_url: str, peer: str, allocation: int, daily_limit: int, cache_key: str | None,
-) -> tuple[int, str | None]:
+def _check_peer(redis_url: str, peer: str) -> int:
     peer_key = hashlib.sha256(peer.encode()).hexdigest()
     with Redis.from_url(redis_url, socket_timeout=0.8, socket_connect_timeout=0.8) as client:
-        cached = client.get(cache_key) if cache_key else None
-        required = 0 if cached else allocation
-        remaining = client.eval(
-            _RESERVE_SCRIPT, 2, f"ai:peer:{peer_key}",
-            "ai:daily:spend", 3, required, daily_limit,
-        )
-        return int(remaining), cached.decode("utf-8") if cached else None
+        return int(client.eval(_PEER_SCRIPT, 1, f"ai:peer:{peer_key}"))
+
+
+def _reserve_spend(redis_url: str, allocation: int, limit: int) -> bool:
+    with Redis.from_url(redis_url, socket_timeout=0.8, socket_connect_timeout=0.8) as client:
+        return bool(client.eval(_SPEND_SCRIPT, 1, "ai:daily:spend", allocation, limit))
 
 
 def _source_from_url(url: str) -> tuple[str, str]:
@@ -179,26 +176,22 @@ async def ai_meta(
             request, 503, "service_unavailable", "AI usage limits are temporarily unavailable."
         )
 
-    # Shared quotas must be reserved BEFORE a URL fetch or billable model request.
+    # Protect expensive URL fetching before requesting any external resource.
     peer = request.client.host if request.client else "unknown"
     redis_url = settings.require_redis_url()
     try:
-        reservation, _ = await asyncio.to_thread(
-            _redis_control, redis_url, peer, limits[0], limits[1], None,
-        )
+        remaining = await asyncio.to_thread(_check_peer, redis_url, peer)
     except (RedisError, OSError, TimeoutError, ValueError):
         return error_response(
             request, 503, "service_unavailable", "AI usage limits are temporarily unavailable."
         )
-    if reservation < 0:
+    if remaining == -2:
         reply = error_response(
-            request, 429, "ai_daily_budget_reached",
-            "Today's AI generation budget is exhausted. Try again tomorrow.",
+            request, 429, "ai_rate_limited",
+            "AI suggestions are limited to three requests per hour per visitor.",
         )
         reply.headers["Retry-After"] = "3600"
         return reply
-    if reservation == 0 and False:  # No branch: zero is a valid last remaining request.
-        pass
 
     try:
         if body.url:
@@ -236,6 +229,20 @@ async def ai_meta(
             return error_response(
                 request, 503, "service_unavailable", "AI caching is temporarily unavailable."
             )
+
+    try:
+        allowed = await asyncio.to_thread(_reserve_spend, redis_url, limits[0], limits[1])
+    except (RedisError, OSError, TimeoutError):
+        return error_response(
+            request, 503, "service_unavailable", "AI spending limits are unavailable."
+        )
+    if not allowed:
+        reply = error_response(
+            request, 429, "ai_daily_budget_reached",
+            "The AI spending allocation has been exhausted. Try again later.",
+        )
+        reply.headers["Retry-After"] = "3600"
+        return reply
 
     # App-wide slot bound is independent of per-provider semaphores.
     slots: asyncio.Semaphore = request.app.state.ai_meta_slots
