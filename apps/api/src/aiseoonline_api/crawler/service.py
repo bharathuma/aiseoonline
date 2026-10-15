@@ -130,7 +130,7 @@ class CrawlSession:
                     deadline=deadline,
                     connect_timeout=self.limits.connect_timeout,
                     dns_timeout=self.limits.dns_timeout,
-                    **({"allowed_mime": allowed_mime} if allowed_mime is not None else {}),
+                    allowed_mime=allowed_mime or ("text/html", "application/xhtml+xml", "text/plain"),
                 )
             finally:
                 self._previous_request = time.monotonic()
