@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
-type ToolKind = 'robots' | 'sitemap' | 'meta';
+type ToolKind = 'robots' | 'sitemap' | 'meta' | 'redirects' | 'canonical' | 'schema';
 type Issue = {
   code: string;
   severity: 'error' | 'warning' | 'info';
@@ -33,6 +33,21 @@ const defaults: Record<ToolKind, { label: string; example: string; hint: string 
     label: 'Webpage URL',
     example: 'https://example.org/about/',
     hint: 'Enter one public HTML page. We check its title, description, headings and directives.',
+  },
+  redirects: {
+    label: 'Redirect starting URL',
+    example: 'https://example.org/old-page',
+    hint: 'Inspect the observed HTTP status for each same-origin hop. External and unsafe redirects are not followed.',
+  },
+  canonical: {
+    label: 'Webpage URL',
+    example: 'https://example.org/page/',
+    hint: 'Inspect canonical elements in the original HTML and classify their declared destinations.',
+  },
+  schema: {
+    label: 'Webpage URL',
+    example: 'https://example.org/article/',
+    hint: 'Check JSON-LD syntax, @context, @type and @graph in the fetched HTML. Rich-result eligibility is not tested.',
   },
 };
 
@@ -197,13 +212,13 @@ export default function PublicToolForm({ kind }: { kind: ToolKind }) {
                     {key.replaceAll('_', ' ')}
                   </dt>
                   <dd className="mt-2 break-words text-sm text-slate-900">
-                    {Array.isArray(value)
-                      ? value.length
-                        ? value.join(', ')
-                        : 'None found'
+                    {Array.isArray(value) && value.length === 0
+                      ? 'None found'
                       : value === null || value === ''
                         ? 'Not found'
-                        : String(value)}
+                        : typeof value === 'object'
+                          ? <pre className="whitespace-pre-wrap break-all font-mono text-xs">{JSON.stringify(value, null, 2)}</pre>
+                          : String(value)}
                   </dd>
                 </div>
               ))}
