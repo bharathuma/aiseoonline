@@ -1,7 +1,8 @@
 ---
 import SiteLayout from '../../layouts/SiteLayout.astro';
 import StatusNotice from './StatusNotice.astro';
-import type { ToolPreview } from '../components/toolCatalog';
+import type { ToolPreview } from '../toolCatalog';
+
 interface Props { tool: ToolPreview; }
 const { tool } = Astro.props;
 ---

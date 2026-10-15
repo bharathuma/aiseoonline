@@ -45,3 +45,14 @@ jobs:
         run: pnpm check:web
       - name: Build Astro website
         run: pnpm build:web
+      - name: Install browser
+        run: pnpm --filter @aiseoonline/web exec playwright install --with-deps chromium
+      - name: Browser smoke tests
+        run: pnpm e2e:web
+      - name: Upload browser report and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-browser-report
+          path: apps/web/playwright-report/
+          if-no-files-found: ignore

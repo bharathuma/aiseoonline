@@ -8,6 +8,7 @@
     "dev:web": "pnpm --filter @aiseoonline/web dev",
     "build:web": "pnpm --filter @aiseoonline/web build",
     "check:web": "pnpm --filter @aiseoonline/web check",
-    "test:web": "pnpm --filter @aiseoonline/web test"
+    "test:web": "pnpm --filter @aiseoonline/web test",
+    "e2e:web": "pnpm --filter @aiseoonline/web e2e"
   }
 }
