@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: \${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.event.pull_request.head.ref }}
           persist-credentials: false
       - uses: astral-sh/setup-uv@v6
         with:
@@ -40,7 +40,7 @@ jobs:
           uv run --project apps/api ruff format apps/api
       - name: Commit refreshed locks and formatting
         env:
-          GH_PUSH_TOKEN: \${{ github.token }}
+          GH_PUSH_TOKEN: ${{ github.token }}
         run: |
           git add apps/api/uv.lock pnpm-lock.yaml apps/api apps/web
           if git diff --cached --quiet; then
