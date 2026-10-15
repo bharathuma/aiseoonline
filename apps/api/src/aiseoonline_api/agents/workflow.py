@@ -8,7 +8,7 @@ import hashlib
 import json
 import re
 from collections.abc import Callable
-from typing import TypedDict
+from typing import Literal, TypedDict
 from urllib.parse import urlsplit
 
 from langgraph.graph import END, START, StateGraph
@@ -59,7 +59,7 @@ def _append(state: AuditState, name: str, outcome: str,
     return (*state.get("trace", ()), AuditTrace(node=name, outcome=outcome, tool=tool))
 
 
-def _priority(finding: SeoFinding) -> str:
+def _priority(finding: SeoFinding) -> Literal["high", "medium", "low"]:
     if finding.severity == "error" or finding.rule_id in (
         "robots.noindex", "canonical.conflicting",
     ):
@@ -80,7 +80,7 @@ def normalize_findings(items: tuple[SeoFinding, ...]) -> tuple[AuditFinding, ...
                 finding_id=f"seo:{fingerprint}",
                 rule_id=finding.rule_id,
                 severity=finding.severity,
-                priority=_priority(finding),  # type: ignore[arg-type]
+                priority=_priority(finding),
                 affected_url=finding.url,
                 summary=finding.summary,
                 correction=finding.recommendation,
