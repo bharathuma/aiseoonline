@@ -145,7 +145,7 @@ def execute_audit_job(
             stop.set()
             watcher.join(timeout=1)
             if provider is not None and hasattr(provider, "aclose"):
-                asyncio.run(provider.aclose())  # type: ignore[attr-defined]
+                asyncio.run(provider.aclose())
         with Session(engine) as session, session.begin():
             committed = complete_job(session, job_id, attempt, report=report, outcome=outcome)
         return outcome if committed else "superseded"
