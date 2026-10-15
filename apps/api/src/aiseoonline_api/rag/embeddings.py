@@ -10,6 +10,7 @@ from typing import Protocol, Sequence
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from aiseoonline_api.config import Settings
 from aiseoonline_api.ai_core.contracts import (
     BudgetExceeded, CredentialsUnavailable, InvalidModelOutput,
     LLMTimeout, ProviderRateLimited, ProviderUnavailable,
@@ -152,3 +153,18 @@ class FixtureEmbeddingProvider:
             result.append([v / scale for v in values])
         validate_vectors(result, len(texts))
         return result
+
+
+def make_openai_embedding_provider(
+    settings: Settings, *, client: httpx.Client | None = None
+) -> OpenAIEmbeddingProvider:
+    """Backend-only factory; no implicit fixture or unconfigured provider fallback."""
+    key = settings.openai_api_key
+    if key is None:
+        raise CredentialsUnavailable("AISEO_OPENAI_API_KEY is needed for embedding calls")
+    return OpenAIEmbeddingProvider(
+        key.get_secret_value(),
+        model=settings.rag_embedding_model,
+        version=settings.rag_embedding_version,
+        client=client,
+    )
