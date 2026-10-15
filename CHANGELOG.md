@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added an internal verified-owner LangGraph SEO audit workflow with model-selected read-only LangChain tools, bounded state transitions, deterministic issue classification, evidence-validated recommendations and sanitized traces.
+- Added offline graph/tool tests and PostgreSQL-backed project isolation and RAG tool integration tests; no public audit route or website-changing actions.
+
+
 - Added a development-only, verified-owner website RAG assistant with source-quote validation, bounded follow-up questions, Redis spending limits, and a private, noindex React chat page.
 - Kept private chat absent from production routes while permanent authentication and audit pipelines remain planned.
 
