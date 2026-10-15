@@ -10,7 +10,7 @@ From the repository root:
 uv sync --project apps/api --locked --group dev
 uv run --project apps/api ruff check apps/api
 uv run --project apps/api ruff format --check apps/api
-uv run --project apps/api mypy apps/api/src
+uv run --project apps/api mypy --config-file apps/api/pyproject.toml apps/api/src
 uv run --project apps/api pytest apps/api/tests -q --cov=aiseoonline_api --cov-report=term-missing
 ```
 
