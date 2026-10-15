@@ -120,13 +120,16 @@ def _check_peer(redis_url: str, peer: str) -> int:
 def _reserve_spend(redis_url: str, allocation: int, limit: int) -> bool:
     with Redis.from_url(redis_url, socket_timeout=0.8, socket_connect_timeout=0.8) as client:
         return (
-            int(client.eval(
-                _SPEND_SCRIPT,
-                1,
-                "ai:daily:" + datetime.now(UTC).strftime("%Y%m%d"),
-                allocation,
-                limit,
-            )) == 1
+            int(
+                client.eval(
+                    _SPEND_SCRIPT,
+                    1,
+                    "ai:daily:" + datetime.now(UTC).strftime("%Y%m%d"),
+                    allocation,
+                    limit,
+                )
+            )
+            == 1
         )
 
 
