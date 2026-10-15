@@ -275,6 +275,7 @@ class AuditAgent:
         req = state["request"]
         lookup = None
         if picked == "rag" and req.use_private_rag and self.rag_lookup:
+
             def lookup(query: str) -> list[dict[str, str]]:
                 assert self.rag_lookup is not None
                 return self.rag_lookup(req, query)
