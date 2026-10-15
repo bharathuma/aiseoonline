@@ -14,6 +14,7 @@ dependencies = [
     { name = "alembic" },
     { name = "celery", extra = ["redis"] },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pydantic-settings" },
     { name = "redis" },
@@ -23,7 +24,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "httpx" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -35,6 +35,7 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.13,<2.0" },
     { name = "celery", extras = ["redis"], specifier = ">=5.5,<6.0" },
     { name = "fastapi", specifier = ">=0.115,<1.0" },
+    { name = "httpx", specifier = ">=0.27,<1.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2,<4.0" },
     { name = "pydantic-settings", specifier = ">=2.7,<3.0" },
     { name = "redis", specifier = ">=5.2,<7.0" },
@@ -44,7 +45,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "httpx", specifier = ">=0.27,<1.0" },
     { name = "mypy", specifier = ">=1.15,<2.0" },
     { name = "pytest", specifier = ">=8.3,<10.0" },
     { name = "pytest-cov", specifier = ">=6.0,<8.0" },
