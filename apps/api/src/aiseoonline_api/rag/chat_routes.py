@@ -55,7 +55,7 @@ def dev_access(request: Request, settings: Settings) -> bool:
         return False
     token = settings.rag_chat_dev_token
     incoming = request.headers.get("x-dev-rag-token", "")
-    if token is None or len(incoming) < 24 or len(incoming) > 256:
+    if token is None or not incoming.isascii() or len(incoming) < 24 or len(incoming) > 256:
         return False
     if request.client is None or request.client.host not in ("127.0.0.1", "::1", "testclient"):
         return False
