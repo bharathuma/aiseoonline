@@ -19,11 +19,10 @@ export default function ToolDirectory() {
             Find the right check
           </h2>
           <p className="mt-3 leading-7 text-slate-600">
-            A growing collection of focused SEO utilities. All tools below are planned, not yet
-            available to run.
+            Try the available free checkers or explore the tools still in development.
           </p>
         </div>
-        <span className="status-pill">Under development</span>
+        <span className="status-pill">Free tools · No signup</span>
       </div>
 
       <form
@@ -67,7 +66,7 @@ export default function ToolDirectory() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p role="status" aria-live="polite" aria-atomic="true" className="text-sm text-slate-600">
-          {results.length} planned {results.length === 1 ? 'tool' : 'tools'} found
+          {results.length} {results.length === 1 ? 'tool' : 'tools'} found
         </p>
         {(query || category !== 'All') && (
           <button
@@ -91,7 +90,7 @@ export default function ToolDirectory() {
                 <div className="flex items-start justify-between gap-3">
                   <span className="category-label">{tool.category}</span>
                   <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
-                    Planned
+                    {tool.status === 'available' ? 'Available' : 'Planned'}
                   </span>
                 </div>
                 <h3 className="mt-5 text-xl font-semibold tracking-tight text-slate-950">
@@ -101,7 +100,7 @@ export default function ToolDirectory() {
                 </h3>
                 <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">{tool.summary}</p>
                 <span className="mt-6 text-sm font-semibold text-teal-800">
-                  Read about this tool <span aria-hidden="true">↗</span>
+                  {tool.status === 'available' ? 'Open free tool' : 'Read about this tool'} <span aria-hidden="true">↗</span>
                 </span>
               </article>
             </li>
