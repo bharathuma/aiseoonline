@@ -102,13 +102,13 @@ def normalize_url(raw: str) -> SafeURL:
         address = ipaddress.ip_address(host)
     except ValueError:
         if re.fullmatch(r"[0-9.]+", host):
-            raise UnsafeTarget("Invalid or ambiguous numeric hostname")
+            raise UnsafeTarget("Invalid or ambiguous numeric hostname") from None
         if host == "localhost" or host.endswith(_RESERVED_SUFFIX):
-            raise UnsafeTarget("Reserved or local hostname")
+            raise UnsafeTarget("Reserved or local hostname") from None
         if not all(_HOST_LABEL.fullmatch(label) for label in host.split(".")):
-            raise UnsafeTarget("Invalid hostname label")
+            raise UnsafeTarget("Invalid hostname label") from None
         if "." not in host:
-            raise UnsafeTarget("Hostname must be a public DNS name")
+            raise UnsafeTarget("Hostname must be a public DNS name") from None
     else:
         if not _valid_ip(address):
             raise UnsafeTarget("Non-public IP addresses are not allowed")
