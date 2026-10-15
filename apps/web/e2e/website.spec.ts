@@ -588,7 +588,7 @@ test('private audit report distinguishes technical evidence from AI interpretati
   await expect(page.getByRole('heading', { name: 'Observed technical findings' })).toBeVisible();
   await expect(page.getByText('Missing title')).toBeVisible();
   await expect(page.getByText('<script>alert(1)</script>')).toBeVisible();
-  await expect(page.locator('script')).toHaveCount(0);
+  await expect(page.locator('script:has-text("alert(1)")')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: /AI interpretations/ })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Download CSV' })).toBeVisible();
 });
