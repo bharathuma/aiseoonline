@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added a development-only, verified-owner website RAG assistant with source-quote validation, bounded follow-up questions, Redis spending limits, and a private, noindex React chat page.
+- Kept private chat absent from production routes while permanent authentication and audit pipelines remain planned.
+
 - Added verified-owner hybrid retrieval with PostgreSQL GIN full-text search, pgvector cosine similarity, reciprocal rank fusion, document-type and freshness filters, bounded citation-ready evidence, and an opt-in reranker interface.
 - Added a versioned local retrieval evaluation dataset and real PostgreSQL isolation and accuracy tests.
 
