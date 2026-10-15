@@ -420,7 +420,8 @@ class AuditAgent:
             self._graph_builder.compile(checkpointer=checkpointer) if checkpointer else self.graph
         )
         config: RunnableConfig = {
-            "recursion_limit": 14, "configurable": {"thread_id": thread_id or ""}
+            "recursion_limit": 14,
+            "configurable": {"thread_id": thread_id or ""},
         }
         initial: AuditState | None = state
         if checkpointer is not None:
