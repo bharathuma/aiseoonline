@@ -331,3 +331,55 @@ def test_logs_never_contain_input_content_or_api_key(caplog: pytest.LogCaptureFi
         asyncio.run(scenario())
     assert secret not in caplog.text
     assert site_text not in caplog.text
+
+
+def test_streaming_enforces_total_wall_clock_deadline() -> None:
+    from aiseoonline_api.ai_core import LLMTimeout
+
+    class SlowChunks(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            yield b'data: {"choices":[{"delta":{"content":"partial"},"finish_reason":null}]}\\n\\n'
+            await asyncio.sleep(1.2)
+            yield b'data: [DONE]\\n\\n'
+
+    async def scenario() -> None:
+        async with client_for(
+            httpx.MockTransport(lambda req: httpx.Response(200, stream=SlowChunks()))
+        ) as client:
+            instance = OpenAIChatProvider(
+                api_key="fixture-only", model="gpt-4o-mini",
+                budget=TokenBudget(max_input_tokens=8192, max_output_tokens=256,
+                                   max_total_tokens=8448),
+                http_client=client, timeout_seconds=1, max_retries=0,
+            )
+            with pytest.raises(LLMTimeout):
+                _ = [event async for event in instance.stream(REQUEST)]
+
+    asyncio.run(scenario())
+
+
+def test_provider_concurrency_is_bounded() -> None:
+    active = 0
+    peak = 0
+
+    async def handler(req: httpx.Request) -> httpx.Response:
+        nonlocal active, peak
+        active += 1
+        peak = max(peak, active)
+        await asyncio.sleep(0.02)
+        active -= 1
+        return httpx.Response(200, json=payload("completed"))
+
+    async def scenario() -> None:
+        async with client_for(httpx.MockTransport(handler)) as client:
+            instance = OpenAIChatProvider(
+                api_key="fixture-only", model="gpt-4o-mini",
+                budget=TokenBudget(max_input_tokens=8192, max_output_tokens=256,
+                                   max_total_tokens=8448),
+                http_client=client, concurrency=2,
+            )
+            results = await asyncio.gather(*(instance.complete(REQUEST) for _ in range(7)))
+            assert len(results) == 7
+
+    asyncio.run(scenario())
+    assert peak == 2
