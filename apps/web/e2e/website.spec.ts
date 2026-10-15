@@ -629,3 +629,56 @@ test('private audit report distinguishes technical evidence from AI interpretati
   await expect(page.getByRole('heading', { name: /AI interpretations/ })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Download CSV' })).toBeVisible();
 });
+
+test('private audit retries reuse a key while separate audits receive new keys', async ({ page }) => {
+  const submittedKeys: string[] = [];
+  let requests = 0;
+  await page.route('**/api/v1/internal/audits', async (route) => {
+    requests++;
+    submittedKeys.push(route.request().headers()['idempotency-key'] ?? '');
+    if (requests === 1) {
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: { code: 'queue_pending', message: 'Audit dispatch delayed.' },
+        }),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 202,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: requests === 2
+          ? '7b7f1234-5678-4678-9876-111122223335'
+          : '7b7f1234-5678-4678-9876-111122223336',
+        status: 'completed',
+        progress_step: 'completed',
+        progress_percent: 100,
+        attempts: 1,
+        cancel_requested: false,
+        report_ready: false,
+        error_code: null,
+      }),
+    });
+  });
+
+  await page.goto('/internal/audit/');
+  await page.getByLabel('Local development audit token').fill('fixture-token-only');
+  await page.getByLabel('Verified project UUID').fill('12341234-5678-4678-9876-111122223333');
+  await page.getByLabel('Single public page URL').fill('https://example.org/audit');
+  const submit = page.getByRole('button', { name: 'Start private audit' });
+  await submit.click();
+  await expect(page.getByRole('alert')).toContainText('Audit dispatch delayed.');
+  await submit.click();
+  await expect(page.getByRole('heading', { name: 'Audit status: completed' })).toBeVisible();
+
+  await page.getByLabel('Single public page URL').fill('https://example.org/another-page');
+  await submit.click();
+  await expect(page.getByRole('heading', { name: 'Audit status: completed' })).toBeVisible();
+  expect(submittedKeys).toHaveLength(3);
+  expect(submittedKeys[0]).toBeTruthy();
+  expect(submittedKeys[0]).toBe(submittedKeys[1]);
+  expect(submittedKeys[2]).not.toBe(submittedKeys[1]);
+});
