@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added a responsive website layout, shared interface components, guide pages, planned-tool pages, metadata and browser checks.
+
 - Added database models, Alembic migrations, pgvector setup, a Celery example worker, Docker Compose and infrastructure tests.
 
 - Added an Astro, React, TypeScript, and Tailwind website foundation.
