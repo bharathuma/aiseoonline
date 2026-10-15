@@ -10,12 +10,12 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 import pytest
-from sqlalchemy import inspect, select, text
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from aiseoonline_api.config import Settings
 from aiseoonline_api.crawler import PageSnapshot, parse_html
-from aiseoonline_api.db.models import Project, RagChunk, RagDocument, User
+from aiseoonline_api.db.models import Project, User
 from aiseoonline_api.db.session import create_database_engine
 from aiseoonline_api.rag.embeddings import FixtureEmbeddingProvider
 from aiseoonline_api.rag.retrieval import HybridRetriever, RetrievalOptions
