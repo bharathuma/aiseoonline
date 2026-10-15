@@ -7,7 +7,7 @@ writes, conversation persistence or model side-effects are performed here.
 import json
 import re
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
