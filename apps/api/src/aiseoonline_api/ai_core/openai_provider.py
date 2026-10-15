@@ -233,6 +233,9 @@ class OpenAIChatProvider:
     async def stream(self, request: GenerationRequest) -> AsyncIterator[StreamEvent]:
         """Emit text deltas and a measured usage event; never retry partial output."""
         payload = self._payload(request, None, stream=True)
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + self.timeout_seconds * (self.max_retries + 1)
+        deadline += self.max_retries * 2.0
         async with self._semaphore:
             # Only retry pre-stream HTTP failures. A partial stream is never replayed.
             for attempt in range(self.max_retries + 1):
@@ -253,44 +256,45 @@ class OpenAIChatProvider:
                         done = False
                         usage: TokenUsage | None = None
                         size = 0
-                        async for line in response.aiter_lines():
-                            if not line.startswith("data:"):
-                                continue
-                            encoded = line[5:].strip()
-                            if encoded == _SSE_END:
-                                done = True
-                                break
-                            try:
-                                event = json.loads(encoded)
-                                if not isinstance(event, dict):
-                                    raise ValueError
-                                if event.get("usage") is not None:
-                                    usage = self._usage(event["usage"], request)
-                                    yield StreamEvent(
-                                        "usage", usage=usage, cost_usd=self._cost(usage)
-                                    )
-                                for choice in event.get("choices", []):
-                                    reason = choice.get("finish_reason")
-                                    if reason is not None:
-                                        if reason != "stop":
-                                            raise InvalidModelOutput(
-                                                "Stream ended without completion"
-                                            )
-                                        finished = True
-                                    delta = choice.get("delta", {}).get("content")
-                                    if delta:
-                                        if not isinstance(delta, str):
-                                            raise ValueError
-                                        size += len(delta.encode("utf-8"))
-                                        if size > request.max_output_tokens * 16:
-                                            raise BudgetExceeded(
-                                                "Streaming output exceeded byte guard"
-                                            )
-                                        yield StreamEvent("delta", text=delta)
-                            except (TypeError, KeyError, ValueError):
-                                raise InvalidModelOutput(
-                                    "Malformed provider stream event"
-                                ) from None
+                        async with asyncio.timeout_at(deadline):
+                            async for line in response.aiter_lines():
+                                if not line.startswith("data:"):
+                                    continue
+                                encoded = line[5:].strip()
+                                if encoded == _SSE_END:
+                                    done = True
+                                    break
+                                try:
+                                    event = json.loads(encoded)
+                                    if not isinstance(event, dict):
+                                        raise ValueError
+                                    if event.get("usage") is not None:
+                                        usage = self._usage(event["usage"], request)
+                                        yield StreamEvent(
+                                            "usage", usage=usage, cost_usd=self._cost(usage)
+                                        )
+                                    for choice in event.get("choices", []):
+                                        reason = choice.get("finish_reason")
+                                        if reason is not None:
+                                            if reason != "stop":
+                                                raise InvalidModelOutput(
+                                                    "Stream ended without completion"
+                                                )
+                                            finished = True
+                                        delta = choice.get("delta", {}).get("content")
+                                        if delta:
+                                            if not isinstance(delta, str):
+                                                raise ValueError
+                                            size += len(delta.encode("utf-8"))
+                                            if size > request.max_output_tokens * 16:
+                                                raise BudgetExceeded(
+                                                    "Streaming output exceeded byte guard"
+                                                )
+                                            yield StreamEvent("delta", text=delta)
+                                except (TypeError, KeyError, ValueError):
+                                    raise InvalidModelOutput(
+                                        "Malformed provider stream event"
+                                    ) from None
                         if not done or not finished or usage is None:
                             raise InvalidModelOutput("Provider stream ended without final usage")
                         yield StreamEvent("done", usage=usage, cost_usd=self._cost(usage))
@@ -298,7 +302,7 @@ class OpenAIChatProvider:
                             "LLM stream finished model=%s tokens=%d", self.model, usage.total_tokens
                         )
                         return
-                except httpx.TimeoutException:
+                except (httpx.TimeoutException, TimeoutError):
                     # Once any part of a stream starts, replaying could duplicate output.
                     raise LLMTimeout("AI provider stream timed out") from None
                 except httpx.TransportError:
