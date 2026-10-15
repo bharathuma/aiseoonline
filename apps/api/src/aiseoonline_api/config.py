@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     ai_meta_request_usd_cap: Decimal = Field(default=Decimal("0.05"), gt=0, le=5)
     rag_embedding_model: str = Field(default="text-embedding-3-small", min_length=2, max_length=120)
     rag_embedding_version: str = Field(default="v1", min_length=1, max_length=48)
+    analytics_enabled: bool = False
     auth_registration_enabled: bool = False
     auth_web_origin: str = "https://aiseoonline.com"
     rag_chat_enabled: bool = False

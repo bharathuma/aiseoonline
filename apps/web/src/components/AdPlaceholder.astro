@@ -1,0 +1,18 @@
+---
+/** Optional reserved space only. No advertising provider, script or iframe is installed. */
+const enabled = import.meta.env.PUBLIC_AISEO_AD_SLOTS_ENABLED === 'true';
+---
+
+{
+  enabled && (
+    <aside
+      class="mx-auto my-10 flex min-h-[280px] max-w-4xl items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 text-center"
+      aria-label="Reserved advertising space"
+      data-ad-placeholder
+    >
+      <p class="text-sm leading-7 text-slate-500">
+        Reserved space for possible future advertising. No ad network is connected.
+      </p>
+    </aside>
+  )
+}

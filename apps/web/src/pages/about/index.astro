@@ -1,0 +1,62 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+---
+
+<SiteLayout
+  title="About AISEOOnline — Evidence-first SEO utilities"
+  description="Learn what AISEOOnline checks, how its open-source tools work, and which capabilities are still under development."
+>
+  <section class="page-banner">
+    <div class="site-container max-w-4xl">
+      <p class="eyebrow">About the project</p>
+      <h1 class="section-title mt-4">Useful SEO checks. Evidence before assumptions.</h1>
+      <p class="page-intro">
+        AISEOOnline is an open-source collection of small website tools for developers, site owners
+        and content teams. Each checker focuses on one question instead of inventing a sitewide SEO
+        score.
+      </p>
+    </div>
+  </section>
+  <section class="section-space">
+    <div class="site-container max-w-3xl space-y-7 leading-8 text-slate-700">
+      <h2 class="text-2xl font-bold text-slate-950">What you can inspect</h2>
+      <p>
+        Ten tool interfaces are implemented: nine deterministic checks for robots files, XML
+        sitemaps, metadata, redirects, canonical hints, JSON-LD, headings, internal links and social
+        metadata, plus an optional AI title and description generator. Deterministic reports
+        describe fetched evidence. The AI tool is separated from those findings and requires
+        configured model service and human review.
+      </p>
+      <h2 class="text-2xl font-bold text-slate-950">How the project is built</h2>
+      <p>
+        The public interface uses Astro, React and TypeScript. FastAPI runs the bounded HTTP checks,
+        while PostgreSQL, Redis and Celery support private development workflows. Limits and
+        authentication protect more expensive features. Private deep auditing and private RAG
+        assistants are not generally available in production.
+      </p>
+      <p>
+        Source code, tests, methodology and limitations are published in the <a
+          class="inline-link"
+          href="https://github.com/bharathumashankar/aiseoonline">public GitHub repository</a
+        > under Apache 2.0. See the <a class="inline-link" href="/open-source/benchmarks/"
+          >evaluation methodology and recorded fixture results</a
+        > rather than treating artificial numbers as real search performance.
+      </p>
+      <h2 class="text-2xl font-bold text-slate-950">Who operates the service?</h2>
+      <p>
+        The repository is maintained under the GitHub account <a
+          class="inline-link"
+          href="https://github.com/bharathumashankar">bharathumashankar</a
+        >. The public service's legal operator name, jurisdiction, address and formal support
+        channel require confirmation before production publication. We do not claim an incorporated
+        company or staffed support team.
+      </p>
+      <p>
+        Start with the <a class="inline-link" href="/tools/">public checker directory</a>, read the <a
+          class="inline-link"
+          href="/guides/">SEO guides</a
+        >, or review the <a class="inline-link" href="/contact/">contact options</a>.
+      </p>
+    </div>
+  </section>
+</SiteLayout>

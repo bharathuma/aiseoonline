@@ -1,0 +1,65 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import AnalyticsPreferences from '../../components/AnalyticsPreferences.astro';
+---
+
+<SiteLayout
+  title="Privacy and tracking information — AISEOOnline"
+  description="Learn what SEO checks send to the server, how accounts and logs are handled, and the current analytics and advertising policy."
+>
+  <section class="page-banner">
+    <div class="site-container max-w-4xl">
+      <p class="eyebrow">Privacy</p><h1 class="section-title mt-4">
+        Understand what a website check involves.
+      </h1>
+      <p class="page-intro">
+        This is a plain-language draft for operator review before public launch; it is not a
+        substitute for a jurisdiction-specific legal privacy notice.
+      </p>
+    </div>
+  </section>
+  <section class="section-space">
+    <div class="site-container max-w-3xl space-y-7 leading-8 text-slate-700">
+      <h2 class="text-2xl font-bold">Information you choose to submit</h2>
+      <p>
+        When you submit a public URL, the backend receives that URL, fetches its publicly accessible
+        response within resource limits, and returns check findings. The optional AI generator may
+        transmit excerpts of supplied text to a configured model provider if the feature is enabled.
+        Do not submit confidential or personally identifying content.
+      </p>
+      <h2 class="text-2xl font-bold">Accounts and cookies</h2>
+      <p>
+        Public deterministic checks do not require signup. Private account features, where enabled,
+        use a Secure, HttpOnly session cookie and a short-lived CSRF token. Project ownership,
+        hashed session tokens and verification records may be stored in the backend database.
+        Production self-registration and private deep audits are not generally enabled.
+      </p>
+      <h2 class="text-2xl font-bold">Logs and retention</h2>
+      <p>
+        Hosting and edge services necessarily process network request metadata such as IP addresses
+        to deliver and protect requests. Application logging and infrastructure logs may also retain
+        operational data. The exact retention period, backup lifecycle and deletion procedure
+        require operator review before collecting production customer data. Do not assume that a
+        submitted URL or request is immediately erased from all systems.
+      </p>
+      <h2 class="text-2xl font-bold">Analytics and advertising</h2>
+      <p>
+        No live analytics service, ad network, advertising cookies or third-party measurement script
+        is enabled by this source configuration. Aggregate first-party analytics is only a future
+        opt-in capability and must be explicitly reviewed and activated before event collection
+        begins. See the current preference status below.
+      </p>
+      <AnalyticsPreferences />
+      <h2 class="text-2xl font-bold">Your requests</h2>
+      <p>
+        The project provides limited account metadata export and guarded deletion actions, but full
+        private document and backup erasure procedures are not yet complete. The operator must
+        confirm jurisdiction, legal entity, contact channel, provider list and retention schedule
+        before replacing this draft with an operational policy. <a
+          class="inline-link"
+          href="/contact/">Contact information and limitations</a
+        >.
+      </p>
+    </div>
+  </section>
+</SiteLayout>
