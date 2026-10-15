@@ -161,7 +161,9 @@ def test_missing_or_inconsistent_usage_is_rejected() -> None:
         for value in ({}, {"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 5}):
             async with client_for(
                 httpx.MockTransport(
-                    lambda req, observed=value: httpx.Response(200, json=payload("hi", usage=observed))
+                    lambda req, observed=value: httpx.Response(
+                        200, json=payload("hi", usage=observed)
+                    )
                 )
             ) as client:
                 with pytest.raises(InvalidModelOutput):
