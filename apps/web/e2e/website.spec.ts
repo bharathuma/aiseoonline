@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
 test('homepage renders useful content, metadata and working navigation', async ({ page }) => {
   await page.goto('/');
@@ -51,9 +52,15 @@ for (const width of [375, 768, 1440]) {
       viewport: document.documentElement.clientWidth
     }));
     expect(dimensions.pageWidth).toBeLessThanOrEqual(dimensions.viewport + 1);
-    await page.screenshot({ path: 'playwright-report/home-' + width + '.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/screenshots/home-' + width + '.png', fullPage: true });
   });
 }
+
+test('homepage has no common WCAG A/AA violations', async ({ page }) => {
+  await page.goto('/');
+  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(results.violations.map((item) => ({ id: item.id, nodes: item.nodes.map((n) => n.target) }))).toEqual([]);
+});
 
 test('mobile navigation works with the keyboard', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 });
