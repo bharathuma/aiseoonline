@@ -83,7 +83,7 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
             "title.length",
             "info",
             "Review page title length",
-            f"The extracted title has {len(title)} characters, outside the configured advisory range {conf.title_min_chars}–{conf.title_max_chars}. Search engines may rewrite snippets.",
+            f"Title length is {len(title)}; advisory: {conf.title_min_chars}–{conf.title_max_chars}.",
             "Prefer a distinctive, descriptive title; do not optimize solely for character count.",
             (title_ref,),
         )
@@ -111,7 +111,7 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
             "description.missing",
             "warning",
             "Missing meta description",
-            "No meta description was extracted. Search engines can still generate their own snippets.",
+            "No description was extracted; search engines may supply a snippet.",
             "Consider a helpful summary when it improves search presentation.",
             (_ev(url, "document", "No meta[name=description] captured"),),
         )
@@ -149,7 +149,7 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
                 "description.length",
                 "info",
                 "Review meta description length",
-                f"Description has {len(value)} characters, outside the configured {conf.description_min_chars}–{conf.description_max_chars} advisory range.",
+                f"Description length: {len(value)}; advisory: {conf.description_min_chars}–{conf.description_max_chars}.",
                 "Prefer a clear summary over a rigid character target.",
                 (_tag_ev(present[0]),),
             )
@@ -174,7 +174,7 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
             "info",
             "Multiple H1 headings",
             "Multiple H1 headings can be valid in HTML; review whether the page outline is clear.",
-            "Make the main subject easy to identify; multiple H1s are not automatically an SEO error.",
+            "Make the main subject clear; multiple H1s are not automatically an SEO error.",
             tuple(FindingEvidence(h.evidence, h.text[:180]) for h in h1s),
         )
     previous_level = 0
@@ -186,7 +186,7 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
                 "heading.skipped_level",
                 "info",
                 "Heading level jump",
-                f"A heading jumps from H{previous_level} to H{h.level}. Heading hierarchy is primarily an accessibility and readability concern.",
+                f"Heading level jumps from H{previous_level} to H{h.level}; review the document outline.",
                 "Review whether the heading structure represents the document sections clearly.",
                 (FindingEvidence(h.evidence, h.text[:180]),),
             )
@@ -212,7 +212,7 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
             "canonical.missing",
             "info",
             "No canonical declaration",
-            "No HTML canonical link element was extracted. A canonical tag is not mandatory on every page.",
+            "No HTML canonical was found; not every page requires one.",
             "Add one only if it helps express the preferred URL.",
             (_ev(url, "document", "No rel=canonical link captured"),),
         )
@@ -227,7 +227,7 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
                     "canonical.invalid",
                     "warning",
                     "Invalid canonical URL",
-                    "A canonical declaration is empty, malformed, or outside the supported URL format.",
+                    "The canonical is empty, malformed or uses an unsupported URL.",
                     "Use one absolute or valid relative HTTP(S) canonical URL.",
                     (FindingEvidence(tag.evidence, tag.href[:180] or "Empty href"),),
                 )
@@ -240,7 +240,7 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
                         "canonical.external",
                         "info",
                         "Cross-domain canonical",
-                        "This canonical points to a different host. This may be intentional for syndication.",
+                        "The canonical points to another host; syndication may justify this.",
                         "Confirm the external preferred URL is intended.",
                         (FindingEvidence(tag.evidence, target[:180]),),
                     )
@@ -275,7 +275,7 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
                 "robots.noindex",
                 "info",
                 f"Noindex directive for {agent}",
-                "HTML metadata asks this crawler not to index the page. HTTP X-Robots-Tag headers are not included in this snapshot.",
+                "The page asks this bot not to index it. HTTP X-Robots-Tag headers were not checked.",
                 "Confirm this page is intended to remain out of search results.",
                 metas,
             )
@@ -316,7 +316,7 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
                 "robots.agent_difference",
                 "info",
                 "Crawler-specific indexing instructions differ",
-                "The generic and Googlebot indexing directives differ; crawler-specific rules may intentionally override generic instructions.",
+                "Generic and Googlebot indexing directives differ; this may be intentional.",
                 "Confirm the different crawler directives are intended.",
                 tuple(_tag_ev(t) for t in robots_meta if t.name.lower() in ("robots", "googlebot")),
             )
@@ -338,7 +338,7 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
             "links.no_internal",
             "info",
             "No internal links detected",
-            "No matching-host HTTP(S) anchor links were extracted. A standalone page may not need them.",
+            "No internal anchor links were found; standalone pages may not need them.",
             "Review navigation and context where internal links would help users.",
             (_ev(url, "document", "No matching-host anchor links captured"),),
         )
@@ -403,7 +403,7 @@ def analyze_pages(
                     "title.duplicate_pages",
                     "warning",
                     "Title reused across pages",
-                    "The same normalized title appears on multiple analyzed pages; this may be intentional, but can make pages harder to distinguish.",
+                    "Multiple pages use this title; check whether it should be distinctive.",
                     "Consider distinctive titles for pages with different purposes.",
                     evidences,
                 )
