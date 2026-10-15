@@ -7,7 +7,7 @@ from collections.abc import Iterator
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from aiseoonline_api.config import Settings
 from aiseoonline_api.errors import ErrorResponse
@@ -26,6 +26,14 @@ def client() -> Iterator[TestClient]:
 
     @app.post("/api/v1/__test/validate")
     def validate(body: Input) -> Input:
+        return body
+
+    class StrictInput(BaseModel):
+        model_config = ConfigDict(extra="forbid")
+        size: int
+
+    @app.post("/api/v1/__test/strict")
+    def validate_strict(body: StrictInput) -> StrictInput:
         return body
 
     @app.get("/api/v1/__test/forbidden")
@@ -74,6 +82,15 @@ def test_validation_never_echoes_rejected_values(client: TestClient) -> None:
     assert result.json()["error"]["details"] == [{"field": "body.size", "issue": "greater_than"}]
     assert "dangerous" not in result.text
     assert REQUEST_ID.fullmatch(result.json()["request_id"])
+
+
+def test_validation_paths_never_echo_untrusted_json_key_names(client: TestClient) -> None:
+    result = client.post("/api/v1/__test/strict", json={"size": 1, "sk-secretprivatevalue": 2})
+    assert result.status_code == 422
+    assert result.json()["error"]["details"] == [
+        {"field": "body.field", "issue": "extra_forbidden"}
+    ]
+    assert "sk-secretprivatevalue" not in result.text
 
 
 def test_http_exception_does_not_echo_arbitrary_detail(client: TestClient) -> None:
