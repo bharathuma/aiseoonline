@@ -340,9 +340,12 @@ def test_private_audit_api_authorization_polling_cancellation_and_exports(
     owner_id, project_id = uuid4(), uuid4()
     token = "local-dev-token-" + "x" * 48
     settings = Settings(
-        _env_file=None, environment="test",
-        database_url=database_url, redis_url="redis://127.0.0.1:6379/0",
-        audit_jobs_enabled=True, audit_dev_token=token,
+        _env_file=None,
+        environment="test",
+        database_url=database_url,
+        redis_url="redis://127.0.0.1:6379/0",
+        audit_jobs_enabled=True,
+        audit_dev_token=token,
         audit_dev_owner_id=owner_id,
         openai_api_key="offline-only",
         llm_input_usd_per_million=Decimal("1"),
@@ -363,10 +366,14 @@ def test_private_audit_api_authorization_polling_cancellation_and_exports(
         with Session(engine) as session, session.begin():
             session.add(User(id=owner_id, email=f"audit-http-{uuid4().hex}@example.test"))
             session.flush()
-            session.add(Project(
-                id=project_id, owner_id=owner_id, domain="example.org",
-                verification_status="verified",
-            ))
+            session.add(
+                Project(
+                    id=project_id,
+                    owner_id=owner_id,
+                    domain="example.org",
+                    verification_status="verified",
+                )
+            )
         app = create_app(settings)
         headers = {
             "x-dev-audit-token": token,
@@ -377,13 +384,17 @@ def test_private_audit_api_authorization_polling_cancellation_and_exports(
             denied = client.post("/api/v1/internal/audits", json=payload)
             assert denied.status_code in (404, 422)
             response = client.post(
-                "/api/v1/internal/audits", json=payload, headers=headers,
+                "/api/v1/internal/audits",
+                json=payload,
+                headers=headers,
             )
             assert response.status_code == 202, response.text
             job_id = response.json()["id"]
             assert delivered == [job_id]
             repeated = client.post(
-                "/api/v1/internal/audits", json=payload, headers=headers,
+                "/api/v1/internal/audits",
+                json=payload,
+                headers=headers,
             )
             assert repeated.status_code == 202
             assert repeated.json()["id"] == job_id
@@ -394,58 +405,71 @@ def test_private_audit_api_authorization_polling_cancellation_and_exports(
             assert progress.status_code == 200
             assert progress.json()["status"] == "queued"
             not_ready = client.get(
-                f"/api/v1/internal/audits/{job_id}/report", headers=headers,
+                f"/api/v1/internal/audits/{job_id}/report",
+                headers=headers,
             )
             assert not_ready.status_code == 409
             cancelled = client.post(
-                f"/api/v1/internal/audits/{job_id}/cancel", headers=headers,
+                f"/api/v1/internal/audits/{job_id}/cancel",
+                headers=headers,
             )
             assert cancelled.status_code == 200
             assert cancelled.json()["status"] == "cancelled"
             cancelled_again = client.post(
-                f"/api/v1/internal/audits/{job_id}/cancel", headers=headers,
+                f"/api/v1/internal/audits/{job_id}/cancel",
+                headers=headers,
             )
             assert cancelled_again.json()["status"] == "cancelled"
-            assert client.get(
-                f"/api/v1/internal/audits/{uuid4()}", headers=headers
-            ).status_code == 404
+            assert (
+                client.get(f"/api/v1/internal/audits/{uuid4()}", headers=headers).status_code == 404
+            )
 
             # A prepared completed report may only be exported after authentication.
             from aiseoonline_api.agents.models import AuditFinding, AuditReport
 
             issue = AuditFinding(
-                finding_id="seo:fixture-html", rule_id="title.missing",
-                severity="error", priority="high", affected_url=TARGET,
+                finding_id="seo:fixture-html",
+                rule_id="title.missing",
+                severity="error",
+                priority="high",
+                affected_url=TARGET,
                 summary="<script>alert(1)</script>",
                 correction="Add a descriptive page title",
-                evidence_quote="=HYPERLINK(1,2)", evidence_ref="title:0",
+                evidence_quote="=HYPERLINK(1,2)",
+                evidence_ref="title:0",
             )
             with Session(engine) as session, session.begin():
                 row = session.get(AuditJob, UUID(job_id))
                 assert row is not None
                 row.report_data = AuditReport(
-                    project_id=project_id, requested_url=TARGET,
-                    final_url=TARGET, captured_at=datetime.now(UTC),
-                    status="partial", findings=[issue], recommendations=[],
-                    selected_tools=[], trace=[], uncertainty="One failed step",
+                    project_id=project_id,
+                    requested_url=TARGET,
+                    final_url=TARGET,
+                    captured_at=datetime.now(UTC),
+                    status="partial",
+                    findings=[issue],
+                    recommendations=[],
+                    selected_tools=[],
+                    trace=[],
+                    uncertainty="One failed step",
                 ).model_dump(mode="json")
                 row.status = "partial"
             html = client.get(
-                f"/api/v1/internal/audits/{job_id}/report.html", headers=headers,
+                f"/api/v1/internal/audits/{job_id}/report.html",
+                headers=headers,
             )
             assert html.status_code == 200
             assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html.text
             assert "<script>alert(1)</script>" not in html.text
             assert "default-src 'none'" in html.headers["content-security-policy"]
             csv = client.get(
-                f"/api/v1/internal/audits/{job_id}/report.csv", headers=headers,
+                f"/api/v1/internal/audits/{job_id}/report.csv",
+                headers=headers,
             )
             assert csv.status_code == 200
             assert "'=HYPERLINK(1,2)" in csv.text
             assert "deterministic" in csv.text
-            assert client.get(
-                f"/api/v1/internal/audits/{job_id}/report.csv"
-            ).status_code == 404
+            assert client.get(f"/api/v1/internal/audits/{job_id}/report.csv").status_code == 404
     finally:
         with Session(engine) as session, session.begin():
             owner = session.get(User, owner_id)
