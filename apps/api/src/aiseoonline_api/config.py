@@ -59,8 +59,8 @@ class Settings(BaseSettings):
                 raise ValueError("Private RAG chat cannot be enabled in production")
             if (
                 self.rag_chat_dev_token is None
-                or (len(self.rag_chat_dev_token.get_secret_value()) < 32 or
-                 not self.rag_chat_dev_token.get_secret_value().isascii())
+                or len(self.rag_chat_dev_token.get_secret_value()) < 32
+                or not self.rag_chat_dev_token.get_secret_value().isascii()
                 or self.rag_chat_dev_owner_id is None
             ):
                 raise ValueError("Private RAG chat needs a 32+ character token and owner UUID")
