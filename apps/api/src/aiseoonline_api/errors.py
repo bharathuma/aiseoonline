@@ -29,7 +29,7 @@ class ErrorResponse(BaseModel):
     request_id: str = Field(description="Server-generated request correlation ID")
 
 
-ERROR_RESPONSES: dict[int, dict[str, Any]] = {
+ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {
     400: {"model": ErrorResponse, "description": "Bad request"},
     404: {"model": ErrorResponse, "description": "Resource not found"},
     405: {"model": ErrorResponse, "description": "Method not allowed"},
@@ -115,6 +115,6 @@ async def unexpected_error(request: Request, exc: Exception) -> JSONResponse:
 
 
 def register_error_handlers(app: FastAPI) -> None:
-    app.add_exception_handler(HTTPException, http_error)
-    app.add_exception_handler(RequestValidationError, validation_error)
+    app.add_exception_handler(HTTPException, http_error)  # type: ignore[arg-type]
+    app.add_exception_handler(RequestValidationError, validation_error)  # type: ignore[arg-type]
     app.add_exception_handler(Exception, unexpected_error)
