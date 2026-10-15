@@ -5,5 +5,8 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   site: 'https://aiseoonline.com',
   integrations: [react()],
-  vite: { plugins: [tailwindcss()] },
+  vite: {
+    plugins: [tailwindcss()],
+    server: { proxy: { '/api': 'http://127.0.0.1:8000' } },
+  },
 });
