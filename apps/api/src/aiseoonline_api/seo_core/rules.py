@@ -5,7 +5,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from urllib.parse import urljoin, urlsplit
 
-from aiseoonline_api.crawler.html import Evidence, MetaTag
+from aiseoonline_api.crawler.html import Evidence, Link, MetaTag
 from aiseoonline_api.crawler.service import PageSnapshot
 from aiseoonline_api.crawler.urls import UnsafeTarget, normalize_url
 
@@ -322,12 +322,12 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
                 tuple(_tag_ev(t) for t in robots_meta if t.name.lower() in ("robots", "googlebot")),
             )
 
-    internal_links: list[tuple[str, object]] = []
+    internal_links: list[tuple[str, Link]] = []
     src_host = urlsplit(url).hostname
     for link in html.links:
         try:
-            target = urlsplit(link.href)
-            if target.hostname != src_host:
+            link_target = urlsplit(link.href)
+            if link_target.hostname != src_host:
                 continue
             internal_links.append((link.href, link))
         except ValueError:
