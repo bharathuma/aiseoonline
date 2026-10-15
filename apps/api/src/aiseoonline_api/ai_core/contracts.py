@@ -3,7 +3,7 @@
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Generic, Literal, Protocol, TypeVar, overload
+from typing import Literal, Protocol, TypeVar, overload
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -98,7 +98,7 @@ class ModelPricing(BaseModel):
 
 
 @dataclass(frozen=True)
-class ModelResult(Generic[T]):
+class ModelResult[T: BaseModel]:
     value: str | T
     model: str
     usage: TokenUsage
