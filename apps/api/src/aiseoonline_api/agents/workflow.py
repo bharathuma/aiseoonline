@@ -275,7 +275,9 @@ class AuditAgent:
         req = state["request"]
         lookup = None
         if picked == "rag" and req.use_private_rag and self.rag_lookup:
-            lookup = lambda query: self.rag_lookup(req, query)
+            def lookup(query: str) -> list[dict[str, str]]:
+                assert self.rag_lookup is not None
+                return self.rag_lookup(req, query)
         tools = build_tools(snapshot, state.get("raw_findings", ()), rag_lookup=lookup)
         if picked not in tools:
             raise InvalidModelOutput("Missing approved tool implementation")
@@ -324,7 +326,7 @@ class AuditAgent:
                 GenerationRequest(
                     template_id="audit_recommendations",
                     template_version="v1",
-                    task="Suggest up to six corrections. Cite only real finding IDs and exact quotes.",
+                    task="Suggest up to six grounded corrections with exact finding IDs and quotes.",
                     website_text=input_text,
                     max_output_tokens=440,
                 ),
