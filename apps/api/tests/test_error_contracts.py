@@ -55,6 +55,7 @@ def test_unknown_resource_uses_shared_error_schema(client: TestClient) -> None:
     envelope = ErrorResponse.model_validate(result.json())
     assert envelope.error.code == "not_found"
     assert envelope.request_id == result.headers["x-request-id"]
+    assert len(result.headers.getlist("x-request-id")) == 1
 
 
 def test_method_not_allowed_preserves_allow_header(client: TestClient) -> None:
@@ -99,6 +100,10 @@ def test_openapi_describes_error_envelopes(client: TestClient) -> None:
     )
     assert responses["422"]["content"]["application/json"]["schema"]["$ref"].endswith(
         "/ErrorResponse"
+    )
+    readiness = schema["paths"]["/api/v1/ready"]["get"]["responses"]
+    assert readiness["503"]["content"]["application/json"]["schema"]["$ref"].endswith(
+        "/ReadinessResponse"
     )
 
 
