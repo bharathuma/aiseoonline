@@ -188,9 +188,11 @@ def collect_evidence(
     lower_question = _clean(question)
     # Sitewide diagnostics require actual completed deterministic findings.
     # Indexed prose alone cannot establish missing tags or broken links.
+    missing_metadata = "missing" in lower_question and any(
+        term in lower_question for term in ("title", "description", "meta", "heading")
+    )
     audit_question = (
-        ("missing" in lower_question and
-         any(term in lower_question for term in ("title", "description", "meta", "heading")))
+        missing_metadata
         or ("problem" in lower_question and "link" in lower_question)
         or ("priorit" in lower_question and "seo" in lower_question)
     )
