@@ -8,7 +8,7 @@ From the repository root:
 
 ```bash
 uv sync --project apps/api --group dev
-uv run --project apps/api uvicorn aiseoonline_api.main:app --reload
+uv run --project apps/api uvicorn aiseoonline_api.main:app --reload --no-access-log
 uv run --project apps/api pytest apps/api/tests -q
 uv run --project apps/api ruff check apps/api
 uv run --project apps/api mypy apps/api/src
