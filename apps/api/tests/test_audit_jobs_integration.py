@@ -263,6 +263,7 @@ def test_persistent_langgraph_checkpoint_resumes_without_refetching() -> None:
     try:
         with Session(engine) as session, session.begin():
             session.add(User(id=owner_id, email=f"checkpoint-{uuid4().hex}@example.test"))
+            session.flush()
             session.add(
                 Project(
                     id=project_id,
