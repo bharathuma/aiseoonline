@@ -131,10 +131,10 @@ def estimated_allocation(settings: Settings) -> int | None:
         return None
     if settings.llm_max_input_tokens < 4096 or settings.llm_max_output_tokens < 440:
         return None
-    # Reserve the worst allowed tokens across four calls and all provider retries.
+    # Three graph calls, up to three worker attempts and all provider retries.
     dollars = (
         (input_rate * settings.llm_max_input_tokens + output_rate * settings.llm_max_output_tokens)
-        * 4
+        * 3
         * 3
         * (settings.llm_max_retries + 1)
         / Decimal(1000000)
