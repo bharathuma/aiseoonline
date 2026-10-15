@@ -151,7 +151,7 @@ class CrawlSession:
                     dns_timeout=self.limits.dns_timeout,
                     allowed_mime=allowed_mime
                     or ("text/html", "application/xhtml+xml", "text/plain"),
-                    headers_only=headers_only,
+                    **({"headers_only": True} if headers_only else {}),
                 )
             finally:
                 self._previous_request = time.monotonic()
