@@ -35,11 +35,15 @@ class RagSelectorFixture:
             value = ToolChoice(name=name, reason="Check existing, owner-scoped RAG evidence")
         else:
             from aiseoonline_api.agents.models import AgentDraft
+
             value = AgentDraft(recommendations=[], uncertainty="No supported extra claims")
         return ModelResult(
-            value=value, model="fixture", cost_usd=Decimal(0),
+            value=value,
+            model="fixture",
+            cost_usd=Decimal(0),
             usage=TokenUsage(input_tokens=70, output_tokens=30, total_tokens=100),
-            prompt_id=request.template_id, prompt_version=request.template_version,
+            prompt_id=request.template_id,
+            prompt_version=request.template_version,
         )
 
 
@@ -65,15 +69,19 @@ def test_audit_agent_uses_verified_project_and_existing_rag_retriever() -> None:
                     session.flush()
                     url = "https://example.org/seo"
                     html = (
-                        '<html><body><main><h1>Clay planter care</h1>'
-                        '<p>Handmade ceramic planters need drainage trays and gentle watering. '
-                        'Allow the soil to dry before watering again.</p></main></body></html>'
+                        "<html><body><main><h1>Clay planter care</h1>"
+                        "<p>Handmade ceramic planters need drainage trays and gentle watering. "
+                        "Allow the soil to dry before watering again.</p></main></body></html>"
                     )
                     data = html.encode()
                     sample = PageSnapshot(
-                        requested_url=url, final_url=url,
-                        captured_at=datetime.now(UTC), http_status=200,
-                        redirects=(), content_bytes=len(data), html=parse_html(data, url),
+                        requested_url=url,
+                        final_url=url,
+                        captured_at=datetime.now(UTC),
+                        http_status=200,
+                        redirects=(),
+                        content_bytes=len(data),
+                        html=parse_html(data, url),
                     )
                     embedding = FixtureEmbeddingProvider()
                     inserted = RagStore(session, embedding).ingest_snapshot(
@@ -94,8 +102,12 @@ def test_audit_agent_uses_verified_project_and_existing_rag_retriever() -> None:
                         rag_lookup=hybrid_rag_lookup(HybridRetriever(session, embedding)),
                     )
                     request = AuditRequest(
-                        owner_id=owner.id, project_id=project.id, url=url,
-                        max_tools=1, max_model_calls=2, use_private_rag=True,
+                        owner_id=owner.id,
+                        project_id=project.id,
+                        url=url,
+                        max_tools=1,
+                        max_model_calls=2,
+                        use_private_rag=True,
                     )
                     report = asyncio.run(agent.run(request))
                     assert report.status == "completed", report.model_dump()

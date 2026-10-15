@@ -9,17 +9,10 @@ import json
 import re
 from collections.abc import Callable
 from typing import Literal, TypedDict
-from urllib.parse import urlsplit
 
 from langgraph.graph import END, START, StateGraph
 from pydantic import ValidationError
 
-from aiseoonline_api.ai_core.contracts import (
-    GenerationRequest,
-    InvalidModelOutput,
-    LLMError,
-    LLMProvider,
-)
 from aiseoonline_api.agents.models import (
     AgentDraft,
     AuditFinding,
@@ -30,6 +23,12 @@ from aiseoonline_api.agents.models import (
     ToolChoice,
 )
 from aiseoonline_api.agents.tools import build_tools, eligible_tools
+from aiseoonline_api.ai_core.contracts import (
+    GenerationRequest,
+    InvalidModelOutput,
+    LLMError,
+    LLMProvider,
+)
 from aiseoonline_api.crawler import CrawlError, CrawlSession, PageSnapshot, normalize_url
 from aiseoonline_api.rag.store import RagAccessDenied
 from aiseoonline_api.seo_core.models import SeoFinding
@@ -53,15 +52,17 @@ class AuditState(TypedDict, total=False):
     report: AuditReport
 
 
-def _append(state: AuditState, name: str, outcome: str,
-            tool: str | None = None) -> tuple[AuditTrace, ...]:
+def _append(
+    state: AuditState, name: str, outcome: str, tool: str | None = None
+) -> tuple[AuditTrace, ...]:
     # Never log page bodies, raw prompts, hostnames, or provider error messages.
     return (*state.get("trace", ()), AuditTrace(node=name, outcome=outcome, tool=tool))
 
 
 def _priority(finding: SeoFinding) -> Literal["high", "medium", "low"]:
     if finding.severity == "error" or finding.rule_id in (
-        "robots.noindex", "canonical.conflicting",
+        "robots.noindex",
+        "canonical.conflicting",
     ):
         return "high"
     return "medium" if finding.severity == "warning" else "low"
@@ -72,8 +73,9 @@ def normalize_findings(items: tuple[SeoFinding, ...]) -> tuple[AuditFinding, ...
     for finding in items[:40]:
         first = finding.evidence[0]
         ref = first.reference
-        key = "|".join((finding.url, finding.rule_id, ref.element,
-                        str(ref.ordinal), first.observed))
+        key = "|".join(
+            (finding.url, finding.rule_id, ref.element, str(ref.ordinal), first.observed)
+        )
         fingerprint = hashlib.sha256(key.encode()).hexdigest()[:20]
         normalized.append(
             AuditFinding(
@@ -93,8 +95,9 @@ def normalize_findings(items: tuple[SeoFinding, ...]) -> tuple[AuditFinding, ...
     return tuple(normalized)
 
 
-def verify_recommendations(draft: AgentDraft, findings: tuple[AuditFinding, ...]
-                           ) -> tuple[Recommendation, ...]:
+def verify_recommendations(
+    draft: AgentDraft, findings: tuple[AuditFinding, ...]
+) -> tuple[Recommendation, ...]:
     indexed = {item.finding_id: item for item in findings}
     recommendations: list[Recommendation] = []
     used: set[str] = set()
@@ -107,8 +110,9 @@ def verify_recommendations(draft: AgentDraft, findings: tuple[AuditFinding, ...]
         if quote not in observed:
             raise InvalidModelOutput("Recommendation quote was not in recorded evidence")
         claim_numbers = set(re.findall(r"(?<!\w)\d+(?:[.,]\d+)?%?(?!\w)", claim.advice))
-        evidence_numbers = set(re.findall(r"(?<!\w)\d+(?:[.,]\d+)?%?(?!\w)",
-                                      finding.evidence_quote))
+        evidence_numbers = set(
+            re.findall(r"(?<!\w)\d+(?:[.,]\d+)?%?(?!\w)", finding.evidence_quote)
+        )
         if not claim_numbers.issubset(evidence_numbers):
             raise InvalidModelOutput("Recommendation adds an unsupported numeric claim")
         used.add(claim.finding_id)
@@ -152,11 +156,17 @@ class AuditAgent:
             graph.add_node(name, func)
         graph.add_edge(START, "authorize")
         graph.add_edge("authorize", "collect")
-        graph.add_conditional_edges("collect", lambda s: "checks" if s.get("snapshot") else "finish",
-                                    {"checks": "checks", "finish": "finish"})
+        graph.add_conditional_edges(
+            "collect",
+            lambda s: "checks" if s.get("snapshot") else "finish",
+            {"checks": "checks", "finish": "finish"},
+        )
         graph.add_edge("checks", "select")
-        graph.add_conditional_edges("select", lambda s: "tool" if s.get("next_tool") else "analyze",
-                                    {"tool": "tool", "analyze": "analyze"})
+        graph.add_conditional_edges(
+            "select",
+            lambda s: "tool" if s.get("next_tool") else "analyze",
+            {"tool": "tool", "analyze": "analyze"},
+        )
         graph.add_edge("tool", "select")
         graph.add_edge("analyze", "finish")
         graph.add_edge("finish", END)
@@ -172,15 +182,18 @@ class AuditAgent:
         req = state["request"]
         try:
             snapshot = await asyncio.to_thread(self.fetch, req.url)
-            if (normalize_url(snapshot.final_url).origin != normalize_url(req.url).origin
-                    or snapshot.http_status != 200):
+            if (
+                normalize_url(snapshot.final_url).origin != normalize_url(req.url).origin
+                or snapshot.http_status != 200
+            ):
                 raise RagAccessDenied("Snapshot outside verified origin or not successful")
             # Recheck owner policy after redirects, before any source content is used.
             self.authorize(req)
             return {"snapshot": snapshot, "trace": _append(state, "collect", "fetched")}
         except CrawlError:
             return {
-                "snapshot": None, "errors": ("crawler_unavailable",),
+                "snapshot": None,
+                "errors": ("crawler_unavailable",),
                 "trace": _append(state, "collect", "partial_failure"),
             }
 
@@ -200,16 +213,21 @@ class AuditAgent:
         snapshot = state["snapshot"]
         assert snapshot is not None
         available = [
-            name for name in eligible_tools(
-                snapshot, state.get("raw_findings", ()),
+            name
+            for name in eligible_tools(
+                snapshot,
+                state.get("raw_findings", ()),
                 rag_enabled=req.use_private_rag and self.rag_lookup is not None,
             )
             if name not in state.get("used_tools", ())
         ]
         model_calls = state.get("model_calls", 0)
-        if (not available or len(state.get("used_tools", ())) >= req.max_tools
-                or model_calls >= req.max_model_calls - 1
-                or not state.get("findings")):
+        if (
+            not available
+            or len(state.get("used_tools", ())) >= req.max_tools
+            or model_calls >= req.max_model_calls - 1
+            or not state.get("findings")
+        ):
             return {"next_tool": None, "trace": _append(state, "select", "budget_or_no_tools")}
         payload = {
             "available_tools": available,
@@ -218,7 +236,8 @@ class AuditAgent:
             "observations": list(state.get("observations", ()))[:3],
         }
         request = GenerationRequest(
-            template_id="audit_tool_selection", template_version="v1",
+            template_id="audit_tool_selection",
+            template_version="v1",
             task="Choose one useful available read-only SEO evidence tool, or stop.",
             website_text=json.dumps(payload, ensure_ascii=True)[:3500],
             max_output_tokens=180,
@@ -233,12 +252,17 @@ class AuditAgent:
             return {
                 "next_tool": None if picked == "stop" else picked,
                 "model_calls": model_calls + 1,
-                "trace": _append(state, "select", "stopped" if picked == "stop" else "selected",
-                                 None if picked == "stop" else picked),
+                "trace": _append(
+                    state,
+                    "select",
+                    "stopped" if picked == "stop" else "selected",
+                    None if picked == "stop" else picked,
+                ),
             }
         except (LLMError, ValueError):
             return {
-                "next_tool": None, "model_calls": model_calls + 1,
+                "next_tool": None,
+                "model_calls": model_calls + 1,
                 "errors": (*state.get("errors", ()), "tool_planner_unavailable"),
                 "trace": _append(state, "select", "partial_failure"),
             }
@@ -260,8 +284,7 @@ class AuditAgent:
             safe = json.dumps(response, ensure_ascii=True)[:1200]
             return {
                 "used_tools": (*state.get("used_tools", ()), picked),
-                "observations": (*state.get("observations", ()),
-                                 {"tool": picked, "result": safe}),
+                "observations": (*state.get("observations", ()), {"tool": picked, "result": safe}),
                 "next_tool": None,
                 "trace": _append(state, "tool", "executed", picked),
             }
@@ -280,9 +303,14 @@ class AuditAgent:
         if not findings or calls >= state["request"].max_model_calls:
             return {"trace": _append(state, "analyze", "no_evidence_or_budget")}
         evidence = [
-            {"finding_id": f.finding_id, "code": f.rule_id, "url": f.affected_url,
-             "summary": f.summary, "evidence": f.evidence_quote,
-             "correction": f.correction}
+            {
+                "finding_id": f.finding_id,
+                "code": f.rule_id,
+                "url": f.affected_url,
+                "summary": f.summary,
+                "evidence": f.evidence_quote,
+                "correction": f.correction,
+            }
             for f in findings[:10]
         ]
         input_text = json.dumps(
@@ -294,9 +322,11 @@ class AuditAgent:
         try:
             response = await self.llm.complete(
                 GenerationRequest(
-                    template_id="audit_recommendations", template_version="v1",
+                    template_id="audit_recommendations",
+                    template_version="v1",
                     task="Suggest up to six corrections. Cite only real finding IDs and exact quotes.",
-                    website_text=input_text, max_output_tokens=440,
+                    website_text=input_text,
+                    max_output_tokens=440,
                 ),
                 schema=AgentDraft,
             )
@@ -336,17 +366,22 @@ class AuditAgent:
             trace=list(_append(state, "finish", status)),
             uncertainty=(
                 "Some checks or model steps were unavailable; findings remain deterministic."
-                if errors else
-                "Limited to one permitted HTML snapshot. No browser render or deep scan."
+                if errors
+                else "Limited to one permitted HTML snapshot. No browser render or deep scan."
             ),
-            model=state.get("model"), token_usage=state.get("token_usage"),
+            model=state.get("model"),
+            token_usage=state.get("token_usage"),
         )
         return {"report": report, "trace": tuple(report.trace)}
 
     async def run(self, request: AuditRequest) -> AuditReport:
         state: AuditState = {
-            "request": request, "used_tools": (), "observations": (),
-            "trace": (), "errors": (), "model_calls": 0,
+            "request": request,
+            "used_tools": (),
+            "observations": (),
+            "trace": (),
+            "errors": (),
+            "model_calls": 0,
         }
         # Even infinite/slow provider streams cannot run this graph indefinitely.
         async with asyncio.timeout(request.max_seconds):

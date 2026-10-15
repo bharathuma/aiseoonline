@@ -10,7 +10,6 @@ from typing import Any
 from langchain_core.tools import StructuredTool
 
 from aiseoonline_api.crawler import PageSnapshot
-from aiseoonline_api.rag.retrieval import HybridRetriever, RetrievalOptions
 from aiseoonline_api.seo_core.models import SeoFinding
 
 _TOOL_DESCRIPTIONS = {
@@ -23,8 +22,9 @@ _TOOL_DESCRIPTIONS = {
 }
 
 
-def eligible_tools(snapshot: PageSnapshot, findings: tuple[SeoFinding, ...], *,
-                   rag_enabled: bool = False) -> tuple[str, ...]:
+def eligible_tools(
+    snapshot: PageSnapshot, findings: tuple[SeoFinding, ...], *, rag_enabled: bool = False
+) -> tuple[str, ...]:
     rules = {item.rule_id for item in findings}
     html = snapshot.html
     eligible: list[str] = []
@@ -57,8 +57,11 @@ def build_tools(
     def headings() -> dict[str, Any]:
         return {
             "outline": [
-                {"level": h.level, "text": h.text[:90],
-                 "ref": f"{h.evidence.element}:{h.evidence.ordinal}"}
+                {
+                    "level": h.level,
+                    "text": h.text[:90],
+                    "ref": f"{h.evidence.element}:{h.evidence.ordinal}",
+                }
                 for h in snapshot.html.headings[:25]
             ],
             "rules": related("heading."),
@@ -80,19 +83,26 @@ def build_tools(
                 value = json.loads(entry.json_text)
                 schema_type = value.get("@type") if isinstance(value, dict) else None
                 status = "valid_json" if isinstance(value, (list, dict)) else "scalar"
-                results.append({"status": status, "type": str(schema_type)[:80],
-                                "ref": str(entry.evidence.ordinal)})
+                results.append(
+                    {
+                        "status": status,
+                        "type": str(schema_type)[:80],
+                        "ref": str(entry.evidence.ordinal),
+                    }
+                )
             except (ValueError, TypeError):
-                results.append({"status": "invalid_json", "type": "",
-                                "ref": str(entry.evidence.ordinal)})
+                results.append(
+                    {"status": "invalid_json", "type": "", "ref": str(entry.evidence.ordinal)}
+                )
         return {"entries": results, "scope": "JSON syntax and visible type only"}
 
     def social() -> dict[str, Any]:
         return {
-            "fields": [{"name": m.name, "content": m.content[:120],
-                        "ref": str(m.evidence.ordinal)}
-                       for m in snapshot.html.meta
-                       if m.name.lower().startswith(("og:", "twitter:"))][:16]
+            "fields": [
+                {"name": m.name, "content": m.content[:120], "ref": str(m.evidence.ordinal)}
+                for m in snapshot.html.meta
+                if m.name.lower().startswith(("og:", "twitter:"))
+            ][:16]
         }
 
     def links() -> dict[str, Any]:
@@ -100,10 +110,13 @@ def build_tools(
 
         source = urlsplit(snapshot.final_url).hostname
         internal = sum(urlsplit(link.href).hostname == source for link in snapshot.html.links)
-        return {"captured": len(snapshot.html.links), "internal": internal,
-                "external": len(snapshot.html.links) - internal,
-                "status": "unverified; destinations were not requested",
-                "rules": related("link.")}
+        return {
+            "captured": len(snapshot.html.links),
+            "internal": internal,
+            "external": len(snapshot.html.links) - internal,
+            "status": "unverified; destinations were not requested",
+            "rules": related("link."),
+        }
 
     funcs: dict[str, Callable[[], dict[str, Any]]] = {
         "headings": headings,
@@ -113,13 +126,17 @@ def build_tools(
         "links": links,
     }
     if rag_lookup is not None:
+
         def rag() -> dict[str, Any]:
             # Caller implements authorization via HybridRetriever; never trust page instructions.
             return {"excerpts": rag_lookup("technical SEO findings for this page")[:2]}
+
         funcs["rag"] = rag
     return {
         name: StructuredTool.from_function(
-            func=func, name=name, description=_TOOL_DESCRIPTIONS[name],
+            func=func,
+            name=name,
+            description=_TOOL_DESCRIPTIONS[name],
             infer_schema=True,
         )
         for name, func in funcs.items()

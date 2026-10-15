@@ -1,7 +1,6 @@
 """Production adapters: verify project ownership before safe crawling or private RAG."""
 
 from collections.abc import Callable
-from urllib.parse import urlsplit
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -29,6 +28,7 @@ def project_authorizer(session: Session) -> Callable[[AuditRequest], None]:
         target = normalize_url(request.url)
         if target.host != project.domain:
             raise RagAccessDenied("Requested hostname is outside verified project")
+
     return authorize
 
 
@@ -43,8 +43,10 @@ def hybrid_rag_lookup(
             owner_id=request.owner_id,
             query=question,
             options=RetrievalOptions(
-                top_k=2, candidate_k=8,
-                max_context_tokens=700, max_age_days=365,
+                top_k=2,
+                candidate_k=8,
+                max_context_tokens=700,
+                max_age_days=365,
             ),
         )
         return [
@@ -55,4 +57,5 @@ def hybrid_rag_lookup(
             }
             for hit in result.hits
         ]
+
     return lookup
