@@ -265,7 +265,7 @@ class LiveFixture(BaseHTTPRequestHandler):
                 b'<a href="/missing">Missing</a>'
                 b'<a href="/failed-link">Server issue</a>'
                 b'<a href="/extra">Beyond budget</a>'
-                    b'<a href="https://example.org/secure">Same host, other scheme</a>'
+                b'<a href="https://example.org/secure">Same host, other scheme</a>'
                 b'<a href="https://external.org/other">External</a></html>'
             )
             kind = "text/html"
