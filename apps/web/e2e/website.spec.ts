@@ -279,3 +279,83 @@ test('new tool pages are indexable and expose controls', async ({ page }) => {
     await expect(page.getByRole('button', { name: 'Run free check' })).toBeVisible();
   }
 });
+
+
+test('heading tool shows the real H1–H6 outline in document order', async ({ page }) => {
+  await page.route('**/api/v1/tools/headings', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+      tool: 'headings', requested_url: 'https://example.org/', final_url: 'https://example.org/',
+      checked_at: '2026-10-15T12:00:00Z',
+      facts: { headings: [
+        { level: 1, text: 'Main topic', ordinal: 1 },
+        { level: 3, text: 'Subtopic', ordinal: 1 },
+      ], total: 2 },
+      issues: [{ code: 'heading.skipped_level', severity: 'info',
+        message: 'Heading level jump', recommendation: 'Review heading structure.',
+        evidence: 'h3#1: Subtopic' }],
+    }) });
+  });
+  await page.goto('/tools/heading-structure-analyzer/');
+  await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+  await page.getByLabel('Webpage URL').fill('https://example.org/');
+  await page.getByRole('button', { name: 'Run free check' }).click();
+  await expect(page.getByRole('list', { name: 'HTML heading outline' }).locator('li')).toHaveCount(2);
+  await expect(page.getByText('Heading level jump')).toBeVisible();
+});
+
+test('internal-link checker differentiates verified and unchecked results', async ({ page }) => {
+  await page.route('**/api/v1/tools/links', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+      tool: 'links', requested_url: 'https://example.org/', final_url: 'https://example.org/',
+      checked_at: '2026-10-15T12:00:00Z',
+      facts: { internal_links: 1, external_links: 1, probed_destinations: 1,
+        links: [
+          { url: 'https://example.org/missing', classification: 'internal',
+            status: 404, state: 'verified' },
+          { url: 'https://external.org/page', classification: 'external',
+            status: null, state: 'not_checked' },
+        ] },
+      issues: [{ code: 'links.broken_verified', severity: 'error',
+        message: 'An internal URL returned a broken-page status.',
+        recommendation: 'Update the link.', evidence: 'a#1: HTTP 404' }],
+    }) });
+  });
+  await page.goto('/tools/internal-link-checker/');
+  await page.getByLabel('Webpage URL').fill('https://example.org/');
+  await page.getByRole('button', { name: 'Run free check' }).click();
+  await expect(page.getByRole('table')).toBeVisible();
+  await expect(page.getByText('An internal URL returned a broken-page status.')).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'not checked' })).toBeVisible();
+});
+
+test('social checker labels its preview as approximate and never loads the image', async ({ page }) => {
+  await page.route('**/api/v1/tools/social', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+      tool: 'social', requested_url: 'https://example.org/', final_url: 'https://example.org/',
+      checked_at: '2026-10-15T12:00:00Z',
+      facts: { approximate_preview: { title: 'Sample social title',
+        description: 'Shared description', site_name: 'Example',
+        image_url: 'https://example.org/photo.jpg' }, open_graph: { 'og:title': ['Sample social title'] } },
+      issues: [],
+    }) });
+  });
+  await page.goto('/tools/social-metadata-checker/');
+  await page.getByLabel('Webpage URL').fill('https://example.org/');
+  await page.getByRole('button', { name: 'Run free check' }).click();
+  const preview = page.getByLabel('Approximate social sharing preview');
+  await expect(preview.getByText('Sample social title')).toBeVisible();
+  await expect(preview.getByText(/Approximate preview/)).toBeVisible();
+  await expect(preview.locator('img')).toHaveCount(0);
+});
+
+test('all nine deterministic tools have indexable pages and working controls', async ({ page }) => {
+  for (const slug of [
+    'robots-txt-validator', 'xml-sitemap-validator', 'meta-tag-checker',
+    'redirect-chain-checker', 'canonical-url-checker', 'structured-data-checker',
+    'heading-structure-analyzer', 'internal-link-checker', 'social-metadata-checker',
+  ]) {
+    await page.goto('/tools/' + slug + '/');
+    await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Run free check' })).toBeVisible();
+  }
+});
