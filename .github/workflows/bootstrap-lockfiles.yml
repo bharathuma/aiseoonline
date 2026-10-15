@@ -1,0 +1,53 @@
+name: Refresh initial lockfiles and formatting
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    # One-time controlled bootstrap on a same-repository branch.
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'chore/api-quality-gates'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10.18.0'
+          run_install: false
+      - name: Resolve Python lockfile
+        run: uv lock --project apps/api
+      - name: Resolve frontend lockfile
+        run: pnpm install --no-frozen-lockfile
+      - name: Format frontend
+        run: pnpm format:web
+      - name: Format Python sources
+        run: uv run --project apps/api ruff format apps/api
+      - name: Push generated lockfiles and formatting
+        env:
+          GH_PUSH_TOKEN: ${{ github.token }}
+        run: |
+          git add apps/api/uv.lock pnpm-lock.yaml apps/api apps/web
+          if git diff --cached --quiet; then
+            echo "Lockfiles and source formatting are current"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: lock dependencies and format application sources"
+          AUTH="$(printf 'x-access-token:%s' "$GH_PUSH_TOKEN" | base64 -w0)"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $AUTH" push origin HEAD:refs/heads/chore/api-quality-gates

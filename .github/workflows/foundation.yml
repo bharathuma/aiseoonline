@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   api:
-    name: API tests
+    name: API tests, lint and types
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,15 +18,26 @@ jobs:
         with:
           python-version: '3.12'
           enable-cache: true
-      - name: Install Python dependencies
-        run: uv sync --project apps/api --group dev
+      - name: Install locked Python dependencies
+        run: uv sync --project apps/api --locked --group dev
       - name: Check Python style
-        run: uv run --project apps/api ruff check apps/api
-      - name: Test API
-        run: uv run --project apps/api pytest apps/api/tests -q
+        run: uv run --project apps/api --locked ruff check apps/api
+      - name: Check Python formatting
+        run: uv run --project apps/api --locked ruff format --check apps/api
+      - name: Check Python types
+        run: uv run --project apps/api --locked mypy apps/api/src
+      - name: Test API with coverage
+        run: uv run --project apps/api --locked pytest apps/api/tests -q --cov=aiseoonline_api --cov-report=term-missing --cov-report=xml:apps/api/coverage.xml
+      - name: Upload API coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-coverage
+          path: apps/api/coverage.xml
+          if-no-files-found: ignore
 
   web:
-    name: Web build and tests
+    name: Web build, lint and browser tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,9 +48,13 @@ jobs:
         with:
           version: '10.18.0'
           run_install: false
-      - name: Install frontend dependencies
-        run: pnpm install --no-frozen-lockfile
-      - name: Test tool catalog
+      - name: Install locked frontend dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Lint TypeScript
+        run: pnpm lint:web
+      - name: Check frontend formatting
+        run: pnpm format:check:web
+      - name: Run frontend unit tests
         run: pnpm test:web
       - name: Check Astro and TypeScript
         run: pnpm check:web
