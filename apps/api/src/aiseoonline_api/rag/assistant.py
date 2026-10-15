@@ -15,10 +15,9 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from aiseoonline_api.ai_core.contracts import GenerationRequest, InvalidModelOutput, LLMProvider
 from aiseoonline_api.crawler import normalize_url
 from aiseoonline_api.crawler.urls import UnsafeTarget
-
-from aiseoonline_api.ai_core.contracts import GenerationRequest, InvalidModelOutput, LLMProvider
 from aiseoonline_api.db.models import AuditJob, Page, Project, SeoFinding
 from aiseoonline_api.rag.retrieval import HybridRetriever, RetrievalOptions
 from aiseoonline_api.rag.store import RagAccessDenied
@@ -103,7 +102,11 @@ def _clean(text: str) -> str:
 
 
 def _findings(
-    session: Session, project_id: UUID, question: str, *, max_items: int = 8,
+    session: Session,
+    project_id: UUID,
+    question: str,
+    *,
+    max_items: int = 8,
 ) -> list[EvidenceSource]:
     """Use only recorded findings attached to a completed audit and scoped page."""
     audit_id = session.scalar(
@@ -171,8 +174,12 @@ def _findings(
 
 
 def collect_evidence(
-    session: Session, retriever: HybridRetriever, *,
-    project_id: UUID, owner_id: UUID, question: str,
+    session: Session,
+    retriever: HybridRetriever,
+    *,
+    project_id: UUID,
+    owner_id: UUID,
+    question: str,
 ) -> tuple[EvidenceSource, ...]:
     check_project(session, project_id, owner_id)
     findings = _findings(session, project_id, question)
@@ -182,8 +189,11 @@ def collect_evidence(
         owner_id=owner_id,
         query=question,
         options=RetrievalOptions(
-            mode="hybrid", top_k=4, candidate_k=12,
-            max_context_tokens=1800, max_age_days=365,
+            mode="hybrid",
+            top_k=4,
+            candidate_k=12,
+            max_context_tokens=1800,
+            max_age_days=365,
         ),
     )
     sources = list(findings)
@@ -205,14 +215,16 @@ def collect_evidence(
 
 
 def _safe_no_evidence(project_id: UUID, *, uncertainty: str) -> GroundedAnswer:
-    return GroundedAnswer(
-        project_id=project_id, statements=[], sources=[], uncertainty=uncertainty
-    )
+    return GroundedAnswer(project_id=project_id, statements=[], sources=[], uncertainty=uncertainty)
 
 
 def verify_draft(
-    project_id: UUID, draft: AnswerDraft, sources: Sequence[EvidenceSource], *,
-    model: str, usage: dict[str, int],
+    project_id: UUID,
+    draft: AnswerDraft,
+    sources: Sequence[EvidenceSource],
+    *,
+    model: str,
+    usage: dict[str, int],
 ) -> GroundedAnswer:
     available = {source.source_id: source for source in sources}
     statements: list[AnswerStatement] = []
@@ -232,32 +244,42 @@ def verify_draft(
             ):
                 raise InvalidModelOutput("Answer claims unsupported universal coverage")
         cited.add(source.source_id)
-        statements.append(AnswerStatement(
-            statement=claim.statement, source_id=source.source_id,
-            supporting_quote=claim.supporting_quote,
-        ))
+        statements.append(
+            AnswerStatement(
+                statement=claim.statement,
+                source_id=source.source_id,
+                supporting_quote=claim.supporting_quote,
+            )
+        )
     if not statements:
         return _safe_no_evidence(
             project_id,
-            uncertainty=draft.uncertainty or "The available evidence does not answer this question.",
+            uncertainty=draft.uncertainty
+            or "The available evidence does not answer this question.",
         )
     return GroundedAnswer(
-        project_id=project_id, statements=statements,
+        project_id=project_id,
+        statements=statements,
         sources=[source for source in sources if source.source_id in cited],
         uncertainty=draft.uncertainty,
-        model=model, token_usage=usage,
+        model=model,
+        token_usage=usage,
     )
 
 
 def _build_request(
-    question: QuestionInput, sources: Sequence[EvidenceSource],
+    question: QuestionInput,
+    sources: Sequence[EvidenceSource],
 ) -> GenerationRequest:
     content = {
         "scope": "Verified-project indexed snapshots and recorded deterministic findings only.",
         "sources": [
             {
-                "id": item.source_id, "kind": item.kind, "url": item.source_url,
-                "excerpt": item.excerpt, "captured_at": item.captured_at.isoformat(),
+                "id": item.source_id,
+                "kind": item.kind,
+                "url": item.source_url,
+                "excerpt": item.excerpt,
+                "captured_at": item.captured_at.isoformat(),
             }
             for item in sources
         ],
@@ -272,15 +294,19 @@ def _build_request(
         "instructions": "Use only the supplied source IDs and verbatim quotes.",
     }
     return GenerationRequest(
-        template_id="website_rag", template_version="v1",
+        template_id="website_rag",
+        template_version="v1",
         task=json.dumps(conversation, ensure_ascii=True),
-        website_text=evidence, max_output_tokens=480,
+        website_text=evidence,
+        max_output_tokens=480,
     )
 
 
 async def answer_question(
-    project_id: UUID, question: QuestionInput,
-    sources: Sequence[EvidenceSource], provider: LLMProvider,
+    project_id: UUID,
+    question: QuestionInput,
+    sources: Sequence[EvidenceSource],
+    provider: LLMProvider,
 ) -> GroundedAnswer:
     if not sources:
         return _safe_no_evidence(
@@ -292,6 +318,9 @@ async def answer_question(
     if not isinstance(completed.value, AnswerDraft):
         raise InvalidModelOutput("Answer did not match the grounding contract")
     return verify_draft(
-        project_id, completed.value, sources,
-        model=completed.model, usage=completed.usage.model_dump(),
+        project_id,
+        completed.value,
+        sources,
+        model=completed.model,
+        usage=completed.usage.model_dump(),
     )

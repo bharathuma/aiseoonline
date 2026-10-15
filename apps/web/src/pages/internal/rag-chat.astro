@@ -15,24 +15,26 @@ const enabled = import.meta.env.DEV;
       <p class="eyebrow">Internal development workspace</p>
       <h1 class="section-title mt-3">Website evidence assistant</h1>
       <p class="page-intro">
-        Explore verified project evidence, with citations to actual indexed
-        pages and recorded SEO findings. This is not an open public chat.
+        Explore verified project evidence, with citations to actual indexed pages and recorded SEO
+        findings. This is not an open public chat.
       </p>
     </div>
   </section>
   <section class="section-space">
     <div class="site-container max-w-4xl">
-      {enabled ? (
-        <PrivateRagChat client:load />
-      ) : (
-        <div class="surface-card" role="status">
-          <h2 class="text-lg font-bold">Private chat is unavailable</h2>
-          <p class="mt-2 text-slate-700">
-            The project assistant is restricted to local development.
-            No private project data or access controls are exposed here.
-          </p>
-        </div>
-      )}
+      {
+        enabled ? (
+          <PrivateRagChat client:load />
+        ) : (
+          <div class="surface-card" role="status">
+            <h2 class="text-lg font-bold">Private chat is unavailable</h2>
+            <p class="mt-2 text-slate-700">
+              The project assistant is restricted to local development. No private project data or
+              access controls are exposed here.
+            </p>
+          </div>
+        )
+      }
     </div>
   </section>
 </SiteLayout>

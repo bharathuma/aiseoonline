@@ -8,14 +8,13 @@ from uuid import uuid4
 
 import pytest
 from redis import Redis
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from aiseoonline_api.ai_core import FixtureProvider, TokenUsage
+from aiseoonline_api.config import Settings
 from aiseoonline_api.crawler import PageSnapshot, parse_html
 from aiseoonline_api.db.models import AuditJob, Page, Project, SeoFinding, User
 from aiseoonline_api.db.session import create_database_engine
-from aiseoonline_api.config import Settings
 from aiseoonline_api.rag.assistant import QuestionInput, answer_question, collect_evidence
 from aiseoonline_api.rag.chat_routes import reserve
 from aiseoonline_api.rag.embeddings import FixtureEmbeddingProvider
@@ -25,9 +24,13 @@ from aiseoonline_api.rag.store import RagAccessDenied, RagStore
 
 def page_snapshot(url: str, html: str) -> PageSnapshot:
     return PageSnapshot(
-        requested_url=url, final_url=url,
-        captured_at=datetime.now(UTC), http_status=200, redirects=(),
-        content_bytes=len(html), html=parse_html(html.encode(), url),
+        requested_url=url,
+        final_url=url,
+        captured_at=datetime.now(UTC),
+        http_status=200,
+        redirects=(),
+        content_bytes=len(html),
+        html=parse_html(html.encode(), url),
     )
 
 
@@ -46,10 +49,12 @@ def test_private_rag_answers_genuine_findings_and_blocks_other_projects() -> Non
                     other = User(email=f"private-rag-other-{uuid4().hex}@example.test")
                     session.add_all([owner, other])
                     session.flush()
-                    project = Project(owner_id=owner.id, domain="example.org",
-                                      verification_status="verified")
-                    foreign = Project(owner_id=other.id, domain="example.org",
-                                      verification_status="verified")
+                    project = Project(
+                        owner_id=owner.id, domain="example.org", verification_status="verified"
+                    )
+                    foreign = Project(
+                        owner_id=other.id, domain="example.org", verification_status="verified"
+                    )
                     session.add_all([project, foreign])
                     session.flush()
                     content = (
@@ -68,18 +73,21 @@ def test_private_rag_answers_genuine_findings_and_blocks_other_projects() -> Non
                     session.add(job)
                     session.flush()
                     stored_page = Page(
-                        project_id=project.id, audit_job_id=job.id,
-                        url="https://example.org/shop", title="Shop ceramics", http_status=200,
+                        project_id=project.id,
+                        audit_job_id=job.id,
+                        url="https://example.org/shop",
+                        title="Shop ceramics",
+                        http_status=200,
                     )
                     session.add(stored_page)
                     session.flush()
                     finding = SeoFinding(
-                        audit_job_id=job.id, page_id=stored_page.id,
-                        rule_id="description.missing", severity="warning",
+                        audit_job_id=job.id,
+                        page_id=stored_page.id,
+                        rule_id="description.missing",
+                        severity="warning",
                         summary="Missing meta description",
-                        evidence={"references": [
-                            {"observed": "No description captured"}
-                        ]},
+                        evidence={"references": [{"observed": "No description captured"}]},
                     )
                     session.add(finding)
                     session.flush()
@@ -89,8 +97,11 @@ def test_private_rag_answers_genuine_findings_and_blocks_other_projects() -> Non
                     )
                     retrieval = HybridRetriever(session, fixture)
                     sources = collect_evidence(
-                        session, retrieval, project_id=project.id,
-                        owner_id=owner.id, question=question.question,
+                        session,
+                        retrieval,
+                        project_id=project.id,
+                        owner_id=owner.id,
+                        question=question.question,
                     )
                     matching = [s for s in sources if s.source_id == f"finding:{finding.id}"]
                     assert len(matching) == 1
@@ -98,14 +109,18 @@ def test_private_rag_answers_genuine_findings_and_blocks_other_projects() -> Non
                     assert matching[0].kind == "seo_finding"
                     assert len(sources) <= 12
                     fake = FixtureProvider(
-                        text=json.dumps({
-                            "claims": [{
-                                "statement": "The shop page is missing a meta description.",
-                                "source_id": matching[0].source_id,
-                                "supporting_quote": "Missing meta description",
-                            }],
-                            "uncertainty": "Other pages without completed audits remain unknown.",
-                        }),
+                        text=json.dumps(
+                            {
+                                "claims": [
+                                    {
+                                        "statement": "The shop page is missing a meta description.",
+                                        "source_id": matching[0].source_id,
+                                        "supporting_quote": "Missing meta description",
+                                    }
+                                ],
+                                "uncertainty": "Other pages without completed audits remain unknown.",
+                            }
+                        ),
                         usage=TokenUsage(input_tokens=120, output_tokens=50, total_tokens=170),
                     )
                     result = asyncio.run(answer_question(project.id, question, sources, fake))
@@ -116,11 +131,17 @@ def test_private_rag_answers_genuine_findings_and_blocks_other_projects() -> Non
                     assert "unknown" in result.uncertainty
                     with pytest.raises(RagAccessDenied):
                         collect_evidence(
-                            session, retrieval, project_id=project.id,
-                            owner_id=other.id, question=question.question,
+                            session,
+                            retrieval,
+                            project_id=project.id,
+                            owner_id=other.id,
+                            question=question.question,
                         )
                     foreign_sources = collect_evidence(
-                        session, retrieval, project_id=foreign.id, owner_id=other.id,
+                        session,
+                        retrieval,
+                        project_id=foreign.id,
+                        owner_id=other.id,
                         question=question.question,
                     )
                     assert foreign_sources == ()

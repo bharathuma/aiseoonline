@@ -4,7 +4,7 @@ import asyncio
 import hashlib
 import hmac
 from datetime import UTC, datetime
-from decimal import Decimal, ROUND_CEILING
+from decimal import ROUND_CEILING, Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Request
@@ -14,13 +14,22 @@ from redis.exceptions import RedisError
 from sqlalchemy.orm import Session
 
 from aiseoonline_api.ai_core import (
-    BudgetExceeded, CredentialsUnavailable, InvalidModelOutput, LLMTimeout,
-    ProviderRateLimited, ProviderUnavailable, make_openai_provider,
+    BudgetExceeded,
+    CredentialsUnavailable,
+    InvalidModelOutput,
+    LLMTimeout,
+    ProviderRateLimited,
+    ProviderUnavailable,
+    make_openai_provider,
 )
 from aiseoonline_api.config import Settings
 from aiseoonline_api.errors import error_response
 from aiseoonline_api.rag.assistant import (
-    GroundedAnswer, QuestionInput, answer_question, check_project, collect_evidence,
+    GroundedAnswer,
+    QuestionInput,
+    answer_question,
+    check_project,
+    collect_evidence,
 )
 from aiseoonline_api.rag.embeddings import make_openai_embedding_provider
 from aiseoonline_api.rag.retrieval import HybridRetriever
@@ -48,8 +57,7 @@ def dev_access(request: Request, settings: Settings) -> bool:
     incoming = request.headers.get("x-dev-rag-token", "")
     if token is None or len(incoming) < 24 or len(incoming) > 256:
         return False
-    if (request.client is None or
-            request.client.host not in ("127.0.0.1", "::1", "testclient")):
+    if request.client is None or request.client.host not in ("127.0.0.1", "::1", "testclient"):
         return False
     return hmac.compare_digest(token.get_secret_value(), incoming)
 
@@ -64,11 +72,9 @@ def price_allocation(settings: Settings) -> int | None:
         return None
     # Conservative reserve: full context budget + retry envelope for generation
     # and all 3 embedding retries. Actual costs are provider-controlled.
-    worst_micro_usd = (
-        (input_rate * settings.llm_max_input_tokens + output_rate * 480)
-        * (settings.llm_max_retries + 1)
-        + embed_rate * 800 * 3
-    )
+    worst_micro_usd = (input_rate * settings.llm_max_input_tokens + output_rate * 480) * (
+        settings.llm_max_retries + 1
+    ) + embed_rate * 800 * 3
     allocation = int(worst_micro_usd.to_integral_value(rounding=ROUND_CEILING))
     request_limit = int(settings.rag_chat_request_usd_cap * Decimal(1000000))
     return allocation if 0 < allocation <= request_limit else None
@@ -77,12 +83,15 @@ def price_allocation(settings: Settings) -> int | None:
 def reserve(redis_url: str, visitor: str, allocation: int, cap: int) -> int:
     peer = hashlib.sha256(visitor.encode("utf-8")).hexdigest()
     date = datetime.now(UTC).strftime("%Y%m%d")
-    with Redis.from_url(
-        redis_url, socket_timeout=0.8, socket_connect_timeout=0.8
-    ) as client:
+    with Redis.from_url(redis_url, socket_timeout=0.8, socket_connect_timeout=0.8) as client:
         result = client.eval(
-            _GUARD_SCRIPT, 2, f"ai:rag:peer:{peer}",
-            f"ai:rag:daily:{date}", 6, allocation, cap,
+            _GUARD_SCRIPT,
+            2,
+            f"ai:rag:peer:{peer}",
+            f"ai:rag:daily:{date}",
+            6,
+            allocation,
+            cap,
         )
     return int(result)
 
@@ -105,26 +114,30 @@ def retrieve_sources(request: Request, question: QuestionInput, owner_id: UUID):
         with Session(engine) as session:
             retrieval = HybridRetriever(session, embedding)
             return collect_evidence(
-                session, retrieval, project_id=question.project_id,
-                owner_id=owner_id, question=question.question,
+                session,
+                retrieval,
+                project_id=question.project_id,
+                owner_id=owner_id,
+                question=question.question,
             )
     finally:
         embedding.close()
 
 
 @router.post(
-    "/internal/rag/chat", response_model=GroundedAnswer,
+    "/internal/rag/chat",
+    response_model=GroundedAnswer,
     summary="Development-only verified-project evidence chat",
 )
-async def chat(
-    request: Request, question: QuestionInput
-) -> GroundedAnswer | JSONResponse:
+async def chat(request: Request, question: QuestionInput) -> GroundedAnswer | JSONResponse:
     settings: Settings = request.app.state.settings
     if not dev_access(request, settings):
         # Do not advertise an available private service in production.
         return error_response(request, 404, "not_found", "The requested resource was not found.")
     if settings.database_url is None or settings.redis_url is None:
-        return error_response(request, 503, "service_unavailable", "Private chat dependencies unavailable.")
+        return error_response(
+            request, 503, "service_unavailable", "Private chat dependencies unavailable."
+        )
     if settings.openai_api_key is None:
         return error_response(request, 503, "ai_not_configured", "AI credentials unavailable.")
     allocation = price_allocation(settings)
@@ -135,7 +148,9 @@ async def chat(
     # never accepted from the browser as an owner_id.
     owner_id = settings.rag_chat_dev_owner_id
     if owner_id is None:
-        return error_response(request, 503, "dev_identity_missing", "Development identity unavailable.")
+        return error_response(
+            request, 503, "dev_identity_missing", "Development identity unavailable."
+        )
 
     try:
         await asyncio.to_thread(preauthorize, request, question.project_id, owner_id)
@@ -148,13 +163,21 @@ async def chat(
         cap = int(settings.rag_chat_daily_usd_cap * Decimal(1000000))
         peer = request.client.host if request.client else "unknown"
         admitted = await asyncio.to_thread(
-            reserve, settings.require_redis_url(), peer, allocation, cap,
+            reserve,
+            settings.require_redis_url(),
+            peer,
+            allocation,
+            cap,
         )
     except (RedisError, ValueError, OSError, TimeoutError):
-        return error_response(request, 503, "service_unavailable", "Usage controls are unavailable.")
+        return error_response(
+            request, 503, "service_unavailable", "Usage controls are unavailable."
+        )
     if admitted != 1:
         response = error_response(
-            request, 429, "rag_chat_budget_exhausted",
+            request,
+            429,
+            "rag_chat_budget_exhausted",
             "Private assistant request limit or budget exhausted.",
         )
         response.headers["Retry-After"] = "3600"
@@ -167,7 +190,9 @@ async def chat(
             # No evidence means no paid generation call.
             if not sources:
                 return GroundedAnswer(
-                    project_id=question.project_id, statements=[], sources=[],
+                    project_id=question.project_id,
+                    statements=[],
+                    sources=[],
                     uncertainty="No relevant indexed content or completed audit findings were found.",
                 )
             model = make_openai_provider(settings)
@@ -177,8 +202,17 @@ async def chat(
                 await model.aclose()
     except RagAccessDenied:
         return error_response(request, 404, "not_found", "Project is unavailable.")
-    except (CredentialsUnavailable, ProviderUnavailable, ProviderRateLimited, LLMTimeout,
-            TimeoutError):
-        return error_response(request, 503, "ai_unavailable", "Private assistant is temporarily unavailable.")
+    except (
+        CredentialsUnavailable,
+        ProviderUnavailable,
+        ProviderRateLimited,
+        LLMTimeout,
+        TimeoutError,
+    ):
+        return error_response(
+            request, 503, "ai_unavailable", "Private assistant is temporarily unavailable."
+        )
     except (BudgetExceeded, InvalidModelOutput, ValueError):
-        return error_response(request, 502, "ungrounded_answer", "No verifiable answer could be produced.")
+        return error_response(
+            request, 502, "ungrounded_answer", "No verifiable answer could be produced."
+        )

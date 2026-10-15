@@ -2,8 +2,8 @@
 
 from decimal import Decimal
 from functools import lru_cache
-from uuid import UUID
 from typing import Literal
+from uuid import UUID
 
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -57,9 +57,11 @@ class Settings(BaseSettings):
         if self.rag_chat_enabled:
             if self.environment == "production":
                 raise ValueError("Private RAG chat cannot be enabled in production")
-            if (self.rag_chat_dev_token is None or
-                len(self.rag_chat_dev_token.get_secret_value()) < 32 or
-                self.rag_chat_dev_owner_id is None):
+            if (
+                self.rag_chat_dev_token is None
+                or len(self.rag_chat_dev_token.get_secret_value()) < 32
+                or self.rag_chat_dev_owner_id is None
+            ):
                 raise ValueError("Private RAG chat needs a 32+ character token and owner UUID")
         return self
 
