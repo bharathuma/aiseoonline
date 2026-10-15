@@ -83,7 +83,7 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
             "title.length",
             "info",
             "Review page title length",
-            f"Title length is {len(title)}; advisory: {conf.title_min_chars}–{conf.title_max_chars}.",
+            f"Title: {len(title)} chars; advisory: {conf.title_min_chars}–{conf.title_max_chars}.",
             "Prefer a distinctive, descriptive title; do not optimize solely for character count.",
             (title_ref,),
         )
@@ -149,7 +149,7 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
                 "description.length",
                 "info",
                 "Review meta description length",
-                f"Description length: {len(value)}; advisory: {conf.description_min_chars}–{conf.description_max_chars}.",
+                f"Length: {len(value)}; advisory: {conf.description_min_chars}–{conf.description_max_chars}.",
                 "Prefer a clear summary over a rigid character target.",
                 (_tag_ev(present[0]),),
             )
@@ -186,7 +186,7 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
                 "heading.skipped_level",
                 "info",
                 "Heading level jump",
-                f"Heading level jumps from H{previous_level} to H{h.level}; review the document outline.",
+                f"Jump from H{previous_level} to H{h.level}; review heading structure.",
                 "Review whether the heading structure represents the document sections clearly.",
                 (FindingEvidence(h.evidence, h.text[:180]),),
             )
@@ -275,7 +275,7 @@ def _html_findings(snapshot: PageSnapshot, conf: RuleConfig) -> list[SeoFinding]
                 "robots.noindex",
                 "info",
                 f"Noindex directive for {agent}",
-                "The page asks this bot not to index it. HTTP X-Robots-Tag headers were not checked.",
+                "Noindex found. HTTP X-Robots-Tag headers were not checked.",
                 "Confirm this page is intended to remain out of search results.",
                 metas,
             )
