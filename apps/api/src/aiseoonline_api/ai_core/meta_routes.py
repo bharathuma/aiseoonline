@@ -57,9 +57,13 @@ return 3-count-1
 """
 _SPEND_SCRIPT = """
 local spent=tonumber(redis.call('GET', KEYS[1]) or '0')
+local global=tonumber(redis.call('GET', KEYS[2]) or '0')
 if spent+tonumber(ARGV[1])>tonumber(ARGV[2]) then return -1 end
+if global+tonumber(ARGV[1])>tonumber(ARGV[3]) then return -1 end
 redis.call('INCRBY', KEYS[1], ARGV[1])
+redis.call('INCRBY', KEYS[2], ARGV[1])
 if spent==0 then redis.call('EXPIRE', KEYS[1], 90000) end
+if global==0 then redis.call('EXPIRE', KEYS[2], 90000) end
 return 1
 """
 
@@ -117,16 +121,18 @@ def _check_peer(redis_url: str, peer: str) -> int:
         return int(client.eval(_PEER_SCRIPT, 1, f"ai:peer:{peer_key}"))
 
 
-def _reserve_spend(redis_url: str, allocation: int, limit: int) -> bool:
+def _reserve_spend(redis_url: str, allocation: int, limit: int, global_limit: int) -> bool:
     with Redis.from_url(redis_url, socket_timeout=0.8, socket_connect_timeout=0.8) as client:
         return (
             int(
                 client.eval(
                     _SPEND_SCRIPT,
-                    1,
+                    2,
                     "ai:daily:" + datetime.now(UTC).strftime("%Y%m%d"),
+                    "ai:global:" + datetime.now(UTC).strftime("%Y%m%d"),
                     allocation,
                     limit,
+                    global_limit,
                 )
             )
             == 1
@@ -253,7 +259,13 @@ async def ai_meta(
             )
 
     try:
-        allowed = await asyncio.to_thread(_reserve_spend, redis_url, limits[0], limits[1])
+        allowed = await asyncio.to_thread(
+            _reserve_spend,
+            redis_url,
+            limits[0],
+            limits[1],
+            int(settings.ai_global_daily_usd_cap * 1000000),
+        )
     except (RedisError, OSError, TimeoutError):
         return error_response(
             request, 503, "service_unavailable", "AI spending limits are unavailable."

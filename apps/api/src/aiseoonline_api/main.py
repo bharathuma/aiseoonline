@@ -13,6 +13,7 @@ from aiseoonline_api.config import Settings, get_settings
 from aiseoonline_api.db.session import create_database_engine
 from aiseoonline_api.errors import ERROR_RESPONSES, register_error_handlers
 from aiseoonline_api.logging import configure_logging
+from aiseoonline_api.observability import configure_telemetry
 from aiseoonline_api.public_tools.routes import router as public_tools_router
 from aiseoonline_api.rag.chat_routes import router as rag_chat_router
 from aiseoonline_api.request_id import RequestIdMiddleware
@@ -25,6 +26,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     """Build the API; database connections are established lazily by SQLAlchemy."""
     resolved = settings if settings is not None else get_settings()
     configure_logging(resolved.log_level)
+    configure_telemetry(resolved)
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:

@@ -23,6 +23,7 @@ from aiseoonline_api.agents.workflow import AuditAgent
 from aiseoonline_api.ai_core import LLMProvider, make_openai_provider
 from aiseoonline_api.config import Settings
 from aiseoonline_api.db.session import create_database_engine
+from aiseoonline_api.observability import configure_telemetry, span, trace_from_parent
 
 logger = logging.getLogger("aiseoonline.audit")
 
@@ -57,7 +58,17 @@ async def _execute(
                 fetch=fetch,
                 on_step=on_step,
             )
-            return await agent.run(request, checkpointer=saver, thread_id=f"audit:{job_id}")
+            from aiseoonline_api.db.models import AuditJob
+
+            record = session.get(AuditJob, job_id)
+            assert record is not None
+            with (
+                trace_from_parent(
+                    record.trace_parent, request_id=record.request_id or "-", job_id=str(job_id)
+                ),
+                span("audit.job", attempt=attempt),
+            ):
+                return await agent.run(request, checkpointer=saver, thread_id=f"audit:{job_id}")
 
 
 def execute_audit_job(
@@ -73,6 +84,7 @@ def execute_audit_job(
     All DB state changes are protected by the claimed attempt number.
     """
     resolved = settings or Settings()
+    configure_telemetry(resolved)
     if not resolved.audit_jobs_enabled or resolved.environment == "production":
         return "disabled"
     engine = create_database_engine(resolved)

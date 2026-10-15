@@ -82,7 +82,9 @@ async def enqueue(
         with Session(_engine(request)) as session, session.begin():
             job, created = create_job(session, request=request_data, key=idempotency_key)
             if created:
-                remaining = await asyncio.to_thread(reserve_daily_budget, settings, allocation)
+                remaining = await asyncio.to_thread(
+                    reserve_daily_budget, settings, allocation, owner
+                )
                 if remaining != 1:
                     raise RuntimeError("audit_budget_reached")
             identifier = job.id
