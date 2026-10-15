@@ -118,7 +118,7 @@ def _findings(
     if audit_id is None:
         return []
     project_domain = session.scalar(select(Project.domain).where(Project.id == project_id))
-    records = session.execute(
+    records = list(session.execute(
         select(SeoFinding, Page)
         .join(Page, SeoFinding.page_id == Page.id)
         .where(
@@ -128,7 +128,7 @@ def _findings(
         )
         .order_by(SeoFinding.id)
         .limit(120)
-    ).all()
+    ).all())
     question_text = _clean(question)
     if "description" in question_text:
         records = [r for r in records if "description" in r[0].rule_id]
