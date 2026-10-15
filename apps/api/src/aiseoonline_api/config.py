@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     audit_dev_owner_id: UUID | None = None
     audit_daily_job_cap: int = Field(default=12, ge=1, le=100)
     audit_daily_usd_cap: Decimal = Field(default=Decimal("1.00"), gt=0, le=100)
-    audit_request_usd_cap: Decimal = Field(default=Decimal("0.10"), gt=0, le=10)
+    audit_request_usd_cap: Decimal = Field(default=Decimal("0.30"), gt=0, le=10)
     rag_chat_embedding_usd_per_million: Decimal | None = Field(default=None, ge=0)
     rag_chat_daily_usd_cap: Decimal = Field(default=Decimal("1.00"), gt=0, le=100)
     rag_chat_request_usd_cap: Decimal = Field(default=Decimal("0.10"), gt=0, le=10)
