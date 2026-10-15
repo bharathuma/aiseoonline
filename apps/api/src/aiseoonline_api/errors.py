@@ -85,9 +85,17 @@ async def http_error(request: Request, exc: HTTPException) -> JSONResponse:
 async def validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
     issues: list[FieldIssue] = []
     for error in exc.errors():
-        location = ".".join(
-            str(part) for part in error.get("loc", ()) if isinstance(part, str | int)
-        )
+        # Field paths may contain user-supplied JSON keys. Sanitize those keys.
+        path_parts: list[str] = []
+        for part in error.get("loc", ()):
+            if isinstance(part, int):
+                path_parts.append(str(part))
+            elif isinstance(part, str):
+                if part.isascii() and part.isidentifier() and len(part) <= 64:
+                    path_parts.append(part)
+                else:
+                    path_parts.append("field")
+        location = ".".join(path_parts)
         kind = error.get("type", "invalid")
         issues.append(
             FieldIssue(
