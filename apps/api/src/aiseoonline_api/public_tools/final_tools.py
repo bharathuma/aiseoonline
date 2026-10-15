@@ -240,7 +240,7 @@ def check_social(url: str) -> ToolReport:
                 "title": title[0] if title else None,
                 "description": description[0] if description else None,
                 "image_url": image[0] if image else None,
-                "site_name": (tags.get("og:site_name") or [urlsplit(page.final_url).hostname])[0],
+                "site_name": (tags.get("og:site_name") or [urlsplit(page.final_url).hostname or ""])[0],
             },
             "preview_disclaimer": "Approximation only. Platforms may choose different text, "
             "image crops, and cached previews. Images are not fetched.",
