@@ -5,6 +5,7 @@ writes, conversation persistence or model side-effects are performed here.
 """
 
 import json
+import re
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import Literal
@@ -13,6 +14,9 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+from aiseoonline_api.crawler import normalize_url
+from aiseoonline_api.crawler.urls import UnsafeTarget
 
 from aiseoonline_api.ai_core.contracts import GenerationRequest, InvalidModelOutput, LLMProvider
 from aiseoonline_api.db.models import AuditJob, Page, Project, SeoFinding
@@ -110,6 +114,7 @@ def _findings(
     )
     if audit_id is None:
         return []
+    project_domain = session.scalar(select(Project.domain).where(Project.id == project_id))
     records = session.execute(
         select(SeoFinding, Page)
         .join(Page, SeoFinding.page_id == Page.id)
@@ -131,22 +136,37 @@ def _findings(
     weight = {"error": 0, "warning": 1, "info": 2}
     records.sort(key=lambda r: (weight.get(r[0].severity, 3), str(r[0].id)))
     sources: list[EvidenceSource] = []
-    for finding, page in records[:max_items]:
+    for finding, page in records:
         # The page row is already restricted to the same project and audit.
         # Metadata from JSON findings must not be interpreted as instructions.
-        excerpt = f"{finding.rule_id}: {finding.summary}".strip()[:1050]
+        try:
+            verified_url = normalize_url(page.url)
+        except (UnsafeTarget, ValueError):
+            continue
+        if verified_url.host != project_domain:
+            continue
+        observed = ""
+        if isinstance(finding.evidence, dict):
+            refs = finding.evidence.get("references")
+            if isinstance(refs, list) and refs:
+                first = refs[0]
+                if isinstance(first, dict):
+                    observed = str(first.get("observed", ""))[:120]
+        excerpt = f"{finding.rule_id}: {finding.summary}. {observed}".strip()[:1050]
         if len(excerpt) < 8:
             continue
         sources.append(
             EvidenceSource(
                 source_id=f"finding:{finding.id}",
                 kind="seo_finding",
-                source_url=page.url,
+                source_url=verified_url.value,
                 finding_id=finding.id,
                 captured_at=page.crawled_at,
                 excerpt=excerpt,
             )
         )
+        if len(sources) >= max_items:
+            break
     return sources
 
 
@@ -201,6 +221,16 @@ def verify_draft(
         source = available.get(claim.source_id)
         if source is None or _clean(claim.supporting_quote) not in _clean(source.excerpt):
             raise InvalidModelOutput("Answer referred to unverified source evidence")
+        quote = _clean(claim.supporting_quote)
+        digits = set(re.findall(r"(?<!\\w)\\d+(?:[.,]\\d+)?%?(?!\\w)", claim.statement))
+        quoted_digits = set(re.findall(r"(?<!\\w)\\d+(?:[.,]\\d+)?%?(?!\\w)", quote))
+        if not digits.issubset(quoted_digits):
+            raise InvalidModelOutput("Answer adds a number unsupported by its quoted evidence")
+        for quantifier in ("all", "every", "none"):
+            if re.search(rf"\\b{quantifier}\\b", _clean(claim.statement)) and not re.search(
+                rf"\\b{quantifier}\\b", quote
+            ):
+                raise InvalidModelOutput("Answer claims unsupported universal coverage")
         cited.add(source.source_id)
         statements.append(AnswerStatement(
             statement=claim.statement, source_id=source.source_id,
