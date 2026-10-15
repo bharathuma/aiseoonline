@@ -103,7 +103,7 @@ def test_sitemap_invalid_xml_is_rejected(monkeypatch: pytest.MonkeyPatch, xml: b
 
 def test_meta_uses_real_snapshot_and_rule_engine(monkeypatch: pytest.MonkeyPatch) -> None:
     html = parse_html(
-        b'<html><head><title>Real test title</title><meta name="description" '
+        b'<html><head><title>Hi</title><meta name="description" '
         b'content="Evidence from fixture"/></head><body><h1>Headline</h1></body></html>',
         "https://example.org/"
     )
@@ -122,7 +122,7 @@ def test_meta_uses_real_snapshot_and_rule_engine(monkeypatch: pytest.MonkeyPatch
 
     monkeypatch.setattr(checks, "CrawlSession", Session)
     result = checks.check_meta("https://example.org/")
-    assert result.facts["title"] == "Real test title"
+    assert result.facts["title"] == "Hi"
     assert result.facts["h1"] == ["Headline"]
     assert any(x.code.startswith("title.") for x in result.issues)
     assert all(x.evidence for x in result.issues)
