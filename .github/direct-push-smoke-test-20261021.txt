@@ -1,3 +1,0 @@
-Temporary GitHub direct-push capability check.
-No application, configuration, workflows, or production resources changed.
-This file will be deleted in a follow-up direct commit to main.
